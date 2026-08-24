@@ -134,11 +134,17 @@ class AttackIndicator : Tag(0xFF4C4C) {
     }
 
     override fun onClick() {
-        if (enabled) {
-            if (Dungeon.hero.handle(lastTarget!!.pos)) {
-                Dungeon.hero.next()
-            }
+        val hero = Dungeon.hero
+        val target = lastTarget
+
+        // TheCatist: 攻击前检查怪是否能被攻击，以避免攻击范围内有多个敌人的时候，攻击按钮失效的问题
+        if (!enabled || !hero.ready || target == null || !target.isAlive ||
+                !Dungeon.visible[target.pos] || !hero.canAttack(target)) {
+            checkEnemies()
+            return
         }
+
+        if (hero.handle(target.pos)) hero.next()
     }
 
     companion object {

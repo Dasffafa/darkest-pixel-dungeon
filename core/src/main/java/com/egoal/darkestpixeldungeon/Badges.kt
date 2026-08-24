@@ -791,6 +791,7 @@ object Badges {
             HeroClass.ROGUE -> badge = Badge.VICTORY_ROGUE
             HeroClass.HUNTRESS -> badge = Badge.VICTORY_HUNTRESS
             HeroClass.SORCERESS -> badge = Badge.VICTORY_SORCERESS
+            else -> {}
         }
         local.add(badge)
         if (!global!!.contains(badge)) {

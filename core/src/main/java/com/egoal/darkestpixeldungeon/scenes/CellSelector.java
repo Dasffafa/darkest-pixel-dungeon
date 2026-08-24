@@ -80,8 +80,13 @@ public class CellSelector extends TouchArea {
   public void select(int cell) {
     if (enabled && listener != null && cell != -1) {
 
-      listener.onSelect(cell);
-      GameScene.ready();
+      Listener selectedListener = listener;
+      selectedListener.onSelect(cell);
+      // A selection callback may start another targeting action. Do not
+      // overwrite the new listener when finishing the previous selection.
+      if (listener == selectedListener) {
+        GameScene.ready();
+      }
 
     } else {
 

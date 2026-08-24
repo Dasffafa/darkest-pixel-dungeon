@@ -174,6 +174,26 @@ class TimekeepersHourglass : Artifact() {
             damages.add(dmg)
         }
 
+        fun hasLethalDamageFor(target: Char): Boolean {
+            var hp = target.HP
+            var shield = target.SHLD
+
+            damages.asSequence().filter { it.to === target }.forEach { dmg ->
+                when (dmg.type) {
+                    Damage.Type.NORMAL -> {
+                        val total = dmg.value + dmg.add_value
+                        val absorbed = minOf(shield, total)
+                        shield -= absorbed
+                        hp -= total - absorbed
+                    }
+                    Damage.Type.MAGICAL -> hp -= dmg.value + dmg.add_value
+                    Damage.Type.MENTAL -> Unit
+                }
+            }
+
+            return hp <= 0
+        }
+
         private fun triggerPresses() {
             pressed.forEach { Dungeon.level.press(it, null) }
             pressed.clear()

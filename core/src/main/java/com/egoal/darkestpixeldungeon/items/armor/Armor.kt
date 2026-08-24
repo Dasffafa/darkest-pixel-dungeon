@@ -125,7 +125,8 @@ open class Armor(var tier: Int) : EquipableItem() {
 
     override fun activate(ch: Char) {
         if (seal != null) Buff.affect(ch, BrokenSeal.WarriorShield::class.java).setArmor(this)
-        if (glyph is Peaceful) Buff.affect(ch, Peaceful.PeaceReg::class.java)
+        if (glyph is Peaceful)
+            Buff.affect(ch, Peaceful.PeaceReg::class.java).setArmor(this)
     }
 
     fun affixSeal(seal: BrokenSeal) {
@@ -149,6 +150,8 @@ open class Armor(var tier: Int) : EquipableItem() {
             (hero.sprite as HeroSprite).updateArmor()
 
             hero.buff(BrokenSeal.WarriorShield::class.java)?.setArmor(null)
+            if (glyph is Peaceful)
+                Buff.detach(hero, Peaceful.PeaceReg::class.java)
 
             return true
         } else {

@@ -16,8 +16,10 @@ import com.egoal.darkestpixeldungeon.messages.Messages
 import com.egoal.darkestpixeldungeon.scenes.CellSelector
 import com.egoal.darkestpixeldungeon.scenes.GameScene
 import com.egoal.darkestpixeldungeon.sprites.ItemSpriteSheet
+import com.egoal.darkestpixeldungeon.utils.BArray
 import com.egoal.darkestpixeldungeon.utils.GLog
 import com.watabou.noosa.audio.Sample
+import com.watabou.utils.PathFinder
 import com.watabou.utils.Random
 import java.util.*
 
@@ -124,8 +126,17 @@ class CloakOfSheep : Artifact() {
                     GLog.w(Messages.get(CloakOfSheep::class.java, "out-of-range"))
                 else if (Level.solid[cell] || Actor.findChar(cell) != null)
                     GLog.w(Messages.get(CloakOfSheep::class.java, "cannot-go-there"))
-                else
-                    blink(cell)
+                else {
+                    // teleport can cross walls, but not into unreachable areas
+                    // (e.g. rooms sealed off behind a locked door)
+                    val passable = BooleanArray(Dungeon.level.length())
+                    BArray.or(Level.passable, Level.avoid, passable)
+                    PathFinder.buildDistanceMap(cell, passable, Integer.MAX_VALUE)
+                    if (PathFinder.distance[Item.curUser.pos] == Integer.MAX_VALUE)
+                        GLog.w(Messages.get(CloakOfSheep::class.java, "cannot-go-there"))
+                    else
+                        blink(cell)
+                }
             }
         }
 

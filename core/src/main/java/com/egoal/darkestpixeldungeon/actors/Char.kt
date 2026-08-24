@@ -244,7 +244,7 @@ abstract class Char : Actor() {
             }
             Damage.Type.MAGICAL ->
                 HP -= (dmg.value + dmg.add_value)
-//            Damage.Type.MENTAL -> 0
+            Damage.Type.MENTAL -> {}
         }
 
         if (HP <= 0) {

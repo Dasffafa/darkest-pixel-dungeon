@@ -1,2 +1,13 @@
-#Mon Apr 23 08:11:23 CST 2018
+arguments=--init-script /home/thecatist/.local/share/jdtls/configuration/org.eclipse.osgi/57/0/.cp/gradle/init/init.gradle
+auto.sync=false
+build.scans.enabled=false
+connection.gradle.distribution=GRADLE_DISTRIBUTION(WRAPPER)
 connection.project.dir=
+eclipse.preferences.version=1
+gradle.user.home=
+java.home=/home/thecatist/.jdks/ms-21.0.11
+jvm.arguments=
+offline.mode=false
+override.workspace.settings=true
+show.console.view=true
+show.executions.view=true

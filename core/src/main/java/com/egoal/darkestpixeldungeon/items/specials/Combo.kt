@@ -10,6 +10,7 @@ import com.egoal.darkestpixeldungeon.actors.buffs.Cripple
 import com.egoal.darkestpixeldungeon.actors.buffs.Vertigo
 import com.egoal.darkestpixeldungeon.actors.hero.Hero
 import com.egoal.darkestpixeldungeon.effects.Pushing
+import com.egoal.darkestpixeldungeon.items.artifacts.TimekeepersHourglass
 import com.egoal.darkestpixeldungeon.items.wands.WandOfBlastWave
 import com.egoal.darkestpixeldungeon.mechanics.Ballistica
 import com.egoal.darkestpixeldungeon.messages.M
@@ -234,7 +235,9 @@ class Combo : Special() {
                     addFeature(Damage.Feature.CRITICAL or Damage.Feature.ACCURATE or Damage.Feature.PURE)
                 }
                 Char.ProcessAttackDamage(dmg)
-                if (count > 0 && enemy.isAlive) doAttack(hero, enemy)
+                val lethalDamageQueued = hero.buff(TimekeepersHourglass.TimeFreeze::class.java)
+                        ?.hasLethalDamageFor(enemy) == true
+                if (count > 0 && enemy.isAlive && !lethalDamageQueued) doAttack(hero, enemy)
                 else hero.spendAndNext(hero.attackDelay())
             }
         }

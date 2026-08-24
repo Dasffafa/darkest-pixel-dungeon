@@ -213,7 +213,8 @@ class Tengu : Mob() {
             sprite.move(pos, shuffledposes[0])
             sprite.turnTo(pos, enemypos)
             move(shuffledposes[0])
-
+            // TheCatist: 天狗在瞬移的时候，应该重新渲染地图，避免玩家有灵视也看不到的问题
+            Dungeon.observe()
             spend(Random.Float(0.01f, 0.05f))
         }
 
@@ -243,6 +244,9 @@ class Tengu : Mob() {
 
         sprite.move(pos, newpos)
         move(newpos)
+
+        // TheCatist: 天狗在瞬移的时候，应该重新渲染地图，避免玩家有灵视也看不到的问题
+        Dungeon.observe()
 
         if (Dungeon.visible[newpos]) CellEmitter.get(newpos).burst(Speck.factory(Speck.WOOL), 6)
 

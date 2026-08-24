@@ -186,6 +186,7 @@ class Astrolabe : Special() {
 
     override fun restoreFromBundle(bundle: Bundle) {
         super.restoreFromBundle(bundle)
+        cooldown = bundle.getInt(COOLDOWN)
         blockNextNegative = bundle.getBoolean(BLOCK_NEXT_NEGATIVE)
 
         cachedInvoker_1 = bundle.getInt(CACHED_INVOKER_1)

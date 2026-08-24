@@ -1,12 +1,12 @@
 buildscript {
-    ext.kotlin_version = '1.5.20'
+    ext.kotlin_version = '1.9.24'
     repositories {
         maven {
             url "https://maven.aliyun.com/repository/google"
             allowInsecureProtocol = true
         }
         maven {
-            url "https://maven.aliyun.com/repository/jcenter"
+            url "https://maven.aliyun.com/repository/central"
             allowInsecureProtocol = true
         }
         maven {
@@ -15,7 +15,7 @@ buildscript {
         }
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:4.0.1'
+        classpath 'com.android.tools.build:gradle:8.7.2'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
         classpath "org.jetbrains.kotlin:kotlin-serialization:$kotlin_version"
     }
@@ -28,7 +28,7 @@ allprojects {
             allowInsecureProtocol = true
         }
         maven {
-            url "https://maven.aliyun.com/repository/jcenter"
+            url "https://maven.aliyun.com/repository/central"
             allowInsecureProtocol = true
         }
         maven {
