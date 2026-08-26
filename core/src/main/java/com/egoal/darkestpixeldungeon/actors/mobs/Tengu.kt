@@ -160,7 +160,8 @@ class Tengu : Mob() {
             Dungeon.level.drop(item, cell).sprite.drop(pos)
         }
 
-        if (Random.Int(3) == 0) Dungeon.level.drop(TengusKatana().identify(), pos).sprite.drop()
+        // 掉落的tengu之剑可能也会有等级铭文之类的调整项，因为一把+0三阶武器看起来，不太能应对三区的危险状况了
+        if (Random.Int(3) == 0) Dungeon.level.drop(TengusKatana().random().identify(), pos).sprite.drop()
 
         GameScene.bossSlain()
         super.die(cause)
