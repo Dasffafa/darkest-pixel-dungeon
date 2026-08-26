@@ -28,3 +28,4 @@ dev/reddit.md
 .vscode
 
 core/release
+/core/google-services.json

@@ -30,6 +30,7 @@ import com.egoal.darkestpixeldungeon.messages.Languages;
 import com.egoal.darkestpixeldungeon.scenes.GameScene;
 import com.egoal.darkestpixeldungeon.scenes.PixelScene;
 import com.egoal.darkestpixeldungeon.scenes.WelcomeScene;
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.RenderedText;
 import com.watabou.noosa.audio.Music;
@@ -422,5 +423,6 @@ public class DarkestPixelDungeon extends Game {
 
   public static void reportException(Throwable tr) {
     TopExceptionHandler.Companion.WriteErrorFile(tr);
+    FirebaseCrashlytics.getInstance().recordException(tr);
   }
 }
