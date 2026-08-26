@@ -807,7 +807,7 @@ class Hero : Char() {
     fun resume() {
         curAction = lastAction
         lastAction = null
-        damageInterrupt = false
+        damageInterrupt = true
         next()
     }
 
