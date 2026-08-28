@@ -1,6 +1,7 @@
 package com.egoal.darkestpixeldungeon.levels
 
-import android.opengl.GLES20
+import com.badlogic.gdx.Gdx
+import com.badlogic.gdx.graphics.GL20
 import com.egoal.darkestpixeldungeon.Assets
 import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.DungeonTilemap
@@ -13,7 +14,6 @@ import com.watabou.noosa.Group
 import com.watabou.noosa.particles.PixelParticle
 import com.watabou.utils.PathFinder
 import com.watabou.utils.Random
-import javax.microedition.khronos.opengles.GL10
 
 class HallsLevel : RegularLevel() {
     init {
@@ -116,9 +116,9 @@ class HallsLevel : RegularLevel() {
             }
 
             override fun draw() {
-                GLES20.glBlendFunc(GL10.GL_SRC_ALPHA, GL10.GL_ONE)
+                Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE)
                 super.draw()
-                GLES20.glBlendFunc(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA)
+                Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA)
             }
         }
 

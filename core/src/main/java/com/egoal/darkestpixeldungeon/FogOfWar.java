@@ -20,7 +20,7 @@
  */
 package com.egoal.darkestpixeldungeon;
 
-import android.opengl.GLES20;
+import com.badlogic.gdx.Gdx;
 
 import com.watabou.gltextures.SmartTexture;
 import com.watabou.gltextures.TextureCache;
@@ -194,9 +194,7 @@ public class FogOfWar extends Image {
 
     @Override
     protected void generate() {
-      int[] ids = new int[1];
-      GLES20.glGenTextures(1, ids, 0);
-      id = ids[0];
+      id = Gdx.gl.glGenTexture();
     }
 
     @Override
@@ -209,15 +207,15 @@ public class FogOfWar extends Image {
       bind();
       filter(Texture.LINEAR, Texture.LINEAR);
       pixels.position(0);
-      GLES20.glTexImage2D(
-              GLES20.GL_TEXTURE_2D,
+      Gdx.gl.glTexImage2D(
+              Gdx.gl.GL_TEXTURE_2D,
               0,
-              GLES20.GL_RGBA,
+              Gdx.gl.GL_RGBA,
               width,
               height,
               0,
-              GLES20.GL_RGBA,
-              GLES20.GL_UNSIGNED_BYTE,
+              Gdx.gl.GL_RGBA,
+              Gdx.gl.GL_UNSIGNED_BYTE,
               pixels);
     }
 
@@ -226,14 +224,14 @@ public class FogOfWar extends Image {
       bind();
       filter(Texture.LINEAR, Texture.LINEAR);
       pixels.position(top * width);
-      GLES20.glTexSubImage2D(GLES20.GL_TEXTURE_2D,
+      Gdx.gl.glTexSubImage2D(Gdx.gl.GL_TEXTURE_2D,
               0,
               0,
               top,
               width,
               bottom - top,
-              GLES20.GL_RGBA,
-              GLES20.GL_UNSIGNED_BYTE,
+              Gdx.gl.GL_RGBA,
+              Gdx.gl.GL_UNSIGNED_BYTE,
               pixels);
     }
 

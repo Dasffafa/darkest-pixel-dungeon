@@ -20,7 +20,7 @@
  */
 package com.egoal.darkestpixeldungeon.sprites;
 
-import android.graphics.Bitmap;
+import com.badlogic.gdx.graphics.Pixmap;
 import com.egoal.darkestpixeldungeon.DungeonTilemap;
 import com.egoal.darkestpixeldungeon.effects.CellEmitter;
 import com.egoal.darkestpixeldungeon.items.unclassified.Gold;
@@ -260,11 +260,12 @@ public class ItemSprite extends MovieClip {
   }
 
   public static int pick(int index, int x, int y) {
-    Bitmap bmp = TextureCache.get(Assets.DPD_ITEMS).bitmap;
+    Pixmap bmp = TextureCache.get(Assets.DPD_ITEMS).bitmap;
     int rows = bmp.getWidth() / SIZE;
     int row = index / rows;
     int col = index % rows;
-    return bmp.getPixel(col * SIZE + x, row * SIZE + y);
+    int rgba = bmp.getPixel(col * SIZE + x, row * SIZE + y);
+    return (rgba >>> 8) | (rgba << 24);
   }
 
   public static class Glowing {

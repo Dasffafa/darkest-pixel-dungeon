@@ -3,7 +3,6 @@ package com.egoal.darkestpixeldungeon.items
 import com.egoal.darkestpixeldungeon.items.artifacts.*
 import com.egoal.darkestpixeldungeon.items.rings.*
 import com.egoal.darkestpixeldungeon.items.specials.Astrolabe
-import com.watabou.noosa.Game
 import com.watabou.utils.Bundle
 import java.io.IOException
 
@@ -101,16 +100,12 @@ enum class Catalog(private val items: HashMap<Class<*>, Boolean>) {
             }
             bundle.put(CATELOG, items.toTypedArray())
 
-            val fout = Game.instance.openFileOutput(CATALOG_FILE, Game.MODE_PRIVATE)
-            Bundle.write(bundle, fout)
-            fout.close()
+            com.watabou.utils.FileUtils.bundleToFile(CATALOG_FILE, bundle)
         }
 
         fun Load() {
             try {
-                val fin = Game.instance.openFileInput(CATALOG_FILE)
-                val bundle = Bundle.read(fin)
-                fin.close()
+                val bundle = com.watabou.utils.FileUtils.bundleFromFile(CATALOG_FILE)
 
                 if (bundle.contains(CATELOG)) {
                     val items = bundle.getClassArray(CATELOG)

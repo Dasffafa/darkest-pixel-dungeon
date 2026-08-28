@@ -20,8 +20,6 @@
  */
 package com.egoal.darkestpixeldungeon.scenes;
 
-import android.content.Intent;
-import android.net.Uri;
 
 import com.egoal.darkestpixeldungeon.DarkestPixelDungeon;
 import com.egoal.darkestpixeldungeon.ui.Archs;
@@ -100,9 +98,7 @@ public class AboutScene extends PixelScene {
             dpdlink.width(), dpdlink.height()) {
       @Override
       protected void onClick(Touch touch) {
-        Intent intent = new Intent(Intent.ACTION_VIEW,
-                Uri.parse("https://" + LNK_DPD));
-        Game.instance.startActivity(intent);
+        Game.platform.openURI("https://" + LNK_DPD);
       }
     };
     add(dpdhotArea);

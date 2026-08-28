@@ -21,7 +21,7 @@
 
 package com.watabou.noosa.particles;
 
-import android.graphics.RectF;
+import com.watabou.utils.RectF;
 
 import com.watabou.gltextures.SmartTexture;
 import com.watabou.noosa.Image;

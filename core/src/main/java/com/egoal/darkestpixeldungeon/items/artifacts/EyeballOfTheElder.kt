@@ -1,7 +1,6 @@
 package com.egoal.darkestpixeldungeon.items.artifacts
 
 import com.egoal.darkestpixeldungeon.Assets
-import com.egoal.darkestpixeldungeon.Badges
 import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.DungeonTilemap
 import com.egoal.darkestpixeldungeon.actors.Actor
@@ -29,8 +28,6 @@ import com.egoal.darkestpixeldungeon.ui.QuickSlotButton
 import com.egoal.darkestpixeldungeon.utils.GLog
 import com.watabou.noosa.audio.Sample
 import com.watabou.utils.Random
-import java.util.ArrayList
-import javax.microedition.khronos.opengles.GL
 import kotlin.math.min
 
 //todo: code refactor

@@ -1,0 +1,64 @@
+apply plugin: 'application'
+
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
+
+application {
+    mainClass = 'com.egoal.darkestpixeldungeon.desktop.DesktopLauncher'
+}
+
+tasks.named('run', JavaExec) {
+    systemProperty 'Specification-Version', "${rootProject.ext.appVersionName}-desktop"
+    systemProperty 'Implementation-Version', rootProject.ext.appVersionCode
+}
+
+jar {
+    manifest {
+        attributes(
+                'Main-Class': application.mainClass.get(),
+                'Specification-Title': 'Darkest Pixel Dungeon',
+                'Specification-Version': "${rootProject.ext.appVersionName}-desktop",
+                'Implementation-Version': rootProject.ext.appVersionCode
+        )
+    }
+}
+
+tasks.register('release', Jar) {
+    group = 'build'
+    description = 'Builds a self-contained executable Desktop JAR.'
+    dependsOn tasks.named('classes')
+
+    archiveBaseName.set('darkest-pixel-dungeon')
+    archiveVersion.set("${rootProject.ext.appVersionName}-desktop")
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    from sourceSets.main.output
+    from {
+        configurations.runtimeClasspath.collect { dependency ->
+            dependency.isDirectory() ? dependency : zipTree(dependency)
+        }
+    }
+
+    exclude 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA'
+
+    manifest {
+        attributes(
+                'Main-Class': application.mainClass.get(),
+                'Specification-Title': 'Darkest Pixel Dungeon',
+                'Specification-Version': "${rootProject.ext.appVersionName}-desktop",
+                'Implementation-Version': rootProject.ext.appVersionCode
+        )
+    }
+}
+
+dependencies {
+    implementation project(':core')
+    implementation "com.badlogicgames.gdx:gdx:$gdx_version"
+    implementation "com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdx_version"
+    implementation "com.badlogicgames.gdx:gdx-platform:$gdx_version:natives-desktop"
+    implementation "com.badlogicgames.gdx:gdx-freetype-platform:$gdx_version:natives-desktop"
+}
+
+repositories {
+    mavenCentral()
+}

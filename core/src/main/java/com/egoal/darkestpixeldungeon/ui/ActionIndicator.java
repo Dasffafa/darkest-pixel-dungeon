@@ -81,6 +81,10 @@ public class ActionIndicator extends Tag {
 
   @Override
   protected void onClick() {
+    trigger();
+  }
+
+  public void trigger() {
     if (action != null && Dungeon.INSTANCE.getHero().getReady())
       action.doAction();
   }

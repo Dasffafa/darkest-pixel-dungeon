@@ -20,7 +20,7 @@
  */
 package com.egoal.darkestpixeldungeon.windows;
 
-import android.graphics.RectF;
+import com.watabou.utils.RectF;
 
 import com.egoal.darkestpixeldungeon.Assets;
 import com.egoal.darkestpixeldungeon.DarkestPixelDungeon;

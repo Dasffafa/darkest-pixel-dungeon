@@ -77,6 +77,10 @@ public class CellSelector extends TouchArea {
     return value;
   }
 
+  public void zoomBy(float amount) {
+    zoom(Math.round(camera.zoom + amount));
+  }
+
   public void select(int cell) {
     if (enabled && listener != null && cell != -1) {
 

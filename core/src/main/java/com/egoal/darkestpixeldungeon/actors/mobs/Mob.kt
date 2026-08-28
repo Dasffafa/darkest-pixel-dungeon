@@ -20,7 +20,7 @@
  */
 package com.egoal.darkestpixeldungeon.actors.mobs
 
-import android.util.Log
+import com.watabou.utils.Log
 import com.egoal.darkestpixeldungeon.*
 import com.egoal.darkestpixeldungeon.actors.Actor
 import com.egoal.darkestpixeldungeon.actors.Char
@@ -936,4 +936,3 @@ abstract class Mob : Char() {
         }
     }
 }
-

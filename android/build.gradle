@@ -1,0 +1,66 @@
+apply plugin: 'com.android.application'
+apply plugin: 'com.google.gms.google-services'
+apply plugin: 'com.google.firebase.crashlytics'
+
+android {
+    namespace 'com.egoal.darkestpixeldungeon'
+    compileSdkVersion 34
+
+    defaultConfig {
+        applicationId 'com.egoal.darkestpixeldungeon'
+        minSdkVersion 23
+        targetSdkVersion 23
+        versionCode rootProject.ext.appVersionCode
+        versionName rootProject.ext.appVersionName
+    }
+
+    sourceSets.main {
+        assets.srcDir project(':core').file('src/main/assets')
+        res.srcDir project(':core').file('src/main/res')
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+configurations { natives }
+
+dependencies {
+    implementation project(':core')
+    implementation "com.badlogicgames.gdx:gdx-backend-android:$gdx_version"
+    implementation platform('com.google.firebase:firebase-bom:32.7.4')
+    implementation 'com.google.firebase:firebase-analytics'
+    implementation 'com.google.firebase:firebase-crashlytics'
+
+    natives "com.badlogicgames.gdx:gdx-platform:$gdx_version:natives-armeabi-v7a"
+    natives "com.badlogicgames.gdx:gdx-platform:$gdx_version:natives-arm64-v8a"
+    natives "com.badlogicgames.gdx:gdx-platform:$gdx_version:natives-x86"
+    natives "com.badlogicgames.gdx:gdx-platform:$gdx_version:natives-x86_64"
+    natives "com.badlogicgames.gdx:gdx-freetype-platform:$gdx_version:natives-armeabi-v7a"
+    natives "com.badlogicgames.gdx:gdx-freetype-platform:$gdx_version:natives-arm64-v8a"
+    natives "com.badlogicgames.gdx:gdx-freetype-platform:$gdx_version:natives-x86"
+    natives "com.badlogicgames.gdx:gdx-freetype-platform:$gdx_version:natives-x86_64"
+}
+
+tasks.register('copyLibGdxAndroidNatives') {
+    doLast {
+        configurations.natives.files.each { jar ->
+            def abi = ['armeabi-v7a', 'arm64-v8a', 'x86_64', 'x86'].find {
+                jar.name.endsWith("natives-${it}.jar")
+            }
+            if (abi != null) copy {
+                from zipTree(jar)
+                into file("src/main/jniLibs/$abi")
+                include '*.so'
+            }
+        }
+    }
+}
+
+tasks.configureEach { task ->
+    if (task.name.startsWith('merge') && task.name.endsWith('JniLibFolders')) {
+        task.dependsOn copyLibGdxAndroidNatives
+    }
+}

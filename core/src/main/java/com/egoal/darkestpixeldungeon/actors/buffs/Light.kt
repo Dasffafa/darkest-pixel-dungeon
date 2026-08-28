@@ -20,7 +20,7 @@
  */
 package com.egoal.darkestpixeldungeon.actors.buffs
 
-import android.util.Log
+import com.watabou.utils.Log
 import com.egoal.darkestpixeldungeon.actors.Char
 import com.egoal.darkestpixeldungeon.sprites.CharSprite
 import com.egoal.darkestpixeldungeon.Dungeon

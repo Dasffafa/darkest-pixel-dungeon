@@ -134,6 +134,10 @@ class AttackIndicator : Tag(0xFF4C4C) {
     }
 
     override fun onClick() {
+        trigger()
+    }
+
+    fun trigger() {
         val hero = Dungeon.hero
         val target = lastTarget
 
@@ -145,6 +149,15 @@ class AttackIndicator : Tag(0xFF4C4C) {
         }
 
         if (hero.handle(target.pos)) hero.next()
+    }
+
+    fun cycleTarget() {
+        checkEnemies()
+        if (candidates.isEmpty()) return
+        val index = candidates.indexOf(lastTarget)
+        lastTarget = candidates[(index + 1) % candidates.size]
+        updateImage()
+        HealthIndicator.instance.target(lastTarget)
     }
 
     companion object {

@@ -22,6 +22,7 @@
 
 - 保持 DPD 游戏逻辑为基线，优先替换底层，不以 Shattered `v2.4.2` 重建玩法。
 - 基础迁移集中参考 Shattered 第一个 LibGDX 版本及其连续修复提交，按历史顺序移植；在 Android 与 Desktop 基础迁移完成前，不以 Radish 当前架构替代这条路线。
+- 历史提交用于确定迁移边界和行为，不锁定其当年的依赖版本；DPD 实际使用 LibGDX `1.11.0`，所有移植代码按该版本 API 验证。
 - 保留 Noosa 的上层 API，第一阶段不全面改写为 Scene2D、ECS 或其他对象模型。
 - 迁移底层及上游兼容代码允许继续使用 Java；不为语言统一进行 Java 到 Kotlin 的机械转译。
 - 新玩法和与上游结构无关的新模块仍优先使用 Kotlin。
@@ -102,11 +103,11 @@ Radish 当前 HEAD 和工作区会继续变化。正式移植每一批代码前�
 
 | 状态 | 工作项 | 主要参考 | 验收标准 |
 |---|---|---|---|
-| [ ] | 接入 LibGDX Android 后端和基础依赖 | `2a523f2e` | 保持现有 Android 模块形态时可进入 LibGDX 初始化路径 |
-| [ ] | 将 Noosa `Game`、输入和生命周期接入 LibGDX | `2a523f2e` | create/render/resize/pause/resume/dispose 映射明确，场景时序不变 |
-| [ ] | 将 `glwrap`、纹理和 Buffer 迁移到 LibGDX API | `2a523f2e` | 首个垂直切片无 `GLES20` 底层依赖且画面完整 |
-| [ ] | 将 Music、Sample 和基础资源读取接入 LibGDX | `2a523f2e` | 标题音乐、点击和地牢基础音效可用 |
-| [ ] | 适配 DPD 与首个 LibGDX 版本的必要差异 | DPD 当前实现 | 标题 → 创建角色 → 固定地牢基础流程保持 DPD 行为 |
+| [-] | 接入 LibGDX Android 后端和基础依赖 | `2a523f2e` | 实现和静态检查完成；等待用户 Gradle 构建 |
+| [-] | 将 Noosa `Game`、输入和生命周期接入 LibGDX | `2a523f2e` | 生命周期映射完成；等待手机 S01-S03 |
+| [-] | 将 `glwrap`、纹理和 Buffer 迁移到 LibGDX API | `2a523f2e` | 活跃代码无 GLES20 调用；等待画面验收 |
+| [-] | 将 Music、Sample 和基础资源读取接入 LibGDX | `2a523f2e` | 实现完成；等待标题、点击和战斗音频验收 |
+| [-] | 适配 DPD 与首个 LibGDX 版本的必要差异 | DPD 当前实现 | 差异记录于 M1 阶段文档；等待垂直切片验收 |
 
 退出条件：Android 上通过首个垂直切片；差异均可追溯到 DPD 或 `2a523f2e`。
 
@@ -114,10 +115,10 @@ Radish 当前 HEAD 和工作区会继续变化。正式移植每一批代码前�
 
 | 状态 | 工作项 | 主要参考 | 验收标准 |
 |---|---|---|---|
-| [ ] | 按上游结构重构输入事件 | `05d7f354` | 点击、拖动、返回和菜单事件与现版本一致 |
-| [ ] | 清理杂项 Android 依赖 | `11efd1d0` | 已处理依赖不再回流 Android API |
-| [ ] | 将文件路径改为平台中立表示 | `785726f4` | 路径语义明确且暂不破坏旧存档 |
-| [ ] | 应用迁移问题与 Android 生命周期修复 | `019970b3`、`20f49ac6` | 旋转、暂停恢复和上下文恢复无重复初始化 |
+| [-] | 按上游结构重构输入事件 | `05d7f354` | 点击、拖动、返回和菜单事件与现版本一致 |
+| [-] | 清理杂项 Android 依赖 | `11efd1d0` | 平台中立源码静态清理完成；等待 Android 回归 |
+| [-] | 将文件路径改为平台中立表示 | `785726f4` | 路径语义明确且暂不破坏旧存档 |
+| [-] | 应用迁移问题与 Android 生命周期修复 | `019970b3`、`20f49ac6` | 生命周期映射已实现；等待旋转、暂停和上下文恢复验收 |
 
 退出条件：Android 基础流程稳定，输入、生命周期和文件边界可供模块拆分。
 
@@ -133,10 +134,10 @@ android      Android Launcher、资源与 Android 平台服务
 
 | 状态 | 工作项 | 主要参考 | 验收标准 |
 |---|---|---|---|
-| [ ] | 按历史接口建立 `PlatformSupport` | `3e815a31` | 接口来自历史迁移需求，不预先复制现代接口 |
-| [ ] | 将 Android 宿主从 Noosa `Game` 中分离 | `3e815a31` | Noosa 主循环不继承 Android `Activity` |
-| [ ] | 建立 `android` 模块、Launcher 和平台实现 | `3e815a31` | Android 专用初始化和服务集中在平台模块 |
-| [ ] | 隔离 Firebase、Intent、方向和沉浸模式 | DPD 当前实现 | Android 能力保留，平台无关层不直接执行它们 |
+| [x] | 按历史接口建立 `PlatformSupport` | `3e815a31` | 历史边界及 DPD 所需平台服务接口已建立 |
+| [-] | 将 Android 宿主从 Noosa `Game` 中分离 | `3e815a31` | 实现完成；等待 Android 生命周期验收 |
+| [-] | 建立 `android` 模块、Launcher 和平台实现 | `3e815a31` | 实现完成；等待用户 Android 构建 |
+| [-] | 隔离 Firebase、Intent、方向和沉浸模式 | DPD 当前实现 | 平台边界完成；等待 Android 功能验收 |
 
 退出条件：Android 仍通过 M1/M2 流程，宿主与游戏主循环完成分离。
 
@@ -144,11 +145,11 @@ android      Android Launcher、资源与 Android 平台服务
 
 | 状态 | 工作项 | 主要参考 | 验收标准 |
 |---|---|---|---|
-| [ ] | 将资源访问统一到早期 LibGDX Files/Asset 模式 | `785726f4`、早期迁移 | Android 与未来 Desktop 可加载相同资源 |
-| [ ] | 抽象用户数据、设置、日志和存档路径 | `785726f4` | 平台路径正确且不会覆盖测试数据 |
-| [ ] | 保持旧 Bundle 存档类名和字段兼容 | DPD 当前实现 | M0 存档均能加载并继续游戏 |
+| [-] | 将资源访问统一到早期 LibGDX Files/Asset 模式 | `785726f4`、早期迁移 | 资源 API 已统一；等待 Android/Desktop 资源验收 |
+| [-] | 抽象用户数据、设置、日志和存档路径 | `785726f4` | LibGDX local/preferences/log 边界已实现；等待平台路径验收 |
+| [-] | 保持旧 Bundle 存档类名和字段兼容 | DPD 当前实现 | 序列化格式保持不变并增加临时文件校验写入；等待 M0 存档验收 |
 | [ ] | 评估并迁移必要的反射调用 | `48d2fc77` | Desktop 和未来 AOT 平台不依赖 Android 反射假设 |
-| [ ] | 隔离 Firebase、Intent、URL 等 Android 服务 | Android 平台实现 | Desktop 无 Android 类加载错误 |
+| [x] | 隔离 Firebase、Intent、URL 等 Android 服务 | Android 平台实现 | Android 服务位于 Android 模块，Desktop 启动无 Android 类加载错误 |
 
 退出条件：Android 可以新建、保存、退出和继续游戏，复制的现版本存档兼容；文件接口可供 M6 Desktop 实现。
 
@@ -156,10 +157,10 @@ android      Android Launcher、资源与 Android 平台服务
 
 | 状态 | 工作项 | 主要参考 | 验收标准 |
 |---|---|---|---|
-| [ ] | 按历史方案解耦文本输入 | `0724717a` | Android 文本输入可用且 core 无 Android 对话框依赖 |
-| [ ] | 按历史主体迁移文本渲染 | `b985ed3b` | 当前语言和像素字体行为可接受 |
-| [ ] | 将 `SPD-classes` 与 `core` 改为平台中立模块 | `2aaf18b0` | 两模块不再应用 Android 插件或包含 Manifest |
-| [ ] | 静态检查残余 Android 类引用 | `2aaf18b0` | 平台中立层不加载 Android 类 |
+| [-] | 按历史方案解耦文本输入 | `0724717a` | core 已通过平台接口请求文本；等待双平台确认/取消验收 |
+| [-] | 按历史主体迁移文本渲染 | `b985ed3b` | FreeType 实现完成；等待双端字体视觉验收 |
+| [-] | 将 `SPD-classes` 与 `core` 改为平台中立模块 | `2aaf18b0` | JVM library 配置完成；等待用户双端构建 |
+| [x] | 静态检查残余 Android 类引用 | `2aaf18b0` | 平台中立源码无 Android 类引用 |
 
 退出条件：`SPD-classes` 和 `core` 平台中立，Android 仍通过已有回归流程。
 
@@ -167,9 +168,9 @@ android      Android Launcher、资源与 Android 平台服务
 
 | 状态 | 工作项 | 主要参考 | 验收标准 |
 |---|---|---|---|
-| [ ] | 按首个 Desktop 提交建立 Launcher 和平台实现 | `7670bc14` | Desktop 可进入标题和固定地牢流程 |
-| [ ] | 将 Desktop 后端更新到 LWJGL3 | `4f430015` | 不保留 LWJGL2 发布依赖 |
-| [ ] | 增加鼠标、滚轮和基础键盘映射 | `7670bc14`、DPD 行为 | 常用 UI 与地牢操作可完成 |
+| [x] | 按首个 Desktop 提交建立 Launcher 和平台实现 | `7670bc14` | Desktop 已编译并进入欢迎场景 |
+| [x] | 将 Desktop 后端更新到 LWJGL3 | `4f430015` | Desktop 使用 LWJGL3 并成功创建窗口 |
+| [-] | 增加鼠标、滚轮和基础键盘映射 | `7670bc14`、DPD 行为 | 鼠标触摸映射、滚轮及 Esc 返回已实现；等待 Desktop 操作验收 |
 | [ ] | 验证 Desktop 文件、音频和资源大小写 | 早期迁移 | 新建、保存、继续及主要音频可用 |
 | [ ] | 完成 Android/Desktop 基础行为对比 | 测试标准 | 基础迁移不存在未批准的 DPD 行为变化 |
 
@@ -265,5 +266,8 @@ android      Android Launcher、资源与 Android 平台服务
 - [ ] 建立独立迁移分支。
 - [x] 确保当前工作区已有修改得到妥善保留并排除在迁移改动外。
 - [x] 完成 M0 的静态基线、依赖矩阵与测试标准。
+- [x] 桌面键位与滚轮缩放适配：默认映射参考 Shattered Pixel Dungeon
+  `SPDAction.java`（本地 Radish HEAD `016cc2f56b9fd2654c6104688dd4bfebe9e076ad`），
+  仅复用输入约定，动作仍调用 DPD 原有逻辑。
 - [x] 确认首个垂直切片场景：标题/欢迎场景 → 创建角色 → 固定地牢中的移动、拾取、开门和一次战斗。
 - [ ] 确认构建反馈方式，保留完整的首个错误堆栈而非仅截取末尾。

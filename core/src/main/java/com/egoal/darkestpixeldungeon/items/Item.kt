@@ -105,6 +105,7 @@ open class Item : Bundlable {
     }
 
     open fun doThrow(hero: Hero) {
+        if (!QuickSlotButton.isTargeting()) QuickSlotButton.beginTargeting(this)
         GameScene.selectCell(thrower)
     }
 

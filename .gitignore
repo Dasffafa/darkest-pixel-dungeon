@@ -20,6 +20,13 @@ local.properties
 
 # disable xlsx backup
 ~*
+.~lock.*#
+
+# Generated LibGDX native libraries and local desktop runtime data
+/android/src/main/jniLibs/
+/SPD-classes/src/main/jniLibs/
+/desktop/*.dat
+/desktop/error.dat
 
 dev/messages
 dev/posts
@@ -29,3 +36,4 @@ dev/reddit.md
 
 core/release
 /core/google-services.json
+/AGENTS.md

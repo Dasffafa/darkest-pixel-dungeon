@@ -29,7 +29,7 @@ import com.watabou.glwrap.Quad;
 import com.watabou.glwrap.Vertexbuffer;
 import com.watabou.utils.Rect;
 
-import android.graphics.RectF;
+import com.watabou.utils.RectF;
 
 public class Tilemap extends Visual {
 

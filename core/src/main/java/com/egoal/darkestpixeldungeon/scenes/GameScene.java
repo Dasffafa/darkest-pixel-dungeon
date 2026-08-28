@@ -20,8 +20,8 @@
  */
 package com.egoal.darkestpixeldungeon.scenes;
 
-import android.opengl.GLES20;
-import android.util.Log;
+import com.badlogic.gdx.Gdx;
+import com.watabou.utils.Log;
 
 import com.egoal.darkestpixeldungeon.Badges;
 import com.egoal.darkestpixeldungeon.DungeonTilemap;
@@ -33,6 +33,7 @@ import com.egoal.darkestpixeldungeon.actors.hero.perks.LevelPerception;
 import com.egoal.darkestpixeldungeon.actors.mobs.Mob;
 import com.egoal.darkestpixeldungeon.effects.BubbleText;
 import com.egoal.darkestpixeldungeon.items.unclassified.Honeypot;
+import com.egoal.darkestpixeldungeon.input.DPDAction;
 import com.egoal.darkestpixeldungeon.items.bags.SeedPouch;
 import com.egoal.darkestpixeldungeon.items.scrolls.ScrollOfTeleportation;
 import com.egoal.darkestpixeldungeon.levels.RegularLevel;
@@ -81,6 +82,7 @@ import com.egoal.darkestpixeldungeon.ui.Window;
 import com.egoal.darkestpixeldungeon.windows.WndBag;
 import com.egoal.darkestpixeldungeon.windows.WndGame;
 import com.egoal.darkestpixeldungeon.windows.WndHero;
+import com.egoal.darkestpixeldungeon.windows.WndJournal;
 import com.egoal.darkestpixeldungeon.windows.WndInfoCell;
 import com.egoal.darkestpixeldungeon.windows.WndInfoItem;
 import com.egoal.darkestpixeldungeon.windows.WndInfoMob;
@@ -101,14 +103,17 @@ import com.watabou.noosa.Visual;
 import com.watabou.noosa.audio.Music;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.noosa.particles.Emitter;
+import com.watabou.input.Keys;
+import com.watabou.input.ScrollEvent;
 import com.watabou.utils.GameMath;
+import com.watabou.utils.Signal;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Locale;
 import java.util.function.DoubleUnaryOperator;
+import java.util.function.Supplier;
 
-import javax.microedition.khronos.opengles.GL10;
 
 public class GameScene extends PixelScene {
 
@@ -151,6 +156,8 @@ public class GameScene extends PixelScene {
   private LootIndicator loot;
   private ActionIndicator action;
   private ResumeIndicator resume;
+  private Signal.Listener<Keys.Key> keyListener;
+  private Signal.Listener<ScrollEvent> scrollListener;
 
   @Override
   public void create() {
@@ -183,9 +190,9 @@ public class GameScene extends PixelScene {
       @Override
       public void draw() {
         //water has no alpha component, this improves performance
-        GLES20.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ZERO);
+        Gdx.gl.glBlendFunc(Gdx.gl.GL_ONE, Gdx.gl.GL_ZERO);
         super.draw();
-        GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA);
+        Gdx.gl.glBlendFunc(Gdx.gl.GL_SRC_ALPHA, Gdx.gl.GL_ONE_MINUS_SRC_ALPHA);
       }
     };
     terrain.add(water);
@@ -311,6 +318,13 @@ public class GameScene extends PixelScene {
     resume.camera = uiCamera;
     add(resume);
 
+    Keys.event.add(keyListener = key -> handleKey(key));
+    ScrollEvent.addScrollListener(scrollListener = event -> {
+      if (hasOpenWindow() || event.amount == 0) return false;
+      cellSelector.zoomBy(event.amount > 0 ? -1 : 1);
+      return true;
+    });
+
     log = new GameLog();
     log.camera = uiCamera;
     add(log);
@@ -423,7 +437,86 @@ public class GameScene extends PixelScene {
     scene = null;
     Badges.INSTANCE.saveGlobal();
 
+    Keys.event.remove(keyListener);
+    ScrollEvent.removeScrollListener(scrollListener);
+
     super.destroy();
+  }
+
+  private boolean handleKey(Keys.Key key) {
+    if (!key.pressed) return false;
+    DPDAction command = DPDAction.fromKey(key.code);
+    if (command == null) return false;
+    if (!Dungeon.INSTANCE.getHero().getReady() && command != DPDAction.ZOOM_IN &&
+            command != DPDAction.ZOOM_OUT) return true;
+
+    int width = Dungeon.INSTANCE.getLevel().width();
+    int offset = 0;
+    if (QuickSlotButton.isTargeting()) {
+      switch (command) {
+        case NORTH: QuickSlotButton.moveTarget(0, -1); return true;
+        case WEST: QuickSlotButton.moveTarget(-1, 0); return true;
+        case SOUTH: QuickSlotButton.moveTarget(0, 1); return true;
+        case EAST: QuickSlotButton.moveTarget(1, 0); return true;
+        case NORTH_WEST: QuickSlotButton.moveTarget(-1, -1); return true;
+        case NORTH_EAST: QuickSlotButton.moveTarget(1, -1); return true;
+        case SOUTH_WEST: QuickSlotButton.moveTarget(-1, 1); return true;
+        case SOUTH_EAST: QuickSlotButton.moveTarget(1, 1); return true;
+        case CYCLE_TARGET: QuickSlotButton.cycleTarget(); return true;
+        case TAG_LOOT:
+          if (QuickSlotButton.confirmExternalTarget()) return true;
+          break;
+      }
+    }
+    switch (command) {
+      case NORTH: offset = -width; break;
+      case WEST: offset = -1; break;
+      case SOUTH: offset = width; break;
+      case EAST: offset = 1; break;
+      case NORTH_WEST: offset = -width - 1; break;
+      case NORTH_EAST: offset = -width + 1; break;
+      case SOUTH_WEST: offset = width - 1; break;
+      case SOUTH_EAST: offset = width + 1; break;
+      case WAIT_OR_PICKUP:
+        if (Dungeon.INSTANCE.getLevel().getHeaps().get(Dungeon.INSTANCE.getHero().getPos()) != null) {
+          if (Dungeon.INSTANCE.getHero().handle(Dungeon.INSTANCE.getHero().getPos())) {
+            Dungeon.INSTANCE.getHero().next();
+          }
+        } else {
+          toolbar.waitTurn();
+        }
+        break;
+      case INVENTORY: toolbar.inventory(); break;
+      case EXAMINE: toolbar.examine(); break;
+      case REST: toolbar.rest(); break;
+      case QUICK_SLOT_1: QuickSlotButton.use(0); break;
+      case QUICK_SLOT_2: QuickSlotButton.use(1); break;
+      case QUICK_SLOT_3: QuickSlotButton.use(2); break;
+      case QUICK_SLOT_4: QuickSlotButton.use(3); break;
+      case QUICK_SLOT_5: QuickSlotButton.use(4); break;
+      case QUICK_SLOT_6: QuickSlotButton.use(5); break;
+      case TAG_ATTACK: attack.trigger(); break;
+      case TAG_ACTION: action.trigger(); break;
+      case TAG_LOOT: loot.trigger(); break;
+      case TAG_RESUME: resume.trigger(); break;
+      case CYCLE_TARGET: attack.cycleTarget(); break;
+      case HERO_INFO: show(new WndHero()); break;
+      case JOURNAL: show(new WndJournal()); break;
+      case ZOOM_IN: cellSelector.zoomBy(1); break;
+      case ZOOM_OUT: cellSelector.zoomBy(-1); break;
+    }
+    if (offset != 0 && Dungeon.INSTANCE.getHero().getReady() &&
+            cellSelector.listener == defaultCellListener) {
+      handleCell(Dungeon.INSTANCE.getHero().getPos() + offset);
+    }
+    return true;
+  }
+
+  private boolean hasOpenWindow() {
+    for (Gizmo member : members) {
+      if (member instanceof Window && member.alive) return true;
+    }
+    return false;
   }
 
   @Override
@@ -758,6 +851,11 @@ public class GameScene extends PixelScene {
     scene.addToFront(wnd);
   }
 
+  /** Creates and attaches a window on the LibGDX render thread. */
+  public static void show(Supplier<? extends Window> factory) {
+    com.watabou.noosa.Game.runOnRenderThreadAndWait(() -> show(factory.get()));
+  }
+
   public static void updateFog() {
     if (scene != null)
       scene.fog.updateFog();
@@ -811,9 +909,9 @@ public class GameScene extends PixelScene {
 
     @Override
     public void draw() {
-      GLES20.glBlendFunc(GL10.GL_SRC_ALPHA, GL10.GL_ONE);
+      Gdx.gl.glBlendFunc(Gdx.gl.GL_SRC_ALPHA, Gdx.gl.GL_ONE);
       super.draw();
-      GLES20.glBlendFunc(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
+      Gdx.gl.glBlendFunc(Gdx.gl.GL_SRC_ALPHA, Gdx.gl.GL_ONE_MINUS_SRC_ALPHA);
     }
   }
   // ^^^ may not a good idea...

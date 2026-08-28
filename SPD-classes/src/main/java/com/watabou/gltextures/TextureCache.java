@@ -23,29 +23,13 @@ package com.watabou.gltextures;
 
 import java.util.HashMap;
 
-import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
-import android.graphics.LinearGradient;
-import android.graphics.Paint;
-import android.graphics.Shader.TileMode;
-
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.Pixmap;
 import com.watabou.glwrap.Texture;
 
 public class TextureCache {
 
-	public static Context context;
-	
 	private static HashMap<Object,SmartTexture> all = new HashMap<>();
-	
-	// No dithering, no scaling, 32 bits per pixel
-	private static BitmapFactory.Options bitmapOptions = new BitmapFactory.Options();
-	static {
-		bitmapOptions.inScaled = false;
-		bitmapOptions.inDither = false;
-		bitmapOptions.inPreferredConfig = Bitmap.Config.ARGB_8888;
-	}
 
 	public static SmartTexture createSolid( int color ) {
 		final String key = "1x1:" + color;
@@ -56,8 +40,9 @@ public class TextureCache {
 			
 		} else {
 		
-			Bitmap bmp = Bitmap.createBitmap( 1, 1, Bitmap.Config.ARGB_8888 );
-			bmp.eraseColor( color );
+			Pixmap bmp = new Pixmap( 1, 1, Pixmap.Format.RGBA8888 );
+			bmp.setColor( (color << 8) | (color >>> 24) );
+			bmp.fill();
 			
 			SmartTexture tx = new SmartTexture( bmp );
 			all.put( key, tx );
@@ -76,9 +61,9 @@ public class TextureCache {
 			
 		} else {
 		
-			Bitmap bmp = Bitmap.createBitmap( colors.length, 1, Bitmap.Config.ARGB_8888 );
+			Pixmap bmp = new Pixmap( colors.length, 1, Pixmap.Format.RGBA8888 );
 			for (int i=0; i < colors.length; i++) {
-				bmp.setPixel( i, 0, colors[i] );
+				bmp.drawPixel( i, 0, (colors[i] << 8) | (colors[i] >>> 24) );
 			}
 			SmartTexture tx = new SmartTexture( bmp );
 
@@ -95,6 +80,11 @@ public class TextureCache {
 		all.put( key, tx );
 	}
 
+	public static void remove( Object key ) {
+		SmartTexture tx = all.remove(key);
+		if (tx != null) tx.delete();
+	}
+
 	public static SmartTexture get( Object src ) {
 		
 		if (all.containsKey( src )) {
@@ -107,7 +97,11 @@ public class TextureCache {
 			
 		} else {
 
-			SmartTexture tx = new SmartTexture( getBitmap( src ) );
+			Pixmap bitmap = getBitmap(src);
+			if (bitmap == null) {
+				throw new IllegalArgumentException("Unable to load texture: " + src);
+			}
+			SmartTexture tx = new SmartTexture(bitmap);
 			all.put( src, tx );
 			return tx;
 		}
@@ -129,22 +123,19 @@ public class TextureCache {
 		}
 	}
 	
-	public static Bitmap getBitmap( Object src ) {
+	public static Pixmap getBitmap( Object src ) {
 		
 		try {
 			if (src instanceof Integer){
-				
-				return BitmapFactory.decodeResource(
-					context.getResources(), (Integer)src, bitmapOptions );
+				return null;
 				
 			} else if (src instanceof String) {
 				
-				return BitmapFactory.decodeStream(
-					context.getAssets().open( (String)src ), null, bitmapOptions );
+				return new Pixmap(Gdx.files.internal((String)src));
 				
-			} else if (src instanceof Bitmap) {
+			} else if (src instanceof Pixmap) {
 				
-				return (Bitmap)src;
+				return (Pixmap)src;
 				
 			} else {
 				
@@ -152,8 +143,7 @@ public class TextureCache {
 				
 			}
 		} catch (Exception e) {
-			
-			e.printStackTrace();
+			Gdx.app.error("TextureCache", "Unable to load texture: " + src, e);
 			return null;
 			
 		}

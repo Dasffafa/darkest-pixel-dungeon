@@ -20,7 +20,7 @@
  */
 package com.egoal.darkestpixeldungeon.scenes;
 
-import android.opengl.GLES20;
+import com.badlogic.gdx.Gdx;
 import com.egoal.darkestpixeldungeon.DarkestPixelDungeon;
 import com.egoal.darkestpixeldungeon.ui.RenderedTextMultiline;
 import com.egoal.darkestpixeldungeon.Assets;
@@ -40,7 +40,6 @@ import com.watabou.noosa.Visual;
 import com.watabou.noosa.ui.Component;
 import com.watabou.utils.BitmapCache;
 
-import javax.microedition.khronos.opengles.GL10;
 
 public class PixelScene extends Scene {
 
@@ -294,9 +293,9 @@ public class PixelScene extends Scene {
     @Override
     public void draw() {
       if (light) {
-        GLES20.glBlendFunc(GL10.GL_SRC_ALPHA, GL10.GL_ONE);
+        Gdx.gl.glBlendFunc(Gdx.gl.GL_SRC_ALPHA, Gdx.gl.GL_ONE);
         super.draw();
-        GLES20.glBlendFunc(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
+        Gdx.gl.glBlendFunc(Gdx.gl.GL_SRC_ALPHA, Gdx.gl.GL_ONE_MINUS_SRC_ALPHA);
       } else {
         super.draw();
       }

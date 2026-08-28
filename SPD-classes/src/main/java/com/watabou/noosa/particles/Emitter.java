@@ -21,9 +21,8 @@
 
 package com.watabou.noosa.particles;
 
-import javax.microedition.khronos.opengles.GL10;
 
-import android.opengl.GLES20;
+import com.badlogic.gdx.Gdx;
 
 import com.watabou.noosa.Game;
 import com.watabou.noosa.Group;
@@ -150,9 +149,9 @@ public class Emitter extends Group {
 	@Override
 	public void draw() {
 		if (lightMode) {
-			GLES20.glBlendFunc( GL10.GL_SRC_ALPHA, GL10.GL_ONE );
+			Gdx.gl.glBlendFunc( Gdx.gl.GL_SRC_ALPHA, Gdx.gl.GL_ONE );
 			super.draw();
-			GLES20.glBlendFunc( GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA );
+			Gdx.gl.glBlendFunc( Gdx.gl.GL_SRC_ALPHA, Gdx.gl.GL_ONE_MINUS_SRC_ALPHA );
 		} else {
 			super.draw();
 		}

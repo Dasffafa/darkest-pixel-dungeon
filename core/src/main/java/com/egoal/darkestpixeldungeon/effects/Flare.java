@@ -20,8 +20,7 @@
  */
 package com.egoal.darkestpixeldungeon.effects;
 
-import android.annotation.SuppressLint;
-import android.opengl.GLES20;
+import com.badlogic.gdx.Gdx;
 import com.watabou.gltextures.SmartTexture;
 import com.watabou.gltextures.TextureCache;
 import com.watabou.noosa.Game;
@@ -30,7 +29,6 @@ import com.watabou.noosa.NoosaScript;
 import com.watabou.noosa.Visual;
 import com.watabou.utils.PointF;
 
-import javax.microedition.khronos.opengles.GL10;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
@@ -50,7 +48,6 @@ public class Flare extends Visual {
 
   private int nRays;
 
-  @SuppressLint("FloatMath")
   public Flare(int nRays, float radius) {
 
     super(0, 0, 0, 0);
@@ -153,9 +150,9 @@ public class Flare extends Visual {
     super.draw();
 
     if (lightMode) {
-      GLES20.glBlendFunc(GL10.GL_SRC_ALPHA, GL10.GL_ONE);
+      Gdx.gl.glBlendFunc(Gdx.gl.GL_SRC_ALPHA, Gdx.gl.GL_ONE);
       drawRays();
-      GLES20.glBlendFunc(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
+      Gdx.gl.glBlendFunc(Gdx.gl.GL_SRC_ALPHA, Gdx.gl.GL_ONE_MINUS_SRC_ALPHA);
     } else {
       drawRays();
     }

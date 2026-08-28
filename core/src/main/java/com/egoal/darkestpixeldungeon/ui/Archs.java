@@ -20,7 +20,7 @@
  */
 package com.egoal.darkestpixeldungeon.ui;
 
-import android.opengl.GLES20;
+import com.badlogic.gdx.Gdx;
 
 import com.egoal.darkestpixeldungeon.Assets;
 import com.watabou.noosa.Game;
@@ -52,9 +52,9 @@ public class Archs extends Component {
       @Override
       public void draw() {
         //arch bg has no alpha component, this improves performance
-        GLES20.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ZERO);
+        Gdx.gl.glBlendFunc(Gdx.gl.GL_ONE, Gdx.gl.GL_ZERO);
         super.draw();
-        GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA);
+        Gdx.gl.glBlendFunc(Gdx.gl.GL_SRC_ALPHA, Gdx.gl.GL_ONE_MINUS_SRC_ALPHA);
       }
     };
     arcsBg.autoAdjust = true;

@@ -1,14 +1,8 @@
 package com.egoal.darkestpixeldungeon.actors.buffs
 
-import android.util.Log
-
-import com.egoal.darkestpixeldungeon.actors.Damage
 import com.egoal.darkestpixeldungeon.messages.M
-import com.egoal.darkestpixeldungeon.messages.Messages
 import com.egoal.darkestpixeldungeon.ui.BuffIndicator
-import com.watabou.utils.Bundle
 
-import javax.microedition.khronos.opengles.GL
 
 /**
  * Created by 93942 on 8/2/2018.

@@ -20,30 +20,24 @@
  */
 package com.egoal.darkestpixeldungeon;
 
-import android.annotation.SuppressLint;
-import android.content.pm.ActivityInfo;
-import android.os.Bundle;
-import android.util.DisplayMetrics;
-import android.view.View;
-
 import com.egoal.darkestpixeldungeon.messages.Languages;
 import com.egoal.darkestpixeldungeon.scenes.GameScene;
 import com.egoal.darkestpixeldungeon.scenes.PixelScene;
 import com.egoal.darkestpixeldungeon.scenes.WelcomeScene;
-import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.RenderedText;
 import com.watabou.noosa.audio.Music;
 import com.watabou.noosa.audio.Sample;
-
-import javax.microedition.khronos.opengles.GL10;
-
-import java.util.Locale;
+import com.watabou.utils.PlatformSupport;
 
 public class DarkestPixelDungeon extends Game {
 
   public DarkestPixelDungeon() {
-    super(WelcomeScene.class);
+    this(new PlatformSupport());
+  }
+
+  public DarkestPixelDungeon(PlatformSupport platformSupport) {
+    super(WelcomeScene.class, platformSupport);
 
     // we can add alias to compatible with older saves, but no need for me 23333
     // like:
@@ -57,16 +51,14 @@ public class DarkestPixelDungeon extends Game {
 
   @SuppressWarnings("deprecation")
   @Override
-  protected void onCreate(Bundle savedInstanceState) {
-    super.onCreate(savedInstanceState);
+  public void create() {
+    super.create();
 
-    Thread.setDefaultUncaughtExceptionHandler(new TopExceptionHandler(this));
+    Thread.setDefaultUncaughtExceptionHandler(new TopExceptionHandler());
 
     updateImmersiveMode();
 
-    DisplayMetrics metrics = new DisplayMetrics();
-    instance.getWindowManager().getDefaultDisplay().getMetrics(metrics);
-    boolean landscape = metrics.widthPixels > metrics.heightPixels;
+    boolean landscape = width > height;
 
     if (Preferences.INSTANCE.getBoolean(Preferences.KEY_LANDSCAPE, false) !=
             landscape) {
@@ -142,16 +134,6 @@ public class DarkestPixelDungeon extends Game {
     }
   }
 
-  @Override
-  public void onWindowFocusChanged(boolean hasFocus) {
-
-    super.onWindowFocusChanged(hasFocus);
-
-    if (hasFocus) {
-      updateImmersiveMode();
-    }
-  }
-
   public static void switchNoFade(Class<? extends PixelScene> c) {
     switchNoFade(c, null);
   }
@@ -184,15 +166,7 @@ public class DarkestPixelDungeon extends Game {
   }
 
   public static void landscape(boolean value) {
-    if (android.os.Build.VERSION.SDK_INT >= 9) {
-      Game.instance.setRequestedOrientation(value ?
-              ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE :
-              ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT);
-    } else {
-      Game.instance.setRequestedOrientation(value ?
-              ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE :
-              ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-    }
+    Game.platform.setLandscape(value);
     Preferences.INSTANCE.put(Preferences.KEY_LANDSCAPE, value);
   }
 
@@ -208,22 +182,15 @@ public class DarkestPixelDungeon extends Game {
 
   private static boolean immersiveModeChanged = false;
 
-  @SuppressLint("NewApi")
   public static void immerse(boolean value) {
     Preferences.INSTANCE.put(Preferences.KEY_IMMERSIVE, value);
-
-    instance.runOnUiThread(new Runnable() {
-      @Override
-      public void run() {
-        updateImmersiveMode();
-        immersiveModeChanged = true;
-      }
-    });
+    updateImmersiveMode();
+    immersiveModeChanged = true;
   }
 
   @Override
-  public void onSurfaceChanged(GL10 gl, int width, int height) {
-    super.onSurfaceChanged(gl, width, height);
+  public void resize(int width, int height) {
+    super.resize(width, height);
 
     if (immersiveModeChanged) {
       requestedReset = true;
@@ -231,25 +198,8 @@ public class DarkestPixelDungeon extends Game {
     }
   }
 
-  @SuppressLint("NewApi")
   public static void updateImmersiveMode() {
-    if (android.os.Build.VERSION.SDK_INT >= 19) {
-      try {
-        // Sometime NullPointerException happens here
-        instance.getWindow().getDecorView().setSystemUiVisibility(
-                immersed() ?
-                        View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
-                                View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |
-                                View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
-                                View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
-                                View.SYSTEM_UI_FLAG_FULLSCREEN |
-                                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                        :
-                        0);
-      } catch (Exception e) {
-        reportException(e);
-      }
-    }
+    Game.platform.updateSystemUI();
   }
 
   public static boolean immersed() {
@@ -321,11 +271,7 @@ public class DarkestPixelDungeon extends Game {
   public static Languages language() {
     String code = Preferences.INSTANCE.getString(Preferences.KEY_LANG, null);
     if (code == null) {
-      Languages lang = Languages.Companion.matchLocale(Locale.getDefault());
-      if (lang.getStatus() == Languages.Status.REVIEWED)
-        return lang;
-      else
-        return Languages.ENGLISH;
+      return Languages.Companion.matchLocale(Game.platform.getSystemLocale());
     } else return Languages.Companion.matchCode(code);
   }
 
@@ -423,6 +369,6 @@ public class DarkestPixelDungeon extends Game {
 
   public static void reportException(Throwable tr) {
     TopExceptionHandler.Companion.WriteErrorFile(tr);
-    FirebaseCrashlytics.getInstance().recordException(tr);
+    Game.platform.reportException(tr);
   }
 }

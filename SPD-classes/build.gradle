@@ -1,47 +1,18 @@
-apply plugin: 'com.android.library'
-apply plugin: 'kotlin-android'
-android {
-    namespace 'com.watabou'
-    compileSdkVersion 31
-    buildToolsVersion "36.0.0"
-//    buildToolsVersion "27.0.3"
+apply plugin: 'java-library'
+apply plugin: 'org.jetbrains.kotlin.jvm'
 
-    defaultConfig {
-        minSdkVersion 15
-        targetSdkVersion 23
-    }
-
-//    task ndkBuild(type: Exec) {
-//        description "builds JNI libs from source. " +
-//                "This requires the Android NDK and is optional as precompiled libs are provided."
-//
-//        workingDir = "./src/main"
-//        def ndkDir = android.ndkDirectory
-//
-//        //Need to start cmd first on windows systems, otherwise these are the same
-//        if (System.properties["os.name"].toLowerCase().contains("windows")) {
-//            commandLine "cmd", "/c", "$ndkDir${File.separator}ndk-build " +
-//                    "NDK_APPLICATION_MK=./jniSources/Application.mk " +
-//                    "NDK_LIBS_OUT=./jniLibs"
-//        } else {
-//            commandLine "$ndkDir${File.separator}ndk-build " +
-//                    "NDK_APPLICATION_MK=./jniSources/Application.mk " +
-//                    "NDK_LIBS_OUT=./jniLibs"
-//        }
-//
-//    }
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
-    }
-    kotlinOptions {
-        jvmTarget = "1.8"
-    }
-    ndkVersion '26.1.10909125'
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
 }
+
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+    kotlinOptions.jvmTarget = '1.8'
+}
+
 dependencies {
+    api "com.badlogicgames.gdx:gdx:$gdx_version"
+    api "com.badlogicgames.gdx:gdx-freetype:$gdx_version"
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
-}
-repositories {
-    mavenCentral()
+    implementation "org.json:json:20231013"
 }

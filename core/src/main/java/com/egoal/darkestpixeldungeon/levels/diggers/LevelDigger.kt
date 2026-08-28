@@ -1,6 +1,6 @@
 package com.egoal.darkestpixeldungeon.levels.diggers
 
-import android.util.Log
+import com.watabou.utils.Log
 import com.egoal.darkestpixeldungeon.levels.Level
 import com.egoal.darkestpixeldungeon.levels.Terrain
 import com.watabou.utils.Bundlable

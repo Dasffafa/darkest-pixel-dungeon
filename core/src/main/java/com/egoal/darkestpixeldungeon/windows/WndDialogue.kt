@@ -75,11 +75,11 @@ abstract class WndDialogue(image: Image?, text: String, what: String, vararg opt
         private const val MARGIN = 2f
 
         fun Show(mob: Mob, content: String, vararg options: String, callback: (Int) -> Unit) {
-            GameScene.show(object : WndDialogue(mob.sprite(), mob.name, content, *options) {
+            GameScene.show { object : WndDialogue(mob.sprite(), mob.name, content, *options) {
                 override fun onSelect(idx: Int) {
                     callback(idx)
                 }
-            })
+            } }
         }
 
         private const val COLOR_GRAY = 0x101010

@@ -20,7 +20,7 @@
  */
 package com.egoal.darkestpixeldungeon.utils;
 
-import android.util.Log;
+import com.watabou.utils.Log;
 import com.egoal.darkestpixeldungeon.messages.Messages;
 import com.watabou.utils.Signal;
 

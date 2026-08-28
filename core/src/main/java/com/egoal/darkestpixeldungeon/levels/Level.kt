@@ -20,7 +20,7 @@
  */
 package com.egoal.darkestpixeldungeon.levels
 
-import android.util.Log
+import com.watabou.utils.Log
 import com.egoal.darkestpixeldungeon.Assets
 import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.Statistics
@@ -363,7 +363,7 @@ abstract class Level : Bundlable {
     protected abstract fun createItems()
 
     fun loadMapDataFromFile(mapfile: String): Boolean {
-        val br = Game.instance.assets.open(mapfile).bufferedReader()
+        val br = com.badlogic.gdx.Gdx.files.internal(mapfile).reader("UTF-8").buffered()
         val header = br.readLine()
         val wh = header.split(' ')
         val w = wh[0].toInt()

@@ -20,9 +20,7 @@
  */
 package com.egoal.darkestpixeldungeon.effects;
 
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.Paint;
+import com.badlogic.gdx.graphics.Pixmap;
 
 import com.egoal.darkestpixeldungeon.scenes.PixelScene;
 import com.watabou.gltextures.SmartTexture;
@@ -42,14 +40,11 @@ public class Halo extends Image {
     super();
 
     if (!TextureCache.contains(CACHE_KEY)) {
-      Bitmap bmp = Bitmap.createBitmap(RADIUS * 2, RADIUS * 2, Bitmap.Config
-              .ARGB_8888);
-      Canvas canvas = new Canvas(bmp);
-      Paint paint = new Paint();
-      paint.setColor(0xFFFFFFFF);
-      canvas.drawCircle(RADIUS, RADIUS, RADIUS * 0.75f, paint);
-      paint.setColor(0x88FFFFFF);
-      canvas.drawCircle(RADIUS, RADIUS, RADIUS, paint);
+      Pixmap bmp = new Pixmap(RADIUS * 2, RADIUS * 2, Pixmap.Format.RGBA8888);
+      bmp.setColor(0xFFFFFF88);
+      bmp.fillCircle(RADIUS, RADIUS, RADIUS);
+      bmp.setColor(0xFFFFFFFF);
+      bmp.fillCircle(RADIUS, RADIUS, Math.round(RADIUS * 0.75f));
       TextureCache.add(CACHE_KEY, new SmartTexture(bmp));
     }
 

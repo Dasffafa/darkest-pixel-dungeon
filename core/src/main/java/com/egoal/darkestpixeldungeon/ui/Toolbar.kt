@@ -69,29 +69,21 @@ class Toolbar : Component() {
     override fun createChildren() {
         add(object : Tool(24, 0, 20, 24) {
             override fun onClick() {
-                examining = false
-                hero.rest(false)
+                waitTurn()
             }
 
             override fun onLongClick(): Boolean {
-                examining = false
-                hero.rest(true)
+                rest()
                 return true
             }
         }.also { btnWait = it })
         add(object : Tool(44, 0, 20, 24) {
             override fun onClick() {
-                if (!examining) {
-                    GameScene.selectCell(informer)
-                    examining = true
-                } else {
-                    informer.onSelect(null)
-                    hero.search(true)
-                }
+                examine()
             }
 
             override fun onLongClick(): Boolean {
-                hero.search(true)
+                search()
                 return true
             }
         }.also { btnSearch = it })
@@ -121,8 +113,7 @@ class Toolbar : Component() {
         add(object : Tool(0, 0, 24, 26) {
             private var gold: GoldIndicator? = null
             override fun onClick() {
-                GameScene.show(WndBag(hero.belongings.backpack, null,
-                        WndBag.Mode.ALL, null))
+                inventory()
             }
 
             override fun onLongClick(): Boolean {
@@ -241,6 +232,35 @@ class Toolbar : Component() {
                 btnInventory.centerX(),
                 btnInventory.centerY(),
                 false)
+    }
+
+    fun waitTurn() {
+        examining = false
+        hero.rest(false)
+    }
+
+    fun rest() {
+        examining = false
+        hero.rest(true)
+    }
+
+    fun search() {
+        examining = false
+        hero.search(true)
+    }
+
+    fun examine() {
+        if (!examining) {
+            GameScene.selectCell(informer)
+            examining = true
+        } else {
+            informer.onSelect(null)
+            hero.search(true)
+        }
+    }
+
+    fun inventory() {
+        GameScene.show(WndBag(hero.belongings.backpack, null, WndBag.Mode.ALL, null))
     }
 
     private open class Tool(x: Int, y: Int, width: Int, height: Int) : Button() {

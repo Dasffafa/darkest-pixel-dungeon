@@ -1,6 +1,6 @@
 package com.egoal.darkestpixeldungeon.scenes
 
-import android.util.Log
+import com.watabou.utils.Log
 import com.egoal.darkestpixeldungeon.*
 import com.egoal.darkestpixeldungeon.actors.hero.HeroClass
 import com.egoal.darkestpixeldungeon.effects.BannerSprites

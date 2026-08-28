@@ -20,12 +20,16 @@ class LootIndicator : Tag(0x1F75CC) {
 
         slot = object : ItemSlot() {
             override fun onClick() {
-                if (Dungeon.hero.handle(Dungeon.hero.pos))
-                    Dungeon.hero.next()
+                trigger()
             }
         }
         slot.showParams(true, false, false)
         add(slot)
+    }
+
+    fun trigger() {
+        if (visible && Dungeon.hero.ready && Dungeon.hero.handle(Dungeon.hero.pos))
+            Dungeon.hero.next()
     }
 
     override fun layout() {

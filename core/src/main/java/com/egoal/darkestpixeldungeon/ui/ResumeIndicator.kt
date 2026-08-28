@@ -29,7 +29,11 @@ class ResumeIndicator : Tag(0xCDD5C0) {
     }
 
     override fun onClick() {
-        Dungeon.hero.resume()
+        trigger()
+    }
+
+    fun trigger() {
+        if (visible && Dungeon.hero.ready) Dungeon.hero.resume()
     }
 
     override fun update() {

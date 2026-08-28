@@ -23,8 +23,22 @@ package com.watabou.utils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.TreeMap;
 
-public class SparseArray<T> extends android.util.SparseArray<T> {
+public class SparseArray<T> {
+
+	private final TreeMap<Integer, T> values = new TreeMap<Integer, T>();
+
+	public T get(int key) { return values.get(key); }
+	public T get(int key, T defaultValue) { return values.containsKey(key) ? values.get(key) : defaultValue; }
+	public void put(int key, T value) { values.put(key, value); }
+	public void append(int key, T value) { values.put(key, value); }
+	public void remove(int key) { values.remove(key); }
+	public void clear() { values.clear(); }
+	public int size() { return values.size(); }
+	public int keyAt(int index) { return new ArrayList<Integer>(values.keySet()).get(index); }
+	public T valueAt(int index) { return new ArrayList<T>(values.values()).get(index); }
+	public int indexOfKey(int key) { return new ArrayList<Integer>(values.keySet()).indexOf(key); }
 
 	public int[] keyArray() {
 		int size = size();

@@ -34,7 +34,6 @@ import com.watabou.noosa.RenderedText;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Locale;
 
 public class WndLangs extends Window {
 
@@ -51,7 +50,7 @@ public class WndLangs extends Window {
 
     final ArrayList<Languages> langs = new ArrayList<>(Arrays.asList(Languages.values()));
 
-    Languages nativeLang = Languages.Companion.matchLocale(Locale.getDefault());
+    Languages nativeLang = Languages.Companion.matchLocale(Game.platform.getSystemLocale());
     langs.remove(nativeLang);
     //move the native language to the top.
     langs.add(0, nativeLang);

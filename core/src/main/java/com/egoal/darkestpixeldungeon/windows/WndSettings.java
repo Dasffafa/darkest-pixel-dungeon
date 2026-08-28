@@ -187,7 +187,7 @@ public class WndSettings extends WndTabbed {
       chkImmersive.setRect(0, btnOrientation.bottom() + GAP_TINY, WIDTH,
               BTN_HEIGHT);
       chkImmersive.checked(DarkestPixelDungeon.immersed());
-      chkImmersive.enable(android.os.Build.VERSION.SDK_INT >= 19);
+      chkImmersive.enable(Game.platform.supportsSystemUI());
       add(chkImmersive);
 
 

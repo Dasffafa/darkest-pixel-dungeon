@@ -24,11 +24,9 @@ package com.watabou.noosa;
 import java.nio.FloatBuffer;
 import java.nio.ShortBuffer;
 
-import android.opengl.GLES20;
-import android.os.Build;
+import com.badlogic.gdx.Gdx;
 
 import com.watabou.glscripts.Script;
-import com.watabou.glwrap.FroyoGLES20Fix;
 import com.watabou.glwrap.Attribute;
 import com.watabou.glwrap.Quad;
 import com.watabou.glwrap.Uniform;
@@ -83,7 +81,7 @@ public class NoosaScript extends Script {
 		aUV.vertexPointer( 2, 4, vertices );
 
 		Quad.releaseIndices();
-		GLES20.glDrawElements( GLES20.GL_TRIANGLES, size, GLES20.GL_UNSIGNED_SHORT, indices );
+		Gdx.gl.glDrawElements( Gdx.gl.GL_TRIANGLES, size, Gdx.gl.GL_UNSIGNED_SHORT, indices );
 		Quad.bindIndices();
 	}
 
@@ -95,11 +93,7 @@ public class NoosaScript extends Script {
 		vertices.position( 2 );
 		aUV.vertexPointer( 2, 4, vertices );
 
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.GINGERBREAD) {
-			GLES20.glDrawElements( GLES20.GL_TRIANGLES, Quad.SIZE, GLES20.GL_UNSIGNED_SHORT, 0 );
-		} else {
-			FroyoGLES20Fix.glDrawElements( GLES20.GL_TRIANGLES, Quad.SIZE, GLES20.GL_UNSIGNED_SHORT, 0 );
-		}
+		Gdx.gl.glDrawElements( Gdx.gl.GL_TRIANGLES, Quad.SIZE, Gdx.gl.GL_UNSIGNED_SHORT, 0 );
 		
 	}
 
@@ -114,11 +108,7 @@ public class NoosaScript extends Script {
 
 		buffer.release();
 
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.GINGERBREAD) {
-			GLES20.glDrawElements( GLES20.GL_TRIANGLES, Quad.SIZE, GLES20.GL_UNSIGNED_SHORT, 0 );
-		} else {
-			FroyoGLES20Fix.glDrawElements( GLES20.GL_TRIANGLES, Quad.SIZE, GLES20.GL_UNSIGNED_SHORT, 0 );
-		}
+		Gdx.gl.glDrawElements( Gdx.gl.GL_TRIANGLES, Quad.SIZE, Gdx.gl.GL_UNSIGNED_SHORT, 0 );
 	}
 	
 	public void drawQuadSet( FloatBuffer vertices, int size ) {
@@ -133,11 +123,7 @@ public class NoosaScript extends Script {
 		vertices.position( 2 );
 		aUV.vertexPointer( 2, 4, vertices );
 
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.GINGERBREAD) {
-			GLES20.glDrawElements( GLES20.GL_TRIANGLES, Quad.SIZE * size, GLES20.GL_UNSIGNED_SHORT, 0 );
-		} else {
-			FroyoGLES20Fix.glDrawElements( GLES20.GL_TRIANGLES, Quad.SIZE * size, GLES20.GL_UNSIGNED_SHORT, 0 );
-		}
+		Gdx.gl.glDrawElements( Gdx.gl.GL_TRIANGLES, Quad.SIZE * size, Gdx.gl.GL_UNSIGNED_SHORT, 0 );
 		
 	}
 
@@ -156,11 +142,7 @@ public class NoosaScript extends Script {
 
 		buffer.release();
 
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.GINGERBREAD) {
-			GLES20.glDrawElements( GLES20.GL_TRIANGLES, Quad.SIZE * length, GLES20.GL_UNSIGNED_SHORT, Quad.SIZE * Short.SIZE/8 * offset );
-		} else {
-			FroyoGLES20Fix.glDrawElements( GLES20.GL_TRIANGLES, Quad.SIZE * length, GLES20.GL_UNSIGNED_SHORT, Quad.SIZE * Short.SIZE/8 * offset );
-		}
+		Gdx.gl.glDrawElements( Gdx.gl.GL_TRIANGLES, Quad.SIZE * length, Gdx.gl.GL_UNSIGNED_SHORT, Quad.SIZE * Short.SIZE/8 * offset );
 	}
 	
 	public void lighting( float rm, float gm, float bm, float am, float ra, float ga, float ba, float aa ) {
@@ -181,14 +163,14 @@ public class NoosaScript extends Script {
 			uCamera.valueM4( camera.matrix );
 
 			if (!camera.fullScreen) {
-				GLES20.glEnable( GLES20.GL_SCISSOR_TEST );
-				GLES20.glScissor(
+				Gdx.gl.glEnable( Gdx.gl.GL_SCISSOR_TEST );
+				Gdx.gl.glScissor(
 						camera.x,
 						Game.height - camera.screenHeight - camera.y,
 						camera.screenWidth,
 						camera.screenHeight);
 			} else {
-				GLES20.glDisable( GLES20.GL_SCISSOR_TEST );
+				Gdx.gl.glDisable( Gdx.gl.GL_SCISSOR_TEST );
 			}
 		}
 	}

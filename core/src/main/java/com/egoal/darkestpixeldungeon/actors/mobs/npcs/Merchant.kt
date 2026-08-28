@@ -1,6 +1,6 @@
 package com.egoal.darkestpixeldungeon.actors.mobs.npcs
 
-import android.util.Log
+import com.watabou.utils.Log
 import com.egoal.darkestpixeldungeon.Assets
 import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.Journal

@@ -10,7 +10,6 @@ import com.egoal.darkestpixeldungeon.items.rings.Ring
 import com.egoal.darkestpixeldungeon.items.scrolls.Scroll
 import com.egoal.darkestpixeldungeon.messages.M
 import com.egoal.darkestpixeldungeon.ui.QuickSlotButton
-import com.watabou.noosa.Game
 import com.watabou.utils.Bundlable
 import com.watabou.utils.Bundle
 import java.io.IOException
@@ -142,9 +141,7 @@ object Rankings {
         bundle.put(TOTAL, totalNumber)
         bundle.put(WON, wonNumber)
 
-        val output = Game.instance.openFileOutput(FILE, Game.MODE_PRIVATE)
-        Bundle.write(bundle, output)
-        output.close()
+        com.watabou.utils.FileUtils.bundleToFile(FILE, bundle)
     }
 
     fun Load() {
@@ -152,9 +149,7 @@ object Rankings {
         records = arrayListOf()
 
         try {
-            val input = Game.instance.openFileInput(FILE)
-            val bundle = Bundle.read(input)
-            input.close()
+            val bundle = com.watabou.utils.FileUtils.bundleFromFile(FILE)
 
             records.addAll(bundle.getCollection(RECORDS).map { it as Record })
             lastRecord = bundle.getInt(LATEST)
