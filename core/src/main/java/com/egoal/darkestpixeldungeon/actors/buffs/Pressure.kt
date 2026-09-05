@@ -85,6 +85,7 @@ class Pressure : Buff(), Hero.Doom {
     }
 
     fun upPressure(p: Float): Float {
+        val previousPressure = pressure
         val r = min(p, LVL_NERVOUS - pressure)
         if (r >= 1f && Random.Float() < ignoreChance()) {
             target.sprite.showStatus(CharSprite.DEFAULT, M.L(Hero::class.java, "mental_resist"))
@@ -93,6 +94,9 @@ class Pressure : Buff(), Hero.Doom {
 
         pressure += r
         updateLevel()
+        if (target === Dungeon.hero && previousPressure <= LVL_NORMAL && pressure > LVL_NORMAL) {
+            Dungeon.hero.interrupt()
+        }
         return r
     }
 
@@ -107,6 +111,9 @@ class Pressure : Buff(), Hero.Doom {
         spend(procStep())
 
         if (target.isAlive) {
+            if (target === Dungeon.hero && pressure >= MAX_PRESSURE) {
+                Dungeon.hero.interrupt()
+            }
             if (Dungeon.depth > 0 && Random.Int(10) == 0) {
                 //^ up pressure, not in the village
                 upPressure(procValue())

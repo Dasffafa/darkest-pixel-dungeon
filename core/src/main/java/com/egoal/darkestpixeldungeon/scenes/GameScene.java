@@ -451,14 +451,32 @@ public class GameScene extends PixelScene {
   }
 
   private boolean handleKey(Keys.Key key) {
+    if (isPanKey(key.code)) {
+      if (key.pressed) {
+        heldPanX = key.code == com.badlogic.gdx.Input.Keys.A ? -1 : key.code == com.badlogic.gdx.Input.Keys.D ? 1 : 0;
+        heldPanY = key.code == com.badlogic.gdx.Input.Keys.W ? -1 : key.code == com.badlogic.gdx.Input.Keys.S ? 1 : 0;
+      } else {
+        if (key.code == com.badlogic.gdx.Input.Keys.A || key.code == com.badlogic.gdx.Input.Keys.D) heldPanX = 0;
+        if (key.code == com.badlogic.gdx.Input.Keys.W || key.code == com.badlogic.gdx.Input.Keys.S) heldPanY = 0;
+      }
+      return true;
+    }
+    if (isMoveKey(key.code)) {
+      if (key.pressed) {
+        heldMoveKey = key.code;
+        Dungeon.INSTANCE.getHero().setContinuousMoving(true);
+      } else if (heldMoveKey == key.code) {
+        heldMoveKey = -1;
+        Dungeon.INSTANCE.getHero().stopContinuousMoving();
+      }
+      if (!key.pressed) return true;
+    }
     if (!key.pressed) return false;
+    if (key.code == com.badlogic.gdx.Input.Keys.GRAVE) {
+      Toolbar.switchQuickSlotTabFromKey();
+      return true;
+    }
     if (DeviceCompat.isDesktop()) {
-      int pan = 0;
-      if (key.code == com.badlogic.gdx.Input.Keys.W) pan = -1;
-      else if (key.code == com.badlogic.gdx.Input.Keys.S) pan = 1;
-      if (pan != 0) { Camera.main.target = null; Camera.main.scroll.y += pan * 4; return true; }
-      if (key.code == com.badlogic.gdx.Input.Keys.A) { Camera.main.target = null; Camera.main.scroll.x -= 4; return true; }
-      if (key.code == com.badlogic.gdx.Input.Keys.D) { Camera.main.target = null; Camera.main.scroll.x += 4; return true; }
       if (key.code == com.badlogic.gdx.Input.Keys.Z) { cellSelector.zoomBy(1); return true; }
       if (key.code == com.badlogic.gdx.Input.Keys.X) { cellSelector.zoomBy(-1); return true; }
     }
@@ -475,7 +493,10 @@ public class GameScene extends PixelScene {
     if (key.code >= com.badlogic.gdx.Input.Keys.NUM_1 && key.code <= com.badlogic.gdx.Input.Keys.NUM_8) {
       int configured = DarkestPixelDungeon.quickSlots();
       int number = key.code - com.badlogic.gdx.Input.Keys.NUM_1 + 1;
-      if (number <= configured) { QuickSlotButton.use(configured - number); return true; }
+      if (number <= configured) {
+        QuickSlotButton.use(Toolbar.currentQuickSlotIndex(configured - number));
+        return true;
+      }
     }
     DPDAction command = DPDAction.fromKey(key.code);
     if (command == null) return false;
@@ -535,7 +556,11 @@ public class GameScene extends PixelScene {
       case CYCLE_TARGET: attack.cycleTarget(); break;
       case HERO_INFO: show(new WndHero()); break;
       case TORCH: pane.toggleTorch(); break;
-      case PERK: WndGainNewPerk.Show(Dungeon.INSTANCE.getHero()); break;
+      case PERK:
+        if (Dungeon.INSTANCE.getHero().getReservedPerks() > 0) {
+          WndGainNewPerk.Show(Dungeon.INSTANCE.getHero());
+        }
+        break;
       case JOURNAL: show(new WndJournal()); break;
       case ZOOM_IN: cellSelector.zoomBy(1); break;
       case ZOOM_OUT: cellSelector.zoomBy(-1); break;
@@ -554,6 +579,62 @@ public class GameScene extends PixelScene {
     return false;
   }
 
+  private boolean isPanKey(int code) {
+    return DeviceCompat.isDesktop() && (code == com.badlogic.gdx.Input.Keys.W || code == com.badlogic.gdx.Input.Keys.A ||
+            code == com.badlogic.gdx.Input.Keys.S || code == com.badlogic.gdx.Input.Keys.D);
+  }
+
+  private boolean isMoveKey(int code) {
+    return code == com.badlogic.gdx.Input.Keys.UP || code == com.badlogic.gdx.Input.Keys.DOWN ||
+            code == com.badlogic.gdx.Input.Keys.LEFT || code == com.badlogic.gdx.Input.Keys.RIGHT ||
+            code == com.badlogic.gdx.Input.Keys.NUMPAD_1 || code == com.badlogic.gdx.Input.Keys.NUMPAD_2 ||
+            code == com.badlogic.gdx.Input.Keys.NUMPAD_3 || code == com.badlogic.gdx.Input.Keys.NUMPAD_4 ||
+            code == com.badlogic.gdx.Input.Keys.NUMPAD_6 || code == com.badlogic.gdx.Input.Keys.NUMPAD_7 ||
+            code == com.badlogic.gdx.Input.Keys.NUMPAD_8 || code == com.badlogic.gdx.Input.Keys.NUMPAD_9;
+  }
+
+  private void updateHeldInput() {
+    if (heldPanX != 0 || heldPanY != 0) {
+      Camera.main.target = null;
+      float maxX = Math.max(0, Dungeon.INSTANCE.getLevel().width() * DungeonTilemap.SIZE - Camera.main.width);
+      float maxY = Math.max(0, Dungeon.INSTANCE.getLevel().height() * DungeonTilemap.SIZE - Camera.main.height);
+      Camera.main.scroll.x = Math.max(0, Math.min(maxX, Camera.main.scroll.x + heldPanX * 4));
+      Camera.main.scroll.y = Math.max(0, Math.min(maxY, Camera.main.scroll.y + heldPanY * 4));
+    }
+    if (heldMoveKey == -1 || !Dungeon.INSTANCE.getHero().getReady() ||
+            Dungeon.INSTANCE.getHero().visibleEnemies() > 0 || cellSelector.listener != defaultCellListener) {
+      if (Dungeon.INSTANCE.getHero().visibleEnemies() > 0) {
+        heldMoveKey = -1;
+        Dungeon.INSTANCE.getHero().stopContinuousMoving();
+      }
+      return;
+    }
+    DPDAction command = DPDAction.fromKey(heldMoveKey);
+    if (command == null) return;
+    int width = Dungeon.INSTANCE.getLevel().width();
+    int offset = command == DPDAction.NORTH ? -width : command == DPDAction.SOUTH ? width :
+            command == DPDAction.WEST ? -1 : command == DPDAction.EAST ? 1 :
+            command == DPDAction.NORTH_WEST ? -width - 1 : command == DPDAction.NORTH_EAST ? -width + 1 :
+            command == DPDAction.SOUTH_WEST ? width - 1 : command == DPDAction.SOUTH_EAST ? width + 1 : 0;
+    if (offset != 0) {
+      int next = Dungeon.INSTANCE.getHero().getPos() + offset;
+      if (next >= 0 && next < Dungeon.INSTANCE.getLevel().length()) {
+        com.egoal.darkestpixeldungeon.levels.traps.Trap trap = Dungeon.INSTANCE.getLevel().getTraps().get(next);
+        if (trap != null && trap.getVisible()) {
+          heldMoveKey = -1;
+          Dungeon.INSTANCE.getHero().stopContinuousMoving();
+          return;
+        }
+      }
+      handleCell(next);
+    }
+  }
+
+  public static void stopContinuousMove() {
+    if (scene != null) scene.heldMoveKey = -1;
+    if (!Dungeon.INSTANCE.isHeroNull()) Dungeon.INSTANCE.getHero().stopContinuousMoving();
+  }
+
   @Override
   public synchronized void pause() {
     try {
@@ -566,6 +647,9 @@ public class GameScene extends PixelScene {
   }
 
   private Thread t;
+  private int heldMoveKey = -1;
+  private int heldPanX;
+  private int heldPanY;
 
   @Override
   public synchronized void update() {
@@ -574,6 +658,8 @@ public class GameScene extends PixelScene {
     }
 
     super.update();
+
+    updateHeldInput();
 
     if (!freezeEmitters) water.offset(0, -5 * Game.elapsed);
 

@@ -236,13 +236,25 @@ abstract class HeroAction(var dst: Int = 0) {
                 if (Dungeon.depth == 0 && !confirmed) {
                     // leave village
                     hero.interrupt()
-                    WndOptions.Show(M.L(HeroAction::class.java, "descend_title"), M.L(HeroAction::class.java, "descend_message"),
-                            M.L(HeroAction::class.java, "descend_yes"), M.L(HeroAction::class.java, "descend_no")) {
-                        if (it == 0) {
-                            confirmed = true
-                            hero.resume()
-                        } else hero.ready()
-                    }
+                    GameScene.show(object : WndOptions(
+                            M.L(HeroAction::class.java, "descend_title"),
+                            M.L(HeroAction::class.java, "descend_message"),
+                            M.L(HeroAction::class.java, "descend_yes"),
+                            M.L(HeroAction::class.java, "descend_no")) {
+                        override fun onSelect(index: Int) {
+                            if (index == 0) {
+                                confirmed = true
+                                hero.resume()
+                            } else {
+                                hero.ready()
+                            }
+                        }
+
+                        override fun onBackPressed() {
+                            super.onBackPressed()
+                            hero.ready()
+                        }
+                    })
                 } else {
                     hero.curAction = null
                     hero.buff(TimekeepersHourglass.TimeFreeze::class.java)?.detach()

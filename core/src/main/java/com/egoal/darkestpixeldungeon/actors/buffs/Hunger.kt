@@ -110,8 +110,6 @@ class Hunger : Buff(), Hero.Doom {
                             .MAGICAL).addFeature(Damage.Feature.PURE))
                     statusUpdated = true
 
-                    hero.interrupt()
-
                 } else if (newLevel >= HUNGRY && level < HUNGRY) {
                     GLog.w(Messages.get(this, "onhungry"))
                     statusUpdated = true

@@ -7,9 +7,18 @@
 # Java class files
 *.class
 
+# Python bytecode caches
+__pycache__/
+*.py[cod]
+
 # Eclipse / VS Code Java build output
 bin/
 **/bin/
+
+# Eclipse / Buildship metadata generated for local LSP tooling
+.classpath
+.project
+.settings/
 
 # Gradle files
 .gradle/

@@ -90,8 +90,7 @@ class Toolbar : Component() {
         btnSwitchSlots = object : Tool(125, 0, 15, 24) {
             public override fun onClick() {
                 Sample.INSTANCE.play(Assets.SND_CLICK)
-                currentQuickSlotTab = (currentQuickSlotTab + 1) % TAB_QUICK_SLOTS
-                updateLayout()
+                switchQuickSlotTab()
             }
         }
         add(btnSwitchSlots)
@@ -202,6 +201,14 @@ class Toolbar : Component() {
 
         btnSwitchSlots.setPos(switchRight - btnSwitchSlots.width(), if (moreSlots) visibleY else invisibleY)
     }
+
+    fun switchQuickSlotTab() {
+        if (!DarkestPixelDungeon.moreQuickSlots()) return
+        currentQuickSlotTab = (currentQuickSlotTab + 1) % TAB_QUICK_SLOTS
+        updateLayout()
+    }
+
+    fun quickSlotIndex(localIndex: Int): Int = currentQuickSlotTab * NUM_QUICK_SLOTS + localIndex
 
     override fun top(): Float {
         val moreSlots = DarkestPixelDungeon.moreQuickSlots()
@@ -407,8 +414,19 @@ class Toolbar : Component() {
 
         @JvmStatic
         fun updateLayout() {
-            instance?.layout()
+            instance?.let {
+                if (!DarkestPixelDungeon.moreQuickSlots()) it.currentQuickSlotTab = 0
+                it.layout()
+            }
         }
+
+        @JvmStatic
+        fun switchQuickSlotTabFromKey() {
+            instance?.switchQuickSlotTab()
+        }
+
+        @JvmStatic
+        fun currentQuickSlotIndex(localIndex: Int): Int = instance?.quickSlotIndex(localIndex) ?: localIndex
 
         private val informer: CellSelector.Listener = object : CellSelector.Listener {
             override fun onSelect(cell: Int?) {
