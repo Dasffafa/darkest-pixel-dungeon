@@ -97,7 +97,7 @@ public class AboutScene extends PixelScene {
     TouchArea dpdhotArea = new TouchArea(dpdlink.left(), dpdlink.top(),
             dpdlink.width(), dpdlink.height()) {
       @Override
-      protected void onClick(Touch touch) {
+      public void onClick(Touch touch) {
         Game.platform.openURI("https://" + LNK_DPD);
       }
     };

@@ -111,6 +111,9 @@ public class Tilemap extends Visual {
 	protected void updateVertices() {
 
 		moveToUpdating();
+		// draw() narrows the buffer limit to the number of rendered tiles. Restore
+		// the full capacity before writing newly visible tiles during later updates.
+		quads.limit(quads.capacity());
 
 		float y1 = cellH * updating.top;
 		float y2 = y1 + cellH;

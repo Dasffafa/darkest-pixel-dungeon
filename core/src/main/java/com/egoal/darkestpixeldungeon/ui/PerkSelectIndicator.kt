@@ -1,9 +1,6 @@
 package com.egoal.darkestpixeldungeon.ui
 
 import com.egoal.darkestpixeldungeon.Dungeon
-import com.egoal.darkestpixeldungeon.actors.hero.perks.ExtraPerkChoice
-import com.egoal.darkestpixeldungeon.messages.M
-import com.egoal.darkestpixeldungeon.scenes.GameScene
 import com.egoal.darkestpixeldungeon.scenes.PixelScene
 import com.egoal.darkestpixeldungeon.windows.WndGainNewPerk
 import com.watabou.noosa.BitmapText
@@ -62,7 +59,7 @@ class PerkSelectIndicator : Tag(0xff4c4c) {
         super.update()
     }
 
-    override fun onClick() {
+    public override fun onClick() {
         Dungeon.hero.interrupt()
         WndGainNewPerk.Show(Dungeon.hero)
     }

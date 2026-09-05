@@ -116,7 +116,7 @@ class Weightstone : Item() {
 
             if (weapon.imbue != Weapon.Imbue.LIGHT) {
                 val btnSpeed = object : RedButton(Messages.get(this, "light")) {
-                    override fun onClick() {
+                    public override fun onClick() {
                         hide()
                         this@Weightstone.apply(weapon, true)
                     }
@@ -129,7 +129,7 @@ class Weightstone : Item() {
 
             if (weapon.imbue != Weapon.Imbue.HEAVY) {
                 val btnAccuracy = object : RedButton(Messages.get(this, "heavy")) {
-                    override fun onClick() {
+                    public override fun onClick() {
                         hide()
                         this@Weightstone.apply(weapon, false)
                     }
@@ -141,7 +141,7 @@ class Weightstone : Item() {
             }
 
             val btnCancel = object : RedButton(Messages.get(this, "cancel")) {
-                override fun onClick() {
+                public override fun onClick() {
                     hide()
                 }
             }

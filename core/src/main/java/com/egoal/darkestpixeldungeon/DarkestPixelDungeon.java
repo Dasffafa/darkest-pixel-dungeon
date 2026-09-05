@@ -30,7 +30,13 @@ import com.watabou.noosa.audio.Music;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.utils.PlatformSupport;
 
+import java.util.Map;
+
 public class DarkestPixelDungeon extends Game {
+  private volatile long renderHeartbeat;
+  private volatile boolean watchdogReported;
+  private volatile long actorProcessingSince;
+  private volatile boolean actorTimeoutReported;
 
   public DarkestPixelDungeon() {
     this(new PlatformSupport());
@@ -53,6 +59,47 @@ public class DarkestPixelDungeon extends Game {
   @Override
   public void create() {
     super.create();
+
+    renderHeartbeat = System.currentTimeMillis();
+    Thread watchdog = new Thread(() -> {
+      while (true) {
+        try { Thread.sleep(1000L); } catch (InterruptedException ignored) { return; }
+        long stalled = System.currentTimeMillis() - renderHeartbeat;
+        if (!watchdogReported && stalled >= 10000L) {
+          watchdogReported = true;
+          StringBuilder detail = new StringBuilder("Render thread stalled for more than 10 seconds.\n");
+          for (Map.Entry<Thread, StackTraceElement[]> entry : Thread.getAllStackTraces().entrySet()) {
+            detail.append("\n--- ").append(entry.getKey().getName()).append(" ---\n");
+            for (StackTraceElement element : entry.getValue()) detail.append("at ").append(element).append('\n');
+          }
+          RuntimeException timeout = new RuntimeException(detail.toString());
+          TopExceptionHandler.Companion.WriteErrorFile(timeout);
+          platform.reportException(timeout);
+          return;
+        } else if (stalled < 10000L) {
+          watchdogReported = false;
+        }
+
+        Thread actor = GameScene.currentActorThread();
+        if (actor != null && actor.isAlive() && com.egoal.darkestpixeldungeon.actors.Actor.Companion.processing()) {
+          if (actorProcessingSince == 0L) actorProcessingSince = System.currentTimeMillis();
+          if (!actorTimeoutReported && System.currentTimeMillis() - actorProcessingSince >= 10000L) {
+            actorTimeoutReported = true;
+            RuntimeException timeout = new RuntimeException(
+                    "Actor thread blocked for more than 10 seconds. depth=" + Dungeon.INSTANCE.getDepth());
+            timeout.setStackTrace(actor.getStackTrace());
+            TopExceptionHandler.Companion.WriteErrorFile(timeout);
+            platform.reportException(timeout);
+            return;
+          }
+        } else {
+          actorProcessingSince = 0L;
+          actorTimeoutReported = false;
+        }
+      }
+    }, "DPD Watchdog");
+    watchdog.setDaemon(true);
+    watchdog.start();
 
     Thread.setDefaultUncaughtExceptionHandler(new TopExceptionHandler());
 
@@ -134,6 +181,12 @@ public class DarkestPixelDungeon extends Game {
     }
   }
 
+  @Override
+  public void render() {
+    renderHeartbeat = System.currentTimeMillis();
+    super.render();
+  }
+
   public static void switchNoFade(Class<? extends PixelScene> c) {
     switchNoFade(c, null);
   }
@@ -153,7 +206,7 @@ public class DarkestPixelDungeon extends Game {
   }
 
   public static boolean debug() {
-    return Preferences.INSTANCE.getBoolean(Preferences.KEY_DEBUG, false);
+    return Boolean.getBoolean("dpd.debug") || Preferences.INSTANCE.getBoolean(Preferences.KEY_DEBUG, false);
   }
 
   public static void changeListChecked(boolean value) {

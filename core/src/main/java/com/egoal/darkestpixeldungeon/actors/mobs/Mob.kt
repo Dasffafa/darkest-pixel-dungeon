@@ -118,7 +118,6 @@ abstract class Mob : Char() {
         if (con != null) Config = con
         else {
             Config = Database.DummyMobConfig.copy()
-            Log.w("dpd", "missing mob config of ${javaClass.simpleName}.")
         }
     }
 

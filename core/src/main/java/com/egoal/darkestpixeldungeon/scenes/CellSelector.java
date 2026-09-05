@@ -24,6 +24,8 @@ import com.egoal.darkestpixeldungeon.DungeonTilemap;
 import com.egoal.darkestpixeldungeon.DarkestPixelDungeon;
 import com.egoal.darkestpixeldungeon.actors.Actor;
 import com.egoal.darkestpixeldungeon.actors.Char;
+import com.egoal.darkestpixeldungeon.windows.WndCharActions;
+import com.egoal.darkestpixeldungeon.windows.WndCellActions;
 import com.watabou.input.Touchscreen.Touch;
 import com.watabou.noosa.TouchArea;
 import com.watabou.utils.GameMath;
@@ -45,16 +47,31 @@ public class CellSelector extends TouchArea {
   }
 
   @Override
-  protected void onClick(Touch touch) {
+  public void onClick(Touch touch) {
     if (dragging) {
 
       dragging = false;
 
     } else {
 
-      select(((DungeonTilemap) target).screenToTile(
+      int cell = ((DungeonTilemap) target).screenToTile(
               (int) touch.current.x,
-              (int) touch.current.y));
+              (int) touch.current.y);
+      // Desktop right-click opens the same contextual actions as a long press.
+      if (touch.button == 1 && cell != -1) {
+        onContextClick(cell);
+      } else {
+        select(cell);
+      }
+    }
+  }
+
+  private void onContextClick(int cell) {
+    Char character = Actor.Companion.findChar(cell);
+    if (character != null && character != com.egoal.darkestpixeldungeon.Dungeon.INSTANCE.getHero()) {
+      GameScene.show(new WndCharActions(character, cell));
+    } else {
+      GameScene.show(new WndCellActions(cell));
     }
   }
 
@@ -174,6 +191,17 @@ public class CellSelector extends TouchArea {
       }
     }
 
+  }
+
+  @Override
+  protected boolean onLongClick(Touch t) {
+    int cell = ((DungeonTilemap) target).screenToTile((int) t.current.x, (int) t.current.y);
+    Char character = Actor.Companion.findChar(cell);
+    if (character != null && character != com.egoal.darkestpixeldungeon.Dungeon.INSTANCE.getHero()) {
+      GameScene.show(new WndCharActions(character, cell));
+      return true;
+    }
+    return false;
   }
 
   public void cancel() {

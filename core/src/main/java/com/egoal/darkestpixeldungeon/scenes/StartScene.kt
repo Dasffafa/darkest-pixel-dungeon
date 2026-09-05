@@ -9,7 +9,6 @@ import com.egoal.darkestpixeldungeon.items.Generator
 import com.egoal.darkestpixeldungeon.messages.M
 import com.egoal.darkestpixeldungeon.ui.*
 import com.egoal.darkestpixeldungeon.windows.InputDialog
-import com.egoal.darkestpixeldungeon.windows.WndClass
 import com.egoal.darkestpixeldungeon.windows.WndOptions
 import com.watabou.noosa.*
 import com.watabou.noosa.audio.Sample
@@ -81,7 +80,7 @@ class StartScene : PixelScene() {
         add(btnNewGame)
 
         btnLoadGame = object : GameButton(M.L(this, "load")) {
-            override fun onClick() {
+            public override fun onClick() {
                 InterlevelScene.mode = if (GamesInProgress.check(CurrentClass)!!.isBackup)
                     InterlevelScene.Mode.REFLUX else InterlevelScene.Mode.CONTINUE
 

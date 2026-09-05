@@ -33,6 +33,7 @@ import com.egoal.darkestpixeldungeon.effects.particles.ElmoParticle
 import com.egoal.darkestpixeldungeon.effects.particles.FlameParticle
 import com.egoal.darkestpixeldungeon.items.artifacts.Artifact
 import com.egoal.darkestpixeldungeon.items.food.ChargrilledMeat
+import com.watabou.noosa.Game
 import com.egoal.darkestpixeldungeon.items.food.FrozenCarpaccio
 import com.egoal.darkestpixeldungeon.items.food.MysteryMeat
 import com.egoal.darkestpixeldungeon.items.potions.PotionOfStrength
@@ -133,11 +134,30 @@ class Heap : Bundlable {
     fun pickUp(): Item {
 
         val item = items.removeFirst()
-        if (empty()) destroy()
-        else if (sprite != null) {
-            sprite!!.view(image(), glowing())
+        Game.runOnRenderThread {
+            if (empty()) {
+                Dungeon.level.heaps.remove(pos)
+                items.clear()
+                sprite?.kill()
+            } else {
+                sprite?.view(image(), glowing())
+            }
         }
 
+        return item
+    }
+
+    /** Removes and returns a specific item from this heap. */
+    fun pickUp(item: Item): Item? {
+        if (!items.remove(item)) return null
+        Game.runOnRenderThread {
+            if (empty()) {
+                Dungeon.level.heaps.remove(pos)
+                sprite?.kill()
+            } else {
+                sprite?.view(image(), glowing())
+            }
+        }
         return item
     }
 

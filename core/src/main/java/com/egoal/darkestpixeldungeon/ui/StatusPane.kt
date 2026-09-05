@@ -86,7 +86,7 @@ class StatusPane : Component() {
 
         // hero portrait touch area
         add(object : TouchArea(0f, 1f, 31f, 31f) {
-            override fun onClick(touch: Touchscreen.Touch) {
+            public override fun onClick(touch: Touchscreen.Touch) {
                 val sprite: Image = hero.sprite
                 if (!sprite.isVisible) {
                     Camera.main.focusOn(sprite)
@@ -163,6 +163,8 @@ class StatusPane : Component() {
         add(buffs)
         add(PickedUpItem().also { pickedUp = it })
     }
+
+    fun toggleTorch() { torchIndicator?.onClick() }
 
     override fun layout() {
         height = 32f
@@ -354,7 +356,7 @@ class StatusPane : Component() {
             icon!!.resetColor()
         }
 
-        override fun onClick() {
+        public override fun onClick() {
             GameScene.show(WndJournal())
         }
 
@@ -387,7 +389,7 @@ class StatusPane : Component() {
             image!!.resetColor()
         }
 
-        override fun onClick() {
+        public override fun onClick() {
             GameScene.show(WndGame())
         }
 
@@ -421,7 +423,7 @@ class StatusPane : Component() {
             image!!.resetColor()
         }
 
-        override fun onClick() {
+        public override fun onClick() {
             GameScene.show(WndTitledMessage(Icons.INFO.get(), L(StatusPane::class.java, "clock"),
                     L(StatusPane::class.java, "clock_desc", Clock.timestr)))
         }

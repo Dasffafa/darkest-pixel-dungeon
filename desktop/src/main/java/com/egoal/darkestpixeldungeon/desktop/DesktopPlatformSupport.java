@@ -16,8 +16,20 @@ import com.badlogic.gdx.Gdx;
 import com.watabou.utils.PlatformSupport;
 
 import java.util.Locale;
+import javax.swing.JOptionPane;
+import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
 
 public class DesktopPlatformSupport extends PlatformSupport {
+    @Override
+    public void promptTextInput(String title, String defaultText, final TextCallback callback) {
+        SwingUtilities.invokeLater(() -> {
+            JTextField field = new JTextField(defaultText == null ? "" : defaultText, 20);
+            int result = JOptionPane.showConfirmDialog(null, field, title,
+                    JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+            callback.onSelect(result == JOptionPane.OK_OPTION, field.getText());
+        });
+    }
     @Override
     public Locale getSystemLocale() {
         Locale locale = localeFromEnvironment(System.getenv("LANGUAGE"));

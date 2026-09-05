@@ -7,6 +7,10 @@
 # Java class files
 *.class
 
+# Eclipse / VS Code Java build output
+bin/
+**/bin/
+
 # Gradle files
 .gradle/
 build/

@@ -33,9 +33,14 @@ import com.egoal.darkestpixeldungeon.scenes.PixelScene;
 import com.egoal.darkestpixeldungeon.sprites.ItemSprite;
 import com.egoal.darkestpixeldungeon.ui.RedButton;
 import com.egoal.darkestpixeldungeon.ui.Window;
+import com.watabou.input.Keys;
+import com.badlogic.gdx.Input;
+import java.util.ArrayList;
 import com.egoal.darkestpixeldungeon.utils.GLog;
 
 public class WndWandmaker extends Window {
+  private final ArrayList<RedButton> buttons = new ArrayList<>();
+  private int selected = 0;
 
   private static final int WIDTH = 120;
   private static final int BTN_HEIGHT = 20;
@@ -67,24 +72,42 @@ public class WndWandmaker extends Window {
 
     RedButton btnWand1 = new RedButton(Wandmaker.Quest.INSTANCE.getWand1().name()) {
       @Override
-      protected void onClick() {
+      public void onClick() {
         selectReward(wandmaker, item, Wandmaker.Quest.INSTANCE.getWand1());
       }
     };
     btnWand1.setRect(0, message.top() + message.height() + GAP, WIDTH, 
             BTN_HEIGHT);
     add(btnWand1);
+    buttons.add(btnWand1);
+    btnWand1.textColor(TITLE_COLOR);
 
     RedButton btnWand2 = new RedButton(Wandmaker.Quest.INSTANCE.getWand2().name()) {
       @Override
-      protected void onClick() {
+      public void onClick() {
         selectReward(wandmaker, item, Wandmaker.Quest.INSTANCE.getWand2());
       }
     };
     btnWand2.setRect(0, btnWand1.bottom() + GAP, WIDTH, BTN_HEIGHT);
     add(btnWand2);
+    buttons.add(btnWand2);
 
     resize(WIDTH, (int) btnWand2.bottom());
+  }
+
+  @Override
+  public boolean onSignal(Keys.Key key) {
+    if (key.pressed && !buttons.isEmpty()) {
+      if (key.code == Input.Keys.UP || key.code == Input.Keys.DOWN) {
+        selected = (selected + 1) % buttons.size();
+        for (int i = 0; i < buttons.size(); i++) buttons.get(i).textColor(i == selected ? TITLE_COLOR : 0xFFFFFF);
+        return true;
+      } else if (key.code == Input.Keys.ENTER) {
+        buttons.get(selected).onClick();
+        return true;
+      }
+    }
+    return super.onSignal(key);
   }
 
   private void selectReward(Wandmaker wandmaker, Item item, Wand reward) {

@@ -58,7 +58,7 @@ public class SimpleButton extends Component {
       ;
 
       @Override
-      protected void onClick(Touch touch) {
+      public void onClick(Touch touch) {
         SimpleButton.this.onClick();
       }
 
@@ -72,7 +72,7 @@ public class SimpleButton extends Component {
     image.y = y;
   }
 
-  protected void onClick() {
+  public void onClick() {
   }
 
   ;

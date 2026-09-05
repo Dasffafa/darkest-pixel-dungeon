@@ -63,7 +63,7 @@ public class WndResurrect extends Window {
 
     RedButton btnYes = new RedButton(Messages.get(this, "yes")) {
       @Override
-      protected void onClick() {
+      public void onClick() {
         hide();
 
         Statistics.INSTANCE.setAnkhsUsed(Statistics.INSTANCE.getAnkhsUsed()+1);
@@ -78,7 +78,7 @@ public class WndResurrect extends Window {
 
     RedButton btnNo = new RedButton(Messages.get(this, "no")) {
       @Override
-      protected void onClick() {
+      public void onClick() {
         hide();
 
         Rankings.INSTANCE.Submit(false, WndResurrect.causeOfDeath.getClass());

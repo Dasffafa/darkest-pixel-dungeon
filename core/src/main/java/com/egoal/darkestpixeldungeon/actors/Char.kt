@@ -354,7 +354,7 @@ abstract class Char : Actor() {
 
     open fun die(src: Any?) {
         destroy()
-        sprite.die()
+        if (!sprite.hasPendingShaderDeath) sprite.die()
     }
 
     override fun spend(time: Float) {

@@ -7,6 +7,8 @@ import com.watabou.utils.PlatformSupport
 object InputDialog {
     fun GetString(title: String, defval: String, onInputed: (String) -> Unit) {
         Game.platform.promptTextInput(title, defval,
-                PlatformSupport.TextCallback { _, text -> onInputed(text) })
+                PlatformSupport.TextCallback { accepted, text ->
+                    if (accepted) onInputed(text)
+                })
     }
 }

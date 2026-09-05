@@ -8,13 +8,6 @@ import com.egoal.darkestpixeldungeon.actors.hero.perks.PerkImageSheet
 import com.egoal.darkestpixeldungeon.effects.PerkGain
 import com.egoal.darkestpixeldungeon.messages.M
 import com.egoal.darkestpixeldungeon.scenes.GameScene
-import com.egoal.darkestpixeldungeon.scenes.PixelScene
-import com.egoal.darkestpixeldungeon.ui.PerkSlot
-import com.egoal.darkestpixeldungeon.ui.RedButton
-import com.egoal.darkestpixeldungeon.ui.RenderedTextMultiline
-import com.egoal.darkestpixeldungeon.ui.Window
-import com.watabou.noosa.ColorBlock
-import com.watabou.utils.Bundle
 
 class WndGainNewPerk(title: String, perks: List<Perk>) : WndSelectPerk(title, perks) {
 
@@ -50,6 +43,7 @@ class WndGainNewPerk(title: String, perks: List<Perk>) : WndSelectPerk(title, pe
     }
 
     companion object {
+        @JvmStatic
         fun Show(hero: Hero) {
             // spawn
             if (hero.spawnedPerks.isEmpty()) {

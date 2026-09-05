@@ -20,7 +20,11 @@
  */
 package com.egoal.darkestpixeldungeon.windows;
 
+import com.badlogic.gdx.Input;
+import com.watabou.input.Keys;
+
 import com.watabou.utils.RectF;
+import com.watabou.utils.DeviceCompat;
 
 import com.egoal.darkestpixeldungeon.Assets;
 import com.egoal.darkestpixeldungeon.DarkestPixelDungeon;
@@ -64,7 +68,48 @@ import com.watabou.noosa.Image;
 import com.watabou.noosa.RenderedText;
 import com.watabou.noosa.audio.Sample;
 
+import java.util.ArrayList;
+
 public class WndBag extends WndTabbed {
+
+    private final ArrayList<ItemButton> itemButtons = new ArrayList<>();
+    private int selectedItem = 0;
+
+    @Override
+    public boolean onSignal(Keys.Key key) {
+        if (DeviceCompat.isDesktop() && key.pressed && !itemButtons.isEmpty()) {
+            int next = selectedItem;
+            switch (key.code) {
+                case Input.Keys.LEFT: next--; break;
+                case Input.Keys.RIGHT: next++; break;
+                case Input.Keys.UP: next -= nCols; break;
+                case Input.Keys.DOWN: next += nCols; break;
+                case Input.Keys.ENTER:
+                    itemButtons.get(selectedItem).onClick();
+                    return true;
+                default: break;
+            }
+            if (next != selectedItem && next >= 0 && next < itemButtons.size()) {
+                selectedItem = next;
+                for (ItemButton button : itemButtons) {
+                    button.focused = false;
+                    button.refreshFocus();
+                }
+                itemButtons.get(selectedItem).focused = true;
+                itemButtons.get(selectedItem).refreshFocus();
+                return true;
+            }
+        }
+        if (key.pressed && key.code >= Input.Keys.F1 && key.code <= Input.Keys.F12) {
+            int index = key.code - Input.Keys.F1;
+            if (index < tabs.size()) {
+                // Match mouse tab behavior: rebuild the window for the selected bag.
+                onClick(tabs.get(index));
+                return true;
+            }
+        }
+        return super.onSignal(key);
+    }
 
     public static enum Mode {
         ALL,
@@ -252,7 +297,11 @@ public class WndBag extends WndTabbed {
         int x = col * (SLOT_SIZE + SLOT_MARGIN);
         int y = TITLE_HEIGHT + row * (SLOT_SIZE + SLOT_MARGIN);
 
-        add(new ItemButton(item).setPos(x, y));
+        ItemButton button = new ItemButton(item);
+        button.setPos(x, y);
+        add(button);
+        itemButtons.add(button);
+        if (itemButtons.size() == 1) button.focused = true;
 
         if (++col >= nCols) {
             col = 0;
@@ -278,7 +327,7 @@ public class WndBag extends WndTabbed {
     }
 
     @Override
-    protected void onClick(Tab tab) {
+    public void onClick(Tab tab) {
         hide();
         if (filter != null) GameScene.show(new WndBag(((BagTab) tab).bag, listener, title, filter));
         else GameScene.show(new WndBag(((BagTab) tab).bag, listener, mode, title));
@@ -369,6 +418,7 @@ public class WndBag extends WndTabbed {
 
         private Item item;
         private ColorBlock bg;
+        private boolean focused;
 
         public ItemButton(Item item) {
 
@@ -396,6 +446,11 @@ public class WndBag extends WndTabbed {
             bg.y = y;
 
             super.layout();
+            refreshFocus();
+        }
+
+        private void refreshFocus() {
+            if (bg != null) bg.brightness(focused && DeviceCompat.isDesktop() ? 1.35f : 1f);
         }
 
         @Override
@@ -455,7 +510,7 @@ public class WndBag extends WndTabbed {
         }
 
         @Override
-        protected void onClick() {
+        public void onClick() {
             // todo: refactor this, the gold can just be a normal item actually
             if (!(item instanceof Gold) && !lastBag.contains(item) && !item.isEquipped(Dungeon.INSTANCE.getHero())) {
 

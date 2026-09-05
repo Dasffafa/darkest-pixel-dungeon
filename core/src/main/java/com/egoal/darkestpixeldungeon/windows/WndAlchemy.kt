@@ -51,7 +51,7 @@ class WndAlchemy : Window() {
         h += (BTN_SIZE + BTN_GAP) * ((inputButtons.size + 1) / 3)
 
         refineButton = object : RedButton(Messages.get(this, "refine")) {
-            override fun onClick() {
+            public override fun onClick() {
                 super.onClick()
                 combine()
             }

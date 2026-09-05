@@ -61,11 +61,17 @@ public class Touchscreen {
 		public PointF current;
 		public int id;
 		public boolean down;
+		public int button;
 		
 		public Touch( int x, int y, int id, boolean down ) {
+			this(x, y, id, down, 0);
+		}
+
+		public Touch( int x, int y, int id, boolean down, int button ) {
 			start = current = new PointF(x, y);
 			this.id = id;
 			this.down = down;
+			this.button = button;
 		}
 		
 		public void update( int x, int y ) {

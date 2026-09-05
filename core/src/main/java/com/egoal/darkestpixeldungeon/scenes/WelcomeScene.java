@@ -92,7 +92,7 @@ public class WelcomeScene extends PixelScene {
 
     DarkRedButton okay = new DarkRedButton(Messages.get(this, "continue")) {
       @Override
-      protected void onClick() {
+      public void onClick() {
         super.onClick();
         updateVersion(previousVersion);
         DarkestPixelDungeon.switchScene(TitleScene.class);
@@ -103,7 +103,7 @@ public class WelcomeScene extends PixelScene {
       DarkRedButton changes = new DarkRedButton(Messages.get(this, 
               "changelist")) {
         @Override
-        protected void onClick() {
+        public void onClick() {
           super.onClick();
           updateVersion(previousVersion);
           DarkestPixelDungeon.switchScene(ChangesScene.class);

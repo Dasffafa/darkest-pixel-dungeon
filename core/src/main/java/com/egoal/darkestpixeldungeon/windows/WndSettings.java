@@ -157,7 +157,7 @@ public class WndSettings extends WndTabbed {
               Messages.get(this, "portrait") : Messages.get(this,
               "landscape")) {
         @Override
-        protected void onClick() {
+        public void onClick() {
           if (DarkestPixelDungeon.landscape()) {
             DarkestPixelDungeon.landscape(false);
           } else {
@@ -179,7 +179,7 @@ public class WndSettings extends WndTabbed {
 
       CheckBox chkImmersive = new CheckBox(Messages.get(this, "soft_keys")) {
         @Override
-        protected void onClick() {
+        public void onClick() {
           super.onClick();
           DarkestPixelDungeon.immerse(checked());
         }
@@ -197,7 +197,7 @@ public class WndSettings extends WndTabbed {
       // add debug checkbox
       CheckBox chkDebug = new CheckBox(Messages.get(this, "debug")) {
         @Override
-        protected void onClick() {
+        public void onClick() {
           super.onClick();
           DarkestPixelDungeon.debug(checked());
           if (checked())
@@ -225,7 +225,7 @@ public class WndSettings extends WndTabbed {
 
       RedButton btnSplit = new RedButton(Messages.get(this, "split")) {
         @Override
-        protected void onClick() {
+        public void onClick() {
           DarkestPixelDungeon.toolbarMode(Toolbar.Mode.SPLIT.name());
           Toolbar.updateLayout();
         }
@@ -235,7 +235,7 @@ public class WndSettings extends WndTabbed {
 
       RedButton btnGrouped = new RedButton(Messages.get(this, "group")) {
         @Override
-        protected void onClick() {
+        public void onClick() {
           DarkestPixelDungeon.toolbarMode(Toolbar.Mode.GROUP.name());
           Toolbar.updateLayout();
         }
@@ -247,7 +247,7 @@ public class WndSettings extends WndTabbed {
 
       RedButton btnCentered = new RedButton(Messages.get(this, "center")) {
         @Override
-        protected void onClick() {
+        public void onClick() {
           DarkestPixelDungeon.toolbarMode(Toolbar.Mode.CENTER.name());
           Toolbar.updateLayout();
         }
@@ -260,7 +260,7 @@ public class WndSettings extends WndTabbed {
       CheckBox chkFlipToolbar = new CheckBox(Messages.get(this,
               "flip_toolbar")) {
         @Override
-        protected void onClick() {
+        public void onClick() {
           super.onClick();
           DarkestPixelDungeon.flipToolbar(checked());
           Toolbar.updateLayout();
@@ -275,7 +275,7 @@ public class WndSettings extends WndTabbed {
       final CheckBox chkFlipTags = new CheckBox(Messages.get(this,
               "flip_indicators")) {
         @Override
-        protected void onClick() {
+        public void onClick() {
           super.onClick();
           DarkestPixelDungeon.flipTags(checked());
           GameScene.layoutTags();
@@ -291,7 +291,7 @@ public class WndSettings extends WndTabbed {
       if (lang) {
         RedButton btnLanguage = new RedButton(Messages.get(this, "language")) {
           @Override
-          protected void onClick() {
+          public void onClick() {
             ((WndSettings) parent.parent).parent.add(new WndLangs());
             ((WndSettings) parent.parent).hide();
             // parent.add(new WndLangs());
@@ -318,7 +318,7 @@ public class WndSettings extends WndTabbed {
 
       CheckBox chkMoreSlots = new CheckBox(M.INSTANCE.L(this, "more_slots")){
         @Override
-        protected void onClick() {
+        public void onClick() {
           super.onClick();
           DarkestPixelDungeon.moreQuickSlots(checked());
           Toolbar.updateLayout();
@@ -330,7 +330,7 @@ public class WndSettings extends WndTabbed {
 
       CheckBox chkFont = new CheckBox(Messages.get(this, "smooth_font")) {
         @Override
-        protected void onClick() {
+        public void onClick() {
           super.onClick();
           DarkestPixelDungeon.switchNoFade((Class<? extends PixelScene>)
                   DarkestPixelDungeon.scene().getClass(), new Game
@@ -373,7 +373,7 @@ public class WndSettings extends WndTabbed {
 
       CheckBox musicMute = new CheckBox(Messages.get(this, "music_mute")) {
         @Override
-        protected void onClick() {
+        public void onClick() {
           super.onClick();
           DarkestPixelDungeon.music(!checked());
         }
@@ -397,7 +397,7 @@ public class WndSettings extends WndTabbed {
 
       CheckBox btnSound = new CheckBox(Messages.get(this, "sfx_mute")) {
         @Override
-        protected void onClick() {
+        public void onClick() {
           super.onClick();
           DarkestPixelDungeon.soundFx(!checked());
           Sample.INSTANCE.play(Assets.SND_CLICK);

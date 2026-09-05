@@ -18,9 +18,9 @@ import com.badlogic.gdx.Input
 enum class DPDAction {
     NORTH, WEST, SOUTH, EAST, NORTH_WEST, NORTH_EAST, SOUTH_WEST, SOUTH_EAST,
     WAIT_OR_PICKUP, INVENTORY, EXAMINE, REST,
-    QUICK_SLOT_1, QUICK_SLOT_2, QUICK_SLOT_3, QUICK_SLOT_4, QUICK_SLOT_5, QUICK_SLOT_6,
+    QUICK_SLOT_1, QUICK_SLOT_2, QUICK_SLOT_3, QUICK_SLOT_4, QUICK_SLOT_5, QUICK_SLOT_6, QUICK_SLOT_7, QUICK_SLOT_8,
     TAG_ATTACK, TAG_ACTION, TAG_LOOT, TAG_RESUME, CYCLE_TARGET,
-    HERO_INFO, JOURNAL, ZOOM_IN, ZOOM_OUT;
+    HERO_INFO, JOURNAL, TORCH, PERK, ZOOM_IN, ZOOM_OUT;
 
     companion object {
         private val defaults = mapOf(
@@ -32,15 +32,17 @@ enum class DPDAction {
                 Input.Keys.NUMPAD_1 to SOUTH_WEST, Input.Keys.NUMPAD_3 to SOUTH_EAST,
                 Input.Keys.SPACE to WAIT_OR_PICKUP, Input.Keys.NUMPAD_5 to WAIT_OR_PICKUP,
                 Input.Keys.F to INVENTORY, Input.Keys.I to INVENTORY,
-                Input.Keys.NUM_1 to QUICK_SLOT_1, Input.Keys.NUM_2 to QUICK_SLOT_2,
-                Input.Keys.NUM_3 to QUICK_SLOT_3, Input.Keys.NUM_4 to QUICK_SLOT_4,
-                Input.Keys.NUM_5 to QUICK_SLOT_5, Input.Keys.NUM_6 to QUICK_SLOT_6,
+                Input.Keys.NUM_1 to QUICK_SLOT_8, Input.Keys.NUM_2 to QUICK_SLOT_7,
+                Input.Keys.NUM_3 to QUICK_SLOT_6, Input.Keys.NUM_4 to QUICK_SLOT_5,
+                Input.Keys.NUM_5 to QUICK_SLOT_4, Input.Keys.NUM_6 to QUICK_SLOT_3,
+                Input.Keys.NUM_7 to QUICK_SLOT_2, Input.Keys.NUM_8 to QUICK_SLOT_1,
                 Input.Keys.E to EXAMINE, Input.Keys.Z to REST,
                 Input.Keys.Q to TAG_ATTACK, Input.Keys.X to TAG_ACTION,
                 Input.Keys.C to TAG_LOOT, Input.Keys.ENTER to TAG_LOOT,
                 Input.Keys.R to TAG_RESUME, Input.Keys.TAB to CYCLE_TARGET,
-                Input.Keys.STAR to CYCLE_TARGET, Input.Keys.NUMPAD_MULTIPLY to CYCLE_TARGET,
                 Input.Keys.H to HERO_INFO, Input.Keys.J to JOURNAL,
+                Input.Keys.L to TORCH,
+                Input.Keys.U to PERK,
                 Input.Keys.PLUS to ZOOM_IN, Input.Keys.EQUALS to ZOOM_IN,
                 Input.Keys.MINUS to ZOOM_OUT)
 

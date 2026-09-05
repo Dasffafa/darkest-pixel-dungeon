@@ -20,8 +20,6 @@
  */
 package com.egoal.darkestpixeldungeon.scenes
 
-import com.egoal.darkestpixeldungeon.TopExceptionHandler
-import com.egoal.darkestpixeldungeon.ui.RenderedTextMultiline
 import com.egoal.darkestpixeldungeon.ui.ScrollPane
 import com.egoal.darkestpixeldungeon.ui.RedButton
 import com.egoal.darkestpixeldungeon.Chrome
@@ -31,21 +29,10 @@ import com.egoal.darkestpixeldungeon.ui.Archs
 import com.egoal.darkestpixeldungeon.ui.ExitButton
 import com.egoal.darkestpixeldungeon.ui.Window
 import com.egoal.darkestpixeldungeon.windows.WndMessage
-// import com.sun.prism.Image;
 import com.watabou.input.Touchscreen
 import com.watabou.noosa.Camera
-import com.watabou.noosa.Game
-import com.watabou.noosa.NinePatch
-import com.watabou.noosa.RenderedText
 import com.watabou.noosa.ui.Component
 import com.watabou.noosa.TouchArea
-import com.watabou.utils.Bundle
-
-import java.io.FileInputStream
-import java.io.IOException
-import java.lang.annotation.Inherited
-import java.util.ArrayList
-
 class ChangesScene : PixelScene() {
     override fun create() {
         super.create()
@@ -155,7 +142,7 @@ class ChangesScene : PixelScene() {
     private class ChangesWindow(message: String) : WndMessage(message) {
         init {
             add(object : TouchArea(chrome) {
-                override fun onClick(touch: Touchscreen.Touch) {
+                public override fun onClick(touch: Touchscreen.Touch) {
                     hide()
                 }
             })

@@ -18,6 +18,8 @@ import com.egoal.darkestpixeldungeon.windows.IconTitle
 import com.egoal.darkestpixeldungeon.windows.WndOptions
 import com.watabou.noosa.audio.Sample
 import com.watabou.utils.Bundle
+import com.watabou.input.Keys
+import com.badlogic.gdx.Input
 import com.watabou.utils.Random
 import kotlin.math.pow
 
@@ -205,6 +207,11 @@ class Astrolabe : Special() {
 
     // todo: refactor this
     inner class WndInvoke : Window() {
+        private val buttons = ArrayList<RedButton>()
+        private val buttonColors = ArrayList<Int>()
+        /** Index of each row's main button; rows are invoke, then stored skills. */
+        private val rowMainButtons = ArrayList<Int>()
+        private var selected = 0
         init {
             val ic = IconTitle(ItemSprite(image(), null), M.L(Astrolabe::class.java, "select_invoker"))
             ic.setRect(0f, 0f, WIDTH, 0f)
@@ -219,6 +226,8 @@ class Astrolabe : Special() {
 
             if (cachedInvoker_2 >= 0) pos = addInvoker(pos, positiveInvokers[cachedInvoker_2], index++)
 
+            if (buttons.isNotEmpty()) buttons[0].textColor(TITLE_COLOR)
+
             resize(WIDTH.toInt(), pos.toInt())
         }
 
@@ -232,6 +241,9 @@ class Astrolabe : Special() {
                     onSelect(idx)
                 }
             }
+            buttons += btn
+            buttonColors += color
+            rowMainButtons += buttons.lastIndex
             btn.textColor(color)
 
             if (help.isNotEmpty()) {
@@ -246,12 +258,43 @@ class Astrolabe : Special() {
                 add(btn)
                 btnHelp.setRect((width - MARGIN - WIDTH_HELP_BUTTON), pos, WIDTH_HELP_BUTTON, BTN_HEIGHT)
                 add(btnHelp)
+                buttons += btnHelp
+                buttonColors += color
             } else {
                 btn.setRect(MARGIN, pos, width - MARGIN * 2f, BTN_HEIGHT)
                 add(btn)
             }
 
             return pos + BTN_HEIGHT + MARGIN
+        }
+
+        override fun onSignal(key: Keys.Key): Boolean {
+            if (key.pressed && buttons.isNotEmpty()) {
+                val currentRow = rowMainButtons.indexOfLast { it <= selected }.coerceAtLeast(0)
+                when (key.code) {
+                    Input.Keys.LEFT, Input.Keys.RIGHT -> {
+                        // Only stored-skill rows have a help button to toggle to.
+                        val main = rowMainButtons[currentRow]
+                        if (currentRow > 0 && selected == main && key.code == Input.Keys.RIGHT)
+                            selected = main + 1
+                        else if (currentRow > 0 && selected == main + 1 && key.code == Input.Keys.LEFT)
+                            selected = main
+                    }
+                    Input.Keys.UP -> {
+                        val row = (currentRow - 1 + rowMainButtons.size) % rowMainButtons.size
+                        selected = rowMainButtons[row]
+                    }
+                    Input.Keys.DOWN -> {
+                        val row = (currentRow + 1) % rowMainButtons.size
+                        selected = rowMainButtons[row]
+                    }
+                    Input.Keys.ENTER -> { buttons[selected].onClick(); return true }
+                    else -> return super.onSignal(key)
+                }
+                buttons.forEachIndexed { i, b -> b.textColor(if (i == selected) TITLE_COLOR else buttonColors[i]) }
+                return true
+            }
+            return super.onSignal(key)
         }
 
         private fun onSelect(index: Int) {

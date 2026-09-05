@@ -243,6 +243,15 @@ public class Game implements ApplicationListener {
         return instance != null && Thread.currentThread() == instance.renderThread;
     }
 
+    /** Queues work on the render thread without blocking the caller. */
+    public static void runOnRenderThread(Runnable runnable) {
+        if (isOnRenderThread()) {
+            runnable.run();
+        } else {
+            Gdx.app.postRunnable(runnable);
+        }
+    }
+
     public static void runOnRenderThreadAndWait(Runnable runnable) {
         if (isOnRenderThread()) {
             runnable.run();

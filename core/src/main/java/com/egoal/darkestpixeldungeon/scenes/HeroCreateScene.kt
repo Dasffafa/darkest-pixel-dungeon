@@ -1,14 +1,8 @@
 package com.egoal.darkestpixeldungeon.scenes
 
 import com.egoal.darkestpixeldungeon.*
-import com.egoal.darkestpixeldungeon.actors.hero.Hero
 import com.egoal.darkestpixeldungeon.actors.hero.HeroClass
-import com.egoal.darkestpixeldungeon.actors.hero.HeroSubClass
 import com.egoal.darkestpixeldungeon.items.Generator
-import com.egoal.darkestpixeldungeon.items.Item
-import com.egoal.darkestpixeldungeon.items.food.Humanity
-import com.egoal.darkestpixeldungeon.items.food.OrchidRoot
-import com.egoal.darkestpixeldungeon.items.potions.ReagentOfHealing
 import com.egoal.darkestpixeldungeon.items.unclassified.*
 import com.egoal.darkestpixeldungeon.messages.M
 import com.egoal.darkestpixeldungeon.sprites.HeroSprite
@@ -20,8 +14,6 @@ import com.egoal.darkestpixeldungeon.windows.WndTabbed
 import com.watabou.gltextures.TextureCache
 import com.watabou.noosa.*
 import com.watabou.noosa.ui.Button
-import com.watabou.utils.Random
-import kotlin.Nothing
 import kotlin.math.max
 
 class HeroCreateScene : PixelScene() {
@@ -147,7 +139,7 @@ class HeroCreateScene : PixelScene() {
             add(portrait)
 
             val startGame = object : RedButton(M.L(HeroCreateScene::class.java, "new_game"), 8) {
-                override fun onClick() {
+                public override fun onClick() {
                     startNewGame()
                 }
             }
@@ -222,7 +214,7 @@ class HeroCreateScene : PixelScene() {
 
         // settings
         inner class ClassButton(var heroClass: HeroClass = CurrentClass) : RedButton(M.T(heroClass.title()), 8) {
-            override fun onClick() {
+            public override fun onClick() {
                 val title = M.L(HeroCreateScene::class.java, "select_class")
                 val message = ""
                 val classes = HeroClass.values()
@@ -244,7 +236,7 @@ class HeroCreateScene : PixelScene() {
                           private val prizes: Array<Prize> = Prize.values()) : RedButton(prizes[index].title(), 8) {
             fun prize(): Prize = prizes[index]
 
-            override fun onClick() {
+            public override fun onClick() {
                 val title = M.L(HeroCreateScene::class.java, "select_prize")
                 val message = ""
 
@@ -365,7 +357,7 @@ class HeroCreateScene : PixelScene() {
                             icon.y = y + (height - icon.height) / 2f
                         }
 
-                        override fun onClick() {
+                        public override fun onClick() {
                             description.text(perk.description())
                         }
                     }

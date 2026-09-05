@@ -71,6 +71,12 @@ public class Script extends Program {
 		curScript = null;
 		curScriptClass = null;
 	}
+
+	/** Invalidates the cached GL binding after rendering through another pipeline. */
+	public static void clearBinding() {
+		curScript = null;
+		curScriptClass = null;
+	}
 	
 	public void compile( String src ) {
 

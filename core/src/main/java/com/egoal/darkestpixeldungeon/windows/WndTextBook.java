@@ -1,12 +1,10 @@
 package com.egoal.darkestpixeldungeon.windows;
 
 import com.egoal.darkestpixeldungeon.Chrome;
-import com.egoal.darkestpixeldungeon.items.books.Book;
 import com.egoal.darkestpixeldungeon.items.books.TextBook;
 import com.egoal.darkestpixeldungeon.scenes.PixelScene;
 import com.egoal.darkestpixeldungeon.ui.RenderedTextMultiline;
 import com.egoal.darkestpixeldungeon.ui.Window;
-import com.egoal.darkestpixeldungeon.utils.GLog;
 import com.watabou.input.Touchscreen;
 import com.watabou.noosa.TouchArea;
 import com.watabou.utils.PointF;
@@ -16,6 +14,16 @@ import com.watabou.utils.PointF;
  */
 
 public class WndTextBook extends Window {
+
+  @Override
+  public void onEnterPressed() {
+    if (page_ < book_.pageSize() - 1) {
+      ++page_;
+      updatePage();
+    } else {
+      hide();
+    }
+  }
 
   private static final int WIDTH = 96;
   private static final int MARGIN = 6;
@@ -52,7 +60,7 @@ public class WndTextBook extends Window {
 
     add(new TouchArea(chrome) {
       @Override
-      protected void onClick(Touchscreen.Touch t) {
+      public void onClick(Touchscreen.Touch t) {
         PointF ps = camera().screenToCamera((int) t.current.x, (int) t
                 .current.y);
         if (ps.x < WIDTH * 0.4 && page_ > 0) {

@@ -45,9 +45,14 @@ public class NoosaScript extends Script {
 	private Camera lastCamera;
 	
 	public NoosaScript() {
+		this( null );
+	}
+
+	/** Compatibility constructor for resource-backed shader implementations. */
+	protected NoosaScript( String source ) {
 
 		super();
-		compile( shader() );
+		compile( source == null ? shader() : source );
 		
 		uCamera	= uniform( "uCamera" );
 		uModel	= uniform( "uModel" );

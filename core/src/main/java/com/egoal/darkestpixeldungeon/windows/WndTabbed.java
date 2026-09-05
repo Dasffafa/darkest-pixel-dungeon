@@ -145,7 +145,7 @@ public class WndTabbed extends Window {
     return 25;
   }
 
-  protected void onClick(Tab tab) {
+  public void onClick(Tab tab) {
     select(tab);
   }
 
@@ -185,7 +185,7 @@ public class WndTabbed extends Window {
     }
 
     @Override
-    protected void onClick() {
+    public void onClick() {
       Sample.INSTANCE.play(Assets.SND_CLICK, 0.7f, 0.7f, 1.2f);
       WndTabbed.this.onClick(this);
     }

@@ -185,7 +185,7 @@ class SlotSelectScene : PixelScene() {
             }
         }
 
-        override fun onClick() {
+        public override fun onClick() {
             if (empty) {
                 GamesInProgress.curSlot = slot
                 DarkestPixelDungeon.switchScene(HeroCreateScene::class.java)

@@ -41,7 +41,7 @@ public class CheckBox extends Button {
 	}
 	
 	@Override
-	protected void onClick() {
+	public void onClick() {
 		checked( !checked );
 		onChange();
 	}

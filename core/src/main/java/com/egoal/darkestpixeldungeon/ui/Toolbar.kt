@@ -68,7 +68,7 @@ class Toolbar : Component() {
 
     override fun createChildren() {
         add(object : Tool(24, 0, 20, 24) {
-            override fun onClick() {
+            public override fun onClick() {
                 waitTurn()
             }
 
@@ -78,7 +78,7 @@ class Toolbar : Component() {
             }
         }.also { btnWait = it })
         add(object : Tool(44, 0, 20, 24) {
-            override fun onClick() {
+            public override fun onClick() {
                 examine()
             }
 
@@ -88,7 +88,7 @@ class Toolbar : Component() {
             }
         }.also { btnSearch = it })
         btnSwitchSlots = object : Tool(125, 0, 15, 24) {
-            override fun onClick() {
+            public override fun onClick() {
                 Sample.INSTANCE.play(Assets.SND_CLICK)
                 currentQuickSlotTab = (currentQuickSlotTab + 1) % TAB_QUICK_SLOTS
                 updateLayout()
@@ -112,7 +112,7 @@ class Toolbar : Component() {
 
         add(object : Tool(0, 0, 24, 26) {
             private var gold: GoldIndicator? = null
-            override fun onClick() {
+            public override fun onClick() {
                 inventory()
             }
 

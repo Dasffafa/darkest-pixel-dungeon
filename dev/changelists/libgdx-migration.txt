@@ -1,0 +1,24 @@
+# LibGDX移植
+
+.project
+SPD-classes/.classpath
+SPD-classes/.project
+SPD-classes/build.gradle
+SPD-classes/src/main/java/com/watabou/glscripts/Script.java
+SPD-classes/src/main/java/com/watabou/input/InputHandler.java
+SPD-classes/src/main/java/com/watabou/input/Touchscreen.java
+SPD-classes/src/main/java/com/watabou/noosa/Game.java
+SPD-classes/src/main/java/com/watabou/noosa/NoosaScript.java
+SPD-classes/src/main/java/com/watabou/noosa/Tilemap.java
+SPD-classes/src/main/java/com/watabou/noosa/TouchArea.java
+SPD-classes/src/main/java/com/watabou/noosa/ui/Button.java
+SPD-classes/src/main/java/com/watabou/noosa/ui/CheckBox.java
+SPD-classes/src/main/java/com/watabou/utils/DeviceCompat.java
+core/src/main/assets/shaders/
+core/src/main/java/com/egoal/darkestpixeldungeon/effects/shaders/
+desktop/build.gradle
+desktop/src/main/java/com/egoal/darkestpixeldungeon/desktop/DesktopPlatformSupport.java
+dev/libgdx-migration-m7.md
+dev/libgdx-migration-plan.md
+dev/shader-guidelines.md
+dev/threadsync.md

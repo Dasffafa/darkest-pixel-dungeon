@@ -67,7 +67,7 @@ class TorchIndicator : Tag(0xff4c4c) {
         super.update()
     }
 
-    override fun onClick() {
+    public override fun onClick() {
         if (Dungeon.torch <= 0f) return
 
         val hero = Dungeon.hero

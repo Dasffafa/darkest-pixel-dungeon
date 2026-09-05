@@ -209,7 +209,7 @@ public class BuffIndicator extends Component {
     }
 
     @Override
-    protected void onClick() {
+    public void onClick() {
       if(buff.icon()!= NONE) GameScene.show(new WndInfoBuff(buff));
     }
   }

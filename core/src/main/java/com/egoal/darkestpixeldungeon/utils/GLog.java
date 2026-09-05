@@ -21,6 +21,7 @@
 package com.egoal.darkestpixeldungeon.utils;
 
 import com.watabou.utils.Log;
+import com.watabou.noosa.Game;
 import com.egoal.darkestpixeldungeon.messages.Messages;
 import com.watabou.utils.Signal;
 
@@ -42,7 +43,14 @@ public class GLog {
     }
 
     Log.i(TAG, text);
-    update.dispatch(text);
+    final String message = text;
+    // GameLog creates and measures render objects, so never dispatch its signal
+    // synchronously from the actor thread.
+    if (Game.isOnRenderThread()) {
+      update.dispatch(message);
+    } else {
+      Game.runOnRenderThread(() -> update.dispatch(message));
+    }
   }
 
   public static void p(String text, Object... args) {

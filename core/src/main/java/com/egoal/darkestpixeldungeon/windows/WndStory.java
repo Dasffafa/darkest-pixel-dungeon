@@ -34,6 +34,11 @@ import com.watabou.utils.SparseArray;
 
 public class WndStory extends Window {
 
+  @Override
+  public void onEnterPressed() {
+    hide();
+  }
+
   private static final int WIDTH_P = 120;
   private static final int WIDTH_L = 144;
   private static final int MARGIN = 6;
@@ -77,7 +82,7 @@ public class WndStory extends Window {
 
     add(new TouchArea(chrome) {
       @Override
-      protected void onClick(Touch touch) {
+      public void onClick(Touch touch) {
         hide();
       }
     });

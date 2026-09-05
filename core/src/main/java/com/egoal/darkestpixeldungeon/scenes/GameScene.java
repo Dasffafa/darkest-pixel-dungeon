@@ -21,7 +21,6 @@
 package com.egoal.darkestpixeldungeon.scenes;
 
 import com.badlogic.gdx.Gdx;
-import com.watabou.utils.Log;
 
 import com.egoal.darkestpixeldungeon.Badges;
 import com.egoal.darkestpixeldungeon.DungeonTilemap;
@@ -54,6 +53,8 @@ import com.egoal.darkestpixeldungeon.effects.Flare;
 import com.egoal.darkestpixeldungeon.effects.FloatingText;
 import com.egoal.darkestpixeldungeon.effects.Ripple;
 import com.egoal.darkestpixeldungeon.effects.SpellSprite;
+import com.egoal.darkestpixeldungeon.effects.shaders.FilteredMapGroup;
+import com.egoal.darkestpixeldungeon.effects.shaders.MapFilter;
 import com.egoal.darkestpixeldungeon.items.Heap;
 import com.egoal.darkestpixeldungeon.items.Item;
 import com.egoal.darkestpixeldungeon.items.bags.PotionBandolier;
@@ -82,6 +83,7 @@ import com.egoal.darkestpixeldungeon.ui.Window;
 import com.egoal.darkestpixeldungeon.windows.WndBag;
 import com.egoal.darkestpixeldungeon.windows.WndGame;
 import com.egoal.darkestpixeldungeon.windows.WndHero;
+import com.egoal.darkestpixeldungeon.windows.WndGainNewPerk;
 import com.egoal.darkestpixeldungeon.windows.WndJournal;
 import com.egoal.darkestpixeldungeon.windows.WndInfoCell;
 import com.egoal.darkestpixeldungeon.windows.WndInfoItem;
@@ -107,6 +109,7 @@ import com.watabou.input.Keys;
 import com.watabou.input.ScrollEvent;
 import com.watabou.utils.GameMath;
 import com.watabou.utils.Signal;
+import com.watabou.utils.DeviceCompat;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -148,6 +151,7 @@ public class GameScene extends PixelScene {
   private Group statuses;
   private Group emoicons;
   private Group sentences;
+  private FilteredMapGroup filteredMap;
 
   private Toolbar toolbar;
   private Toast prompt;
@@ -174,8 +178,11 @@ public class GameScene extends PixelScene {
 
     scene = this;
 
+    filteredMap = new FilteredMapGroup();
+    add(filteredMap);
+
     terrain = new Group();
-    add(terrain);
+    filteredMap.add(terrain);
 
     water = new SkinnedBlock(
             Dungeon.INSTANCE.getLevel().width() * DungeonTilemap.SIZE,
@@ -211,10 +218,10 @@ public class GameScene extends PixelScene {
     }
 
     levelVisuals = Dungeon.INSTANCE.getLevel().addVisuals();
-    add(levelVisuals);
+    filteredMap.add(levelVisuals);
 
     traps = new Group();
-    add(traps);
+    filteredMap.add(traps);
 
     int size = Dungeon.INSTANCE.getLevel().getTraps().size();
     for (int i = 0; i < size; i++) {
@@ -222,7 +229,7 @@ public class GameScene extends PixelScene {
     }
 
     plants = new Group();
-    add(plants);
+    filteredMap.add(plants);
 
     size = Dungeon.INSTANCE.getLevel().getPlants().size();
     for (int i = 0; i < size; i++) {
@@ -230,7 +237,7 @@ public class GameScene extends PixelScene {
     }
 
     heaps = new Group();
-    add(heaps);
+    filteredMap.add(heaps);
 
     size = Dungeon.INSTANCE.getLevel().getHeaps().size();
     for (int i = 0; i < size; i++) {
@@ -242,7 +249,7 @@ public class GameScene extends PixelScene {
     emoicons = new Group();
 
     mobs = new Group();
-    add(mobs);
+    filteredMap.add(mobs);
 
     for (Mob mob : Dungeon.INSTANCE.getLevel().getMobs()) {
       addMobSprite(mob);
@@ -251,11 +258,11 @@ public class GameScene extends PixelScene {
       }
     }
 
-    add(emitters);
-    add(effects);
+    filteredMap.add(emitters);
+    filteredMap.add(effects);
 
     gases = new Group();
-    add(gases);
+    filteredMap.add(gases);
 
     for (Blob blob : Dungeon.INSTANCE.getLevel().getBlobs().values()) {
       blob.setEmitter(null);
@@ -263,18 +270,18 @@ public class GameScene extends PixelScene {
     }
 
     fog = new FogOfWar(Dungeon.INSTANCE.getLevel().width(), Dungeon.INSTANCE.getLevel().height());
-    add(fog);
+    filteredMap.add(fog);
 
     spells = new Group();
-    add(spells);
+    filteredMap.add(spells);
 
     statuses = new Group();
-    add(statuses);
+    filteredMap.add(statuses);
 
-    add(emoicons);
+    filteredMap.add(emoicons);
 
     sentences = new Group();
-    add(sentences);
+    filteredMap.add(sentences);
 
 //    heroDoll = new DollSprite();
 //    heroDoll.place(Dungeon.hero.pos+ 1);
@@ -445,8 +452,34 @@ public class GameScene extends PixelScene {
 
   private boolean handleKey(Keys.Key key) {
     if (!key.pressed) return false;
+    if (DeviceCompat.isDesktop()) {
+      int pan = 0;
+      if (key.code == com.badlogic.gdx.Input.Keys.W) pan = -1;
+      else if (key.code == com.badlogic.gdx.Input.Keys.S) pan = 1;
+      if (pan != 0) { Camera.main.target = null; Camera.main.scroll.y += pan * 4; return true; }
+      if (key.code == com.badlogic.gdx.Input.Keys.A) { Camera.main.target = null; Camera.main.scroll.x -= 4; return true; }
+      if (key.code == com.badlogic.gdx.Input.Keys.D) { Camera.main.target = null; Camera.main.scroll.x += 4; return true; }
+      if (key.code == com.badlogic.gdx.Input.Keys.Z) { cellSelector.zoomBy(1); return true; }
+      if (key.code == com.badlogic.gdx.Input.Keys.X) { cellSelector.zoomBy(-1); return true; }
+    }
+    if (DeviceCompat.isDesktop() && (key.code == com.badlogic.gdx.Input.Keys.PERIOD || key.code == com.badlogic.gdx.Input.Keys.COMMA)) {
+      int target = key.code == com.badlogic.gdx.Input.Keys.PERIOD ? Dungeon.INSTANCE.getLevel().getExit() : Dungeon.INSTANCE.getLevel().getEntrance();
+      if (target >= 0 && target < Dungeon.INSTANCE.getLevel().length()) {
+        Dungeon.INSTANCE.getHero().handle(target);
+        Dungeon.INSTANCE.getHero().next();
+      } else {
+        GLog.w(key.code == com.badlogic.gdx.Input.Keys.PERIOD ? "No downstairs here." : "No upstairs here.");
+      }
+      return true;
+    }
+    if (key.code >= com.badlogic.gdx.Input.Keys.NUM_1 && key.code <= com.badlogic.gdx.Input.Keys.NUM_8) {
+      int configured = DarkestPixelDungeon.quickSlots();
+      int number = key.code - com.badlogic.gdx.Input.Keys.NUM_1 + 1;
+      if (number <= configured) { QuickSlotButton.use(configured - number); return true; }
+    }
     DPDAction command = DPDAction.fromKey(key.code);
     if (command == null) return false;
+
     if (!Dungeon.INSTANCE.getHero().getReady() && command != DPDAction.ZOOM_IN &&
             command != DPDAction.ZOOM_OUT) return true;
 
@@ -501,6 +534,8 @@ public class GameScene extends PixelScene {
       case TAG_RESUME: resume.trigger(); break;
       case CYCLE_TARGET: attack.cycleTarget(); break;
       case HERO_INFO: show(new WndHero()); break;
+      case TORCH: pane.toggleTorch(); break;
+      case PERK: WndGainNewPerk.Show(Dungeon.INSTANCE.getHero()); break;
       case JOURNAL: show(new WndJournal()); break;
       case ZOOM_IN: cellSelector.zoomBy(1); break;
       case ZOOM_OUT: cellSelector.zoomBy(-1); break;
@@ -582,10 +617,23 @@ public class GameScene extends PixelScene {
     cellSelector.enable(Dungeon.INSTANCE.getHero().getReady());
   }
 
+  public Thread actorThread() {
+    return t;
+  }
+
+  public static Thread currentActorThread() {
+    return scene == null ? null : scene.actorThread();
+  }
+
   private boolean tagAttack = false;
   private boolean tagLoot = false;
   private boolean tagAction = false;
   private boolean tagResume = false;
+
+  /** Applies a post-process filter to the map layers while leaving the UI untouched. */
+  public static void mapFilter(MapFilter filter) {
+    if (scene != null) scene.filteredMap.setFilter(filter);
+  }
 
   public static void layoutTags() {
 
@@ -630,6 +678,10 @@ public class GameScene extends PixelScene {
 
   @Override
   protected void onBackPressed() {
+    if (QuickSlotButton.isTargeting()) {
+      QuickSlotButton.cancel();
+      return;
+    }
     if (!cancel()) {
       add(new WndGame());
     }
@@ -737,13 +789,17 @@ public class GameScene extends PixelScene {
 
   public static void add(Heap heap) {
     if (scene != null) {
-      scene.addHeapSprite(heap);
+      com.watabou.noosa.Game.runOnRenderThreadAndWait(() -> {
+        if (scene != null) scene.addHeapSprite(heap);
+      });
     }
   }
 
   public static void discard(Heap heap) {
     if (scene != null) {
-      scene.addDiscardedSprite(heap);
+      com.watabou.noosa.Game.runOnRenderThreadAndWait(() -> {
+        if (scene != null) scene.addDiscardedSprite(heap);
+      });
     }
   }
 

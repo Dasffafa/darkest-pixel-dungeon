@@ -44,9 +44,15 @@ import com.watabou.noosa.TextureFilm
 import com.watabou.noosa.ui.Button
 import java.util.*
 import kotlin.math.round
+import com.watabou.input.Keys
+import com.badlogic.gdx.Input
 
 // window shown when press the status pane avatar
 class WndHero : WndTabbed() {
+    override fun onSignal(key: Keys.Key): Boolean {
+        if (key.pressed && key.code in Input.Keys.F1..Input.Keys.F4) { select(key.code - Input.Keys.F1); return true }
+        return super.onSignal(key)
+    }
     private val stats: StatsTab
     private val buffs: BuffsTab
     private val details: DetailsTab
@@ -140,7 +146,7 @@ class WndHero : WndTabbed() {
 
             if (hero.lvl >= 12 && hero.subClass == HeroSubClass.NONE) {
                 val btn = object : RedButton(M.L(this, "choose_way")) {
-                    override fun onClick() {
+                    public override fun onClick() {
                         hide()
                         WndMasterSubclass.Show(hero)
                     }
@@ -149,7 +155,7 @@ class WndHero : WndTabbed() {
                 add(btn)
             } else if (hero.challenges.isNotEmpty()) {
                 val btn = object : RedButton(M.L(this, "challenges")) {
-                    override fun onClick() {
+                    public override fun onClick() {
                         val s = hero.challenges.joinToString("\n") { "_${it.title()}_\n${it.desc()}\n" }
                         GameScene.show(WndMessage(s))
                     }
@@ -252,7 +258,7 @@ class WndHero : WndTabbed() {
                 txt.y = pos + (icon.height - txt.baseLine()).toInt() / 2
             }
 
-            override fun onClick() {
+            public override fun onClick() {
                 GameScene.show(WndInfoBuff(buff))
             }
         }

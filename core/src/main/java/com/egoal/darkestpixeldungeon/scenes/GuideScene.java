@@ -10,11 +10,9 @@ import com.egoal.darkestpixeldungeon.ui.ScrollPane;
 import com.egoal.darkestpixeldungeon.ui.Window;
 import com.watabou.noosa.Camera;
 import com.watabou.noosa.ColorBlock;
-import com.watabou.noosa.Image;
 import com.watabou.noosa.NinePatch;
 import com.watabou.noosa.RenderedText;
 import com.watabou.noosa.ui.Component;
-import com.watabou.utils.Point;
 
 import java.util.ArrayList;
 
@@ -90,7 +88,7 @@ public class GuideScene extends PixelScene {
         ListItem li = new ListItem(Messages.get(this, "title_" + Integer
                 .toString(index))) {
           @Override
-          protected void onClick() {
+          public void onClick() {
             showDescription(index);
           }
         };
@@ -188,7 +186,7 @@ public class GuideScene extends PixelScene {
       }
     }
 
-    protected void onClick() {
+    public void onClick() {
     }
   }
 }

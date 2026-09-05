@@ -81,7 +81,7 @@ public class ChangesButton extends Button {
   }
 
   @Override
-  protected void onClick() {
+  public void onClick() {
     DarkestPixelDungeon.switchNoFade(ChangesScene.class);
   }
 }

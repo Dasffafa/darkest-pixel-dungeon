@@ -9,8 +9,12 @@ import com.egoal.darkestpixeldungeon.scenes.GameScene
 import com.egoal.darkestpixeldungeon.scenes.PixelScene
 import com.egoal.darkestpixeldungeon.ui.RedButton
 import com.egoal.darkestpixeldungeon.ui.Window
+import com.watabou.input.Keys
+import com.badlogic.gdx.Input
 
 class WndMasterSubclass(heroClass: HeroClass) : Window() {
+    private val buttons = ArrayList<RedButton>()
+    private var selected = 0
     init {
         val rtm = PixelScene.renderMultiline(6)
 
@@ -30,6 +34,8 @@ class WndMasterSubclass(heroClass: HeroClass) : Window() {
             }
             btn.setRect(0f, y, WIDTH, BTN_HEIGHT)
             add(btn)
+            buttons += btn
+            if (buttons.size == 1) btn.textColor(TITLE_COLOR)
             y = btn.bottom() + GAP
         }
 
@@ -41,8 +47,23 @@ class WndMasterSubclass(heroClass: HeroClass) : Window() {
         }
         btnCancel.setRect(0f, y, WIDTH, BTN_HEIGHT)
         add(btnCancel)
+        buttons += btnCancel
 
         resize(WIDTH.toInt(), btnCancel.bottom().toInt())
+    }
+
+    override fun onSignal(key: Keys.Key): Boolean {
+        if (key.pressed && buttons.isNotEmpty()) {
+            when (key.code) {
+                Input.Keys.UP -> selected = (selected - 1 + buttons.size) % buttons.size
+                Input.Keys.DOWN -> selected = (selected + 1) % buttons.size
+                Input.Keys.ENTER -> { buttons[selected].onClick(); return true }
+                else -> return super.onSignal(key)
+            }
+            buttons.forEachIndexed { i, b -> b.textColor(if (i == selected) TITLE_COLOR else 0xFFFFFF) }
+            return true
+        }
+        return super.onSignal(key)
     }
 
     override fun onBackPressed() {

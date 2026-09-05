@@ -64,7 +64,7 @@ public class WndLangs extends Window {
       RedButton btn = new RedButton(Messages.titleCase(langs.get(i)
               .getNativeName())) {
         @Override
-        protected void onClick() {
+        public void onClick() {
           super.onClick();
           Messages.setup(langs.get(langIndex));
           DarkestPixelDungeon.switchNoFade(TitleScene.class, new Game
@@ -149,7 +149,7 @@ public class WndLangs extends Window {
       RedButton creditsBtn = new RedButton(Messages.titleCase(Messages.get
               (this, "credits"))) {
         @Override
-        protected void onClick() {
+        public void onClick() {
           super.onClick();
           String creds = "";
           String[] reviewers = currLang.getReviewers();

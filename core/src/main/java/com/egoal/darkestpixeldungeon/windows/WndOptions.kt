@@ -28,8 +28,12 @@ import com.egoal.darkestpixeldungeon.ui.RenderedTextMultiline
 import com.egoal.darkestpixeldungeon.scenes.PixelScene
 import com.egoal.darkestpixeldungeon.ui.Window
 import com.watabou.noosa.Image
+import com.watabou.input.Keys
+import com.badlogic.gdx.Input
 
 open class WndOptions : Window {
+    private val optionButtons = ArrayList<RedButton>()
+    private var selectedIndex = 0
     constructor(title: String, message: String, vararg options: String) : super() {
 
         val width = if (DarkestPixelDungeon.landscape()) WIDTH_L else WIDTH_P
@@ -84,18 +88,43 @@ open class WndOptions : Window {
         var pos = pos
         for (i in options.indices) {
             val btn = object : RedButton(options[i]) {
-                override fun onClick() {
+                public override fun onClick() {
                     onSelect(i)
-                    hide()
+                    if (hideOnSelect()) hide()
                 }
             }
+            optionButtons += btn
             btn.setRect(MARGIN.toFloat(), pos, (width - MARGIN * 2).toFloat(), BUTTON_HEIGHT.toFloat())
             add(btn)
 
             pos += (BUTTON_HEIGHT + MARGIN).toFloat()
         }
 
+        updateSelectionHighlight()
+
         return pos
+    }
+
+    private fun updateSelectionHighlight() {
+        optionButtons.forEachIndexed { i, button ->
+            button.textColor(if (i == selectedIndex) TITLE_COLOR else 0xFFFFFF)
+        }
+    }
+
+    protected open fun hideOnSelect(): Boolean = true
+
+    override fun onSignal(key: Keys.Key): Boolean {
+        if (key.pressed && optionButtons.isNotEmpty()) {
+            when (key.code) {
+                Input.Keys.UP -> selectedIndex = (selectedIndex - 1 + optionButtons.size) % optionButtons.size
+                Input.Keys.DOWN -> selectedIndex = (selectedIndex + 1) % optionButtons.size
+                Input.Keys.ENTER -> { onSelect(selectedIndex); if (hideOnSelect()) hide(); return true }
+                else -> return super.onSignal(key)
+            }
+            updateSelectionHighlight()
+            return true
+        }
+        return super.onSignal(key)
     }
 
     companion object {

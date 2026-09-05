@@ -178,12 +178,14 @@ android      Android Launcher、资源与 Android 平台服务
 
 ### M7：迁移完成后的现代功能增强
 
+M7 新增实现使用 Kotlin；为兼容既有 Noosa/上游结构而调整的 Java 底层入口除外。
+
 | 状态 | 工作项 | 主要参考 | 验收标准 |
 |---|---|---|---|
 | [ ] | 评估并移植 Radish 的动态字体切换修复 | `modern-engine` | 中英文及目标语言可运行时切换 |
-| [ ] | 移植 Radish 的 Shader 修复和 `GlslShaderScript` 资源加载模式 | `modern-engine` | Android/Desktop 编译结果和视觉一致 |
-| [ ] | 建立 Shader 注册、Uniform 更新和资源恢复机制 | Radish + NoosaScript | 切换场景和恢复上下文后仍有效 |
-| [ ] | 建立 FrameBuffer 全屏后处理管线 | LibGDX 后端 | 可开关的恒等滤镜不改变原画面 |
+| [-] | 移植 Radish 的 Shader 修复和资源加载模式 | `modern-engine` | Kotlin 资源加载和 Sprite Shader 首批实现完成；等待 Android/Desktop 视觉验收 |
+| [-] | 建立 Shader 注册、Uniform 更新和资源恢复机制 | Radish + NoosaScript | Sprite 参数更新入口完成；等待暂停恢复验收 |
+| [-] | 建立 FrameBuffer 地图后处理管线 | LibGDX 后端 | 地图与 UI 分层及恒等滤镜完成；等待双端视觉验收 |
 | [ ] | 支持滤镜链、强度参数和低性能降级 | 新增底层能力 | 关闭后无额外视觉副作用 |
 | [ ] | 为 Tweener、粒子和屏幕动画定义扩展点 | 现有 Noosa 动画 | 新效果无需侵入游戏主循环 |
 

@@ -30,6 +30,7 @@ import com.egoal.darkestpixeldungeon.messages.M
 import com.egoal.darkestpixeldungeon.messages.Messages
 import com.egoal.darkestpixeldungeon.sprites.TrapSprite
 import com.watabou.noosa.audio.Sample
+import com.watabou.noosa.Game
 import com.watabou.noosa.tweeners.AlphaTweener
 import com.watabou.utils.Bundlable
 import com.watabou.utils.Bundle
@@ -58,9 +59,13 @@ abstract class Trap : Bundlable {
     fun reveal(): Trap {
         visible = true
         if (hasSprite && !sprite.visible) {
-            sprite.visible = true
-            sprite.alpha(0f)
-            sprite.parent.add(AlphaTweener(sprite, 1f, 0.6f))
+            Game.runOnRenderThread {
+                if (hasSprite && !sprite.visible && sprite.parent != null) {
+                    sprite.visible = true
+                    sprite.alpha(0f)
+                    sprite.parent.add(AlphaTweener(sprite, 1f, 0.6f))
+                }
+            }
         }
         return this
     }

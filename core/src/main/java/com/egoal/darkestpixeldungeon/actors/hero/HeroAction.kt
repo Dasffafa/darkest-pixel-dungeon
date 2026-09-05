@@ -51,6 +51,7 @@ import com.egoal.darkestpixeldungeon.utils.GLog
 import com.egoal.darkestpixeldungeon.windows.WndDialogue
 import com.egoal.darkestpixeldungeon.windows.WndMessage
 import com.egoal.darkestpixeldungeon.windows.WndOptions
+import com.egoal.darkestpixeldungeon.windows.WndPickUpItem
 import com.watabou.noosa.Camera
 import com.watabou.noosa.Game
 import com.watabou.noosa.audio.Sample
@@ -83,6 +84,14 @@ abstract class HeroAction(var dst: Int = 0) {
                 val heap = Dungeon.level.heaps.get(dst)
                 if (heap != null) {
                     val item = heap.peek()!!
+
+                    val terrain = Dungeon.level.map[dst]
+                    if (terrain == Terrain.DOOR || terrain == Terrain.OPEN_DOOR || heap.size() > 1) {
+                        hero.curAction = null
+                        GameScene.show(WndPickUpItem(heap, hero))
+                        return false
+                    }
+
 
                     if (item.doPickUp(hero)) {
                         heap.pickUp()

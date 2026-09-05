@@ -84,7 +84,7 @@ public class QuickSlotButton extends Button implements WndBag.Listener {
 
     slot = new ItemSlot() {
       @Override
-      protected void onClick() {
+      public void onClick() {
         QuickSlotButton.this.useItem();
       }
 
@@ -116,21 +116,35 @@ public class QuickSlotButton extends Button implements WndBag.Listener {
 
   public static void use(int slotNum) {
     if (slotNum >= 0 && slotNum < instance.length && instance[slotNum] != null) {
-      instance[slotNum].useItem();
+      QuickSlotButton button = instance[slotNum];
+      if (select(slotNum) == null) {
+        if (targeting) cancel();
+        button.onClick();
+      } else {
+        button.useItem();
+      }
     }
   }
 
   private void useItem() {
+    Item item = select(slotNum);
+    // A slot can be cleared (for example, when its item is removed) while the
+    // button or an in-progress targeting state is still present. Treat that as
+    // an empty slot instead of dereferencing a stale null item.
+    if (item == null) {
+      if (targeting) cancel();
+      return;
+    }
+
     if (targeting) {
       if (targetingSlot != slotNum) {
         cancel();
         useItem();
         return;
       }
-      int cell = lastTarget == null ? targetCell : autoAim(lastTarget, select(slotNum));
+      int cell = lastTarget == null ? targetCell : autoAim(lastTarget, item);
       GameScene.handleCell(cell != -1 ? cell : targetCell);
     } else {
-      Item item = select(slotNum);
       if (item.getUsesTargeting()) useTargeting(item);
       item.execute(Dungeon.INSTANCE.getHero());
     }
@@ -148,7 +162,7 @@ public class QuickSlotButton extends Button implements WndBag.Listener {
   }
 
   @Override
-  protected void onClick() {
+  public void onClick() {
     GameScene.selectItem(this, WndBag.Mode.QUICKSLOT, Messages.get(this, 
             "select_item"));
   }
@@ -234,37 +248,13 @@ public class QuickSlotButton extends Button implements WndBag.Listener {
   public static void moveTarget(int dx, int dy) {
     if (!targeting || targetingItem == null) return;
     int width = Dungeon.INSTANCE.getLevel().width();
-    if (lastTarget == null) {
-      int height = Dungeon.INSTANCE.getLevel().height();
-      int x = targetCell % width + dx;
-      int y = targetCell / width + dy;
-      if (x >= 0 && x < width && y >= 0 && y < height) {
-        targetCell = x + y * width;
-        showTargetCell(targetCell);
-      }
-      return;
-    }
-    List<Char> targets = availableTargets(targetingItem);
-    int fromX = lastTarget.getPos() % width;
-    int fromY = lastTarget.getPos() / width;
-    Char best = null;
-    double bestScore = Double.MAX_VALUE;
-    for (Char target : targets) {
-      if (target == lastTarget) continue;
-      int deltaX = target.getPos() % width - fromX;
-      int deltaY = target.getPos() / width - fromY;
-      int forward = deltaX * dx + deltaY * dy;
-      if (forward <= 0) continue;
-      int side = Math.abs(deltaX * dy - deltaY * dx);
-      double score = side * 1000.0 / forward + deltaX * deltaX + deltaY * deltaY;
-      if (score < bestScore) {
-        bestScore = score;
-        best = target;
-      }
-    }
-    if (best != null) {
-      lastTarget = best;
-      showTarget(lastTarget);
+    int height = Dungeon.INSTANCE.getLevel().height();
+    int x = targetCell % width + dx;
+    int y = targetCell / width + dy;
+    if (x >= 0 && x < width && y >= 0 && y < height) {
+      lastTarget = null;
+      targetCell = x + y * width;
+      showTargetCell(targetCell);
     }
   }
 

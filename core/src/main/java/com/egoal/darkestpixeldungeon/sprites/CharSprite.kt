@@ -25,6 +25,7 @@ import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.DungeonTilemap
 import com.egoal.darkestpixeldungeon.actors.Char
 import com.egoal.darkestpixeldungeon.effects.*
+import com.egoal.darkestpixeldungeon.effects.shaders.SpriteShaderEffect
 import com.egoal.darkestpixeldungeon.effects.particles.FlameParticle
 import com.egoal.darkestpixeldungeon.effects.particles.ShadowParticle
 import com.egoal.darkestpixeldungeon.effects.particles.SnowParticle
@@ -37,6 +38,7 @@ import com.egoal.darkestpixeldungeon.scenes.PixelScene
 import com.watabou.noosa.Camera
 import com.watabou.noosa.Game
 import com.watabou.noosa.MovieClip
+import com.watabou.noosa.NoosaScript
 import com.watabou.noosa.Visual
 import com.watabou.noosa.audio.Sample
 import com.watabou.noosa.particles.Emitter
@@ -50,6 +52,9 @@ import kotlin.math.min
 import kotlin.math.sqrt
 
 open class CharSprite : MovieClip(), Tweener.Listener, MovieClip.Listener {
+    var shaderEffect: SpriteShaderEffect? = null
+    var hasPendingShaderDeath: Boolean = false
+        private set
     protected lateinit var idle: Animation
     protected lateinit var run: Animation
     protected var attack: Animation? = null
@@ -97,6 +102,29 @@ open class CharSprite : MovieClip(), Tweener.Listener, MovieClip.Listener {
 
     init {
         listener = this
+    }
+
+    override fun script(): NoosaScript = shaderEffect?.prepare(this) ?: super.script()
+
+    fun beginShaderDeath(effect: SpriteShaderEffect) {
+        sleeping = false
+        paused = false
+        emo?.killAndErase()
+        emo = null
+        shaderEffect = effect
+        hasPendingShaderDeath = true
+    }
+
+    fun finishShaderDeath(effect: SpriteShaderEffect) {
+        if (shaderEffect !== effect || !hasPendingShaderDeath) return
+        shaderEffect = null
+        hasPendingShaderDeath = false
+        killAndErase()
+    }
+
+    fun clearShaderEffect() {
+        shaderEffect = null
+        hasPendingShaderDeath = false
     }
 
     open fun link(ch: Char) {
@@ -363,6 +391,8 @@ open class CharSprite : MovieClip(), Tweener.Listener, MovieClip.Listener {
     override fun update() {
         super.update()
 
+        shaderEffect?.update(this, Game.elapsed)
+
         if (paused && listener != null) {
             listener.onComplete(curAnim)
         }
@@ -423,6 +453,7 @@ open class CharSprite : MovieClip(), Tweener.Listener, MovieClip.Listener {
     }
 
     override fun kill() {
+        clearShaderEffect()
         super.kill()
 
         emo?.killAndErase()

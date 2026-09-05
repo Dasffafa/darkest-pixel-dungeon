@@ -61,13 +61,13 @@ public class InputHandler extends InputAdapter {
 
     @Override
     public boolean touchDown(int screenX, int screenY, int pointer, int button) {
-        queueTouch(screenX, screenY, pointer, true);
+        queueTouch(screenX, screenY, pointer, true, button);
         return true;
     }
 
     @Override
     public boolean touchUp(int screenX, int screenY, int pointer, int button) {
-        queueTouch(screenX, screenY, pointer, false);
+        queueTouch(screenX, screenY, pointer, false, button);
         return true;
     }
 
@@ -96,10 +96,14 @@ public class InputHandler extends InputAdapter {
     }
 
     private void queueTouch(int screenX, int screenY, int pointer, boolean down) {
+        queueTouch(screenX, screenY, pointer, down, 0);
+    }
+
+    private void queueTouch(int screenX, int screenY, int pointer, boolean down, int button) {
         screenX = toGameX(screenX);
         screenY = toGameY(screenY);
         synchronized (touchEvents) {
-            touchEvents.add(new Touchscreen.Touch(screenX, screenY, pointer, down));
+            touchEvents.add(new Touchscreen.Touch(screenX, screenY, pointer, down, button));
         }
     }
 

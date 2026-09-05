@@ -50,7 +50,7 @@ open class PerkSlot(protected val perk: Perk) : Button() {
         topRight.y = y // - (height - topRight.height())
     }
 
-    override fun onClick() {
+    public override fun onClick() {
         GameScene.show(WndMessage(perk.description()))
     }
 

@@ -80,7 +80,7 @@ public class ActionIndicator extends Tag {
   }
 
   @Override
-  protected void onClick() {
+  public void onClick() {
     trigger();
   }
 
