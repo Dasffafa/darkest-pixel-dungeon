@@ -20,7 +20,6 @@
  */
 package com.egoal.darkestpixeldungeon.windows
 
-import com.egoal.darkestpixeldungeon.DarkestPixelDungeon
 import com.egoal.darkestpixeldungeon.items.Catalog
 import com.egoal.darkestpixeldungeon.items.scrolls.Scroll
 import com.egoal.darkestpixeldungeon.ui.RedButton
@@ -37,7 +36,6 @@ import com.egoal.darkestpixeldungeon.scenes.PixelScene
 import com.egoal.darkestpixeldungeon.sprites.ItemSprite
 import com.egoal.darkestpixeldungeon.sprites.ItemSpriteSheet
 import com.egoal.darkestpixeldungeon.ui.Window
-import com.egoal.darkestpixeldungeon.utils.GLog
 import com.watabou.noosa.ColorBlock
 import com.watabou.noosa.ui.Component
 

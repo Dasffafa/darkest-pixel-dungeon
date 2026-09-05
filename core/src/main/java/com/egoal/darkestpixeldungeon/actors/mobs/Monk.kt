@@ -67,16 +67,20 @@ open class Monk : Mob() {
             if (weapon != null && weapon !is Knuckles && !weapon.cursed) {
                 if (hitsToDisarm <= 0) hitsToDisarm = Random.NormalIntRange(3, 7)
 
-                if (--hitsToDisarm == 0 && hero.belongings.weapon !is BoethiahsBlade) {
-                    hero.belongings.weapon = null
-                    Dungeon.quickslot.clearItem(weapon)
-                    weapon.updateQuickslot()
+                if (--hitsToDisarm == 0) {
+                    if (weapon is BoethiahsBlade) {
+                        GLog.w(Messages.get(weapon, "resists"))
+                    } else {
+                        hero.belongings.weapon = null
+                        Dungeon.quickslot.clearItem(weapon)
+                        weapon.updateQuickslot()
 
-                    val ops = hero.pos + (hero.pos - pos)
-                    val dst = if (Level.passable[ops] && Actor.findChar(ops) == null) ops else hero.pos
+                        val ops = hero.pos + (hero.pos - pos)
+                        val dst = if (Level.passable[ops] && Actor.findChar(ops) == null) ops else hero.pos
 
-                    Dungeon.level.drop(weapon, dst).sprite.drop()
-                    GLog.w(Messages.get(this, "disarm", weapon.name()))
+                        Dungeon.level.drop(weapon, dst).sprite.drop()
+                        GLog.w(Messages.get(this, "disarm", weapon.name()))
+                    }
                 }
             }
         }

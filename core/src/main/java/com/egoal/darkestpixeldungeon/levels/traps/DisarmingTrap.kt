@@ -29,6 +29,7 @@ import com.egoal.darkestpixeldungeon.items.Heap
 import com.egoal.darkestpixeldungeon.items.Item
 import com.egoal.darkestpixeldungeon.items.KindOfWeapon
 import com.egoal.darkestpixeldungeon.items.weapon.melee.Knuckles
+import com.egoal.darkestpixeldungeon.items.weapon.melee.BoethiahsBlade
 import com.egoal.darkestpixeldungeon.messages.Messages
 import com.egoal.darkestpixeldungeon.scenes.GameScene
 import com.egoal.darkestpixeldungeon.sprites.TrapSprite
@@ -66,6 +67,12 @@ class DisarmingTrap : Trap() {
             val weapon = hero.belongings.weapon
 
             if (weapon != null && weapon !is Knuckles && !weapon.cursed) {
+
+                if (weapon is BoethiahsBlade) {
+                    GLog.w(Messages.get(weapon, "resists"))
+                    CellEmitter.get(pos).burst(Speck.factory(Speck.LIGHT), 4)
+                    return
+                }
 
                 val cell = Dungeon.level.randomRespawnCell()
                 if (cell != -1) {
