@@ -846,6 +846,8 @@ class Hero : Char() {
         }
 
         if (newFound) {
+            // Refresh rendered visibility when Telepath detects a newly sensed enemy.
+            Dungeon.observe()
             interrupt()
             resting = false
         }

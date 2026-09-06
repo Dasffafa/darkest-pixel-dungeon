@@ -24,7 +24,7 @@ class Monument : NPC.Unbreakable() {
 
     override fun interact(): Boolean {
         if (!activated && Dungeon.hero.lvl == 1) //todo: rework this
-            GameScene.show(object : WndSelectChallenge() {
+            GameScene.show { object : WndSelectChallenge() {
                 override fun activeChallenges(challenges: List<Challenge>) {
                     if (challenges.isNotEmpty()) {
                         val hero = Dungeon.hero
@@ -40,7 +40,7 @@ class Monument : NPC.Unbreakable() {
 
                     hide()
                 }
-            })
+            } }
 
         return false
     }

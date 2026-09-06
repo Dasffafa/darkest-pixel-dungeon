@@ -372,7 +372,12 @@ enum class HeroClass(private val title: String, vararg subclasses: HeroSubClass)
         MeadWine().identify().collect()
 
         hero.heroPerk.add(IntendedTransportation())
-
+        Dungeon.quickslot.setSlot(6, ScrollOfUpgrade().apply {
+            quantity(99).identify().collect()
+        })
+        Dungeon.quickslot.setSlot(6, PotionOfStrength().apply {
+            quantity(99).identify().collect()
+        })
         Dungeon.quickslot.setSlot(6, FlyCutter().apply {
             quantity(99).identify().collect()
         })

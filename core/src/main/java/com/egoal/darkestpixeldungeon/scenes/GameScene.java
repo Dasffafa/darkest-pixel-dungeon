@@ -116,6 +116,7 @@ import java.util.ArrayList;
 import java.util.Locale;
 import java.util.function.DoubleUnaryOperator;
 import java.util.function.Supplier;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
 public class GameScene extends PixelScene {
@@ -472,6 +473,11 @@ public class GameScene extends PixelScene {
       if (!key.pressed) return true;
     }
     if (!key.pressed) return false;
+
+    // Windows own all input while they are visible. This is especially
+    // important for held movement keys: without this guard a key that opened
+    // a dialogue could keep selecting cells behind the window.
+    if (hasOpenWindow()) return true;
     if (key.code == com.badlogic.gdx.Input.Keys.GRAVE) {
       Toolbar.switchQuickSlotTabFromKey();
       return true;
@@ -573,6 +579,7 @@ public class GameScene extends PixelScene {
   }
 
   private boolean hasOpenWindow() {
+    if (windowPending.get()) return true;
     for (Gizmo member : members) {
       if (member instanceof Window && member.alive) return true;
     }
@@ -594,6 +601,15 @@ public class GameScene extends PixelScene {
   }
 
   private void updateHeldInput() {
+    if (hasOpenWindow()) {
+      heldPanX = 0;
+      heldPanY = 0;
+      if (heldMoveKey != -1) {
+        heldMoveKey = -1;
+        Dungeon.INSTANCE.getHero().stopContinuousMoving();
+      }
+      return;
+    }
     if (heldPanX != 0 || heldPanY != 0) {
       Camera.main.target = null;
       float maxX = Math.max(0, Dungeon.INSTANCE.getLevel().width() * DungeonTilemap.SIZE - Camera.main.width);
@@ -647,6 +663,8 @@ public class GameScene extends PixelScene {
   }
 
   private Thread t;
+  /** Set before an asynchronous window handoff so input cannot slip through. */
+  private final AtomicBoolean windowPending = new AtomicBoolean(false);
   private int heldMoveKey = -1;
   private int heldPanX;
   private int heldPanY;
@@ -989,13 +1007,38 @@ public class GameScene extends PixelScene {
   }
 
   public static void show(Window wnd) {
-    cancelCellSelector();
-    scene.addToFront(wnd);
+    if (wnd == null) return;
+    if (scene == null || !scene.windowPending.compareAndSet(false, true)) {
+      wnd.destroy();
+      return;
+    }
+    com.watabou.noosa.Game.runOnRenderThread(() -> {
+      if (scene == null) {
+        wnd.destroy();
+        return;
+      }
+      cancelCellSelector();
+      scene.addToFront(wnd);
+      scene.windowPending.set(false);
+    });
   }
 
-  /** Creates and attaches a window on the LibGDX render thread. */
+  /** Queues window construction and attachment on the LibGDX render thread. */
   public static void show(Supplier<? extends Window> factory) {
-    com.watabou.noosa.Game.runOnRenderThreadAndWait(() -> show(factory.get()));
+    if (factory == null) return;
+    if (scene == null || !scene.windowPending.compareAndSet(false, true)) return;
+    com.watabou.noosa.Game.runOnRenderThread(() -> {
+      try {
+        if (scene == null) return;
+        Window wnd = factory.get();
+        if (wnd != null) {
+          cancelCellSelector();
+          scene.addToFront(wnd);
+        }
+      } finally {
+        if (scene != null) scene.windowPending.set(false);
+      }
+    });
   }
 
   public static void updateFog() {
@@ -1118,7 +1161,7 @@ public class GameScene extends PixelScene {
                                             WndBag.lastBag(listener, mode,
                                                     title);
 
-    scene.addToFront(wnd);
+    show(wnd);
 
     return wnd;
   }
@@ -1128,7 +1171,7 @@ public class GameScene extends PixelScene {
     cancelCellSelector();
     WndBag wnd = new WndBag(Dungeon.INSTANCE.getHero().getBelongings().getBackpack(), listener,
             title, filter);
-    scene.addToFront(wnd);
+    show(wnd);
 
     return wnd;
   }

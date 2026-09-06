@@ -115,8 +115,15 @@ public class QuickSlotButton extends Button implements WndBag.Listener {
   }
 
   public static void use(int slotNum) {
+    // Keyboard shortcuts can arrive faster than the actor turn completes.
+    // Match the toolbar's disabled state and never execute an item while the
+    // hero is busy, otherwise a rapid press can reuse a detached stack item.
+    if (Dungeon.INSTANCE.isHeroNull() || !Dungeon.INSTANCE.getHero().getReady()) {
+      return;
+    }
     if (slotNum >= 0 && slotNum < instance.length && instance[slotNum] != null) {
       QuickSlotButton button = instance[slotNum];
+      if (!button.active) return;
       if (select(slotNum) == null) {
         if (targeting) cancel();
         button.onClick();
@@ -127,6 +134,10 @@ public class QuickSlotButton extends Button implements WndBag.Listener {
   }
 
   private void useItem() {
+    // Targeting items have already been consumed when their action starts.
+    // Re-clicking the same slot while waiting for a destination must not
+    // execute the item a second time.
+    if (targeting && targetingSlot == slotNum) return;
     Item item = select(slotNum);
     // A slot can be cleared (for example, when its item is removed) while the
     // button or an in-progress targeting state is still present. Treat that as
