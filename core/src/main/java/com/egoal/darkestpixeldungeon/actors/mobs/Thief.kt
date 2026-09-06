@@ -31,6 +31,7 @@ import com.egoal.darkestpixeldungeon.items.Item
 import com.egoal.darkestpixeldungeon.items.artifacts.MasterThievesArmband
 import com.egoal.darkestpixeldungeon.items.unclassified.Gold
 import com.egoal.darkestpixeldungeon.items.unclassified.Honeypot
+import com.egoal.darkestpixeldungeon.items.weapon.melee.BoethiahsBlade
 import com.egoal.darkestpixeldungeon.items.weapon.melee.RedHandleDagger
 import com.egoal.darkestpixeldungeon.messages.Messages
 import com.egoal.darkestpixeldungeon.sprites.CharSprite
@@ -103,6 +104,15 @@ open class Thief : Mob() {
     protected open fun steal(hero: Hero): Boolean {
 
         val item = hero.belongings.randomUnequipped()
+
+        if (item is BoethiahsBlade) {
+            GLog.w(Messages.get(Thief::class.java, "boethiahs_blade"))
+            takeDamage(
+                    Damage(0, hero, this)
+                            .setAdditionalDamage(Damage.Element.Shadow, Random.IntRange(6, 12))
+            )
+            return false
+        }
 
         if (item != null && !item.unique && item.level() < 1) {
 
