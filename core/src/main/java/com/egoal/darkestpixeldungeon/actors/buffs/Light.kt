@@ -20,7 +20,7 @@
  */
 package com.egoal.darkestpixeldungeon.actors.buffs
 
-import android.util.Log
+import com.watabou.utils.Log
 import com.egoal.darkestpixeldungeon.actors.Char
 import com.egoal.darkestpixeldungeon.sprites.CharSprite
 import com.egoal.darkestpixeldungeon.Dungeon
@@ -62,7 +62,11 @@ open class Light : Buff() {
         duration -= Actor.TICK
         if (duration <= 0) detach()
         else {
-            luminary.pos = target.pos
+            // Modified by TheCatist: 不是每个怪物移动的时候都重新计算光源，而是只有玩家或者怪物在发光并且移动的时候才重新计算光源
+            if (luminary.pos != target.pos) {
+                luminary.pos = target.pos
+                Dungeon.level.invalidateLightMap()
+            }
         }
 
         spend(Actor.TICK)

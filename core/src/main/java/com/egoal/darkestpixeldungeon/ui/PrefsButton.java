@@ -65,7 +65,7 @@ public class PrefsButton extends Button {
   }
 
   @Override
-  protected void onClick() {
+  public void onClick() {
     parent.add(new WndSettings());
   }
 }

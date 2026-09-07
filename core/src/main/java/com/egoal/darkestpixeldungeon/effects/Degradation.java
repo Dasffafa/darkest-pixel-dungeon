@@ -20,13 +20,12 @@
  */
 package com.egoal.darkestpixeldungeon.effects;
 
-import android.opengl.GLES20;
+import com.badlogic.gdx.Gdx;
 import com.watabou.noosa.Group;
 import com.watabou.noosa.particles.PixelParticle;
 import com.watabou.utils.PointF;
 import com.watabou.utils.Random;
 
-import javax.microedition.khronos.opengles.GL10;
 
 public class Degradation extends Group {
 
@@ -113,9 +112,9 @@ public class Degradation extends Group {
 
   @Override
   public void draw() {
-    GLES20.glBlendFunc(GL10.GL_SRC_ALPHA, GL10.GL_ONE);
+    Gdx.gl.glBlendFunc(Gdx.gl.GL_SRC_ALPHA, Gdx.gl.GL_ONE);
     super.draw();
-    GLES20.glBlendFunc(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
+    Gdx.gl.glBlendFunc(Gdx.gl.GL_SRC_ALPHA, Gdx.gl.GL_ONE_MINUS_SRC_ALPHA);
   }
 
   public static class Speck extends PixelParticle {

@@ -3,10 +3,11 @@ package com.egoal.darkestpixeldungeon.levels
 import com.egoal.darkestpixeldungeon.Assets
 import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.actors.Actor
-import com.egoal.darkestpixeldungeon.actors.blobs.MagicWellWater
 import com.egoal.darkestpixeldungeon.actors.mobs.Mob
 import com.egoal.darkestpixeldungeon.actors.mobs.npcs.*
+import com.egoal.darkestpixeldungeon.effects.particles.ColdSnowParticles
 import com.egoal.darkestpixeldungeon.messages.Messages
+import com.watabou.noosa.Group
 import com.watabou.utils.PathFinder
 import com.watabou.utils.Random
 
@@ -141,6 +142,16 @@ class VillageLevel : RegularLevel() {
 //        }, xy2cell(16, 30))
 
 //        drop(MendingRune(), xy2cell(17, 5))
+    }
+
+    override fun addVisuals(): Group {
+        super.addVisuals()
+        for (cell in 0 until length()) {
+            if (passable[cell]) {
+                visuals.add(ColdSnowParticles.Snow(cell))
+            }
+        }
+        return visuals
     }
 
     private fun putMobAt(cls: Class<out Mob>, x: Int, y: Int): Mob {

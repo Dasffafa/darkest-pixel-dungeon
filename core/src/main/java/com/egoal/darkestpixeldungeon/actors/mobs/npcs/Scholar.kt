@@ -26,7 +26,7 @@ class Scholar : NPC.Unbreakable() {
 
         WndDialogue.Show(this, M.L(this, "hello"), M.L(this, "ask")) {
             WndDialogue.Show(this, M.L(this, "work"), M.L(this, "ask_pof")) {
-                GameScene.show(WndQuest(this, M.L(this, "info_pof")))
+                GameScene.show { WndQuest(this, M.L(this, "info_pof")) }
             }
         }
 

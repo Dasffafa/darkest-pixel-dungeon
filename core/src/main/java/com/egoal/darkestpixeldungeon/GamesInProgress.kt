@@ -22,7 +22,6 @@ package com.egoal.darkestpixeldungeon
 
 import com.egoal.darkestpixeldungeon.actors.hero.HeroClass
 import com.egoal.darkestpixeldungeon.actors.hero.HeroSubClass
-import com.watabou.noosa.Game
 import java.io.IOException
 import java.util.*
 
@@ -78,18 +77,18 @@ object GamesInProgress {
     fun delete(slot: Int, deleteLevels: Boolean, deleteBackup: Boolean) {
         progresses[slot] = null
 
-        Game.instance.deleteFile(gameFile(slot))
+        com.watabou.utils.FileUtils.deleteFile(gameFile(slot))
 
         if (deleteLevels) {
             var depth = 0
-            while (Game.instance.deleteFile(depthFile(slot, depth))) {
+            while (com.watabou.utils.FileUtils.deleteFile(depthFile(slot, depth))) {
                 depth++
             }
         }
 
         if (deleteBackup) {
-            Game.instance.deleteFile(backupGameFile(slot))
-            Game.instance.deleteFile(backupDepthFile(slot))
+            com.watabou.utils.FileUtils.deleteFile(backupGameFile(slot))
+            com.watabou.utils.FileUtils.deleteFile(backupDepthFile(slot))
         }
     }
 

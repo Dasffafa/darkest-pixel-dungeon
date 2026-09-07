@@ -142,6 +142,8 @@ enum class HeroSubClass(private val title: String) {
                     add_perk(PolearmMaster())
                     addSpecial(hero, Penetration())
                 }
+
+                NONE, FREERUNNER, SNIPER, WARDEN, WINEBIBBER -> {}
             }
         }
 

@@ -29,7 +29,6 @@ import com.egoal.darkestpixeldungeon.items.bags.ScrollHolder
 import com.egoal.darkestpixeldungeon.items.bags.WandHolster
 import com.egoal.darkestpixeldungeon.items.unclassified.GoldenClaw
 import com.egoal.darkestpixeldungeon.messages.M
-import com.watabou.noosa.Game
 import com.watabou.utils.Bundle
 import java.io.IOException
 
@@ -109,16 +108,12 @@ enum class Challenge {
             val bundle = Bundle()
             bundle.put(CHALLENGE, challengePassed.map { it.toString() }.toTypedArray())
 
-            val fout = Game.instance.openFileOutput(CHALLENGE_FILE, Game.MODE_PRIVATE)
-            Bundle.write(bundle, fout)
-            fout.close()
+            com.watabou.utils.FileUtils.bundleToFile(CHALLENGE_FILE, bundle)
         }
 
         fun Load() {
             try {
-                val fin = Game.instance.openFileInput(CHALLENGE_FILE)
-                val bundle = Bundle.read(fin)
-                fin.close()
+                val bundle = com.watabou.utils.FileUtils.bundleFromFile(CHALLENGE_FILE)
 
                 if (bundle.contains(CHALLENGE)) {
                     challengePassed.clear()

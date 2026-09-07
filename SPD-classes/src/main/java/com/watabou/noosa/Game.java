@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2016 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,323 +21,270 @@
 
 package com.watabou.noosa;
 
-import java.util.ArrayList;
-
-import javax.microedition.khronos.egl.EGLConfig;
-import javax.microedition.khronos.opengles.GL10;
-
+import com.badlogic.gdx.ApplicationListener;
+import com.badlogic.gdx.Gdx;
 import com.watabou.glscripts.Script;
 import com.watabou.gltextures.TextureCache;
 import com.watabou.glwrap.Vertexbuffer;
+import com.watabou.input.InputHandler;
 import com.watabou.input.Keys;
-import com.watabou.input.Touchscreen;
 import com.watabou.noosa.audio.Music;
 import com.watabou.noosa.audio.Sample;
-import com.watabou.utils.BitmapCache;
 import com.watabou.utils.SystemTime;
+import com.watabou.utils.PlatformSupport;
 
-import android.annotation.SuppressLint;
-import android.app.Activity;
-import android.content.pm.PackageManager.NameNotFoundException;
-import android.media.AudioManager;
-import android.opengl.GLES20;
-import android.opengl.GLSurfaceView;
-import android.os.Bundle;
-import android.os.Vibrator;
-import android.util.DisplayMetrics;
-import android.view.KeyEvent;
-import android.view.MotionEvent;
-import android.view.SurfaceHolder;
-import android.view.View;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
 
-public class Game extends Activity implements GLSurfaceView.Renderer, View.OnTouchListener {
+public class Game implements ApplicationListener {
 
-	public static Game instance;
-	
-	// Actual size of the screen
-	public static int width;
-	public static int height;
-	
-	// Density: mdpi=1, hdpi=1.5, xhdpi=2...
-	public static float density = 1;
-	
-	public static String version;
-	public static int versionCode;
-	
-	// Current scene
-	protected Scene scene;
-	// New scene we are going to switch to
-	protected Scene requestedScene;
-	// true if scene switch is requested
-	protected boolean requestedReset = true;
-	// callback to perform logic during scene change
-	protected SceneChangeCallback onChange;
-	// New scene class
-	protected Class<? extends Scene> sceneClass;
-	
-	// Current time in milliseconds
-	protected long now;
-	// Milliseconds passed since previous update
-	protected long step;
-	
-	public static float timeScale = 1f;
-	public static float elapsed = 0f;
-	public static float timeTotal = 0f;
-	
-	protected GLSurfaceView view;
-	protected SurfaceHolder holder;
-	
-	// Accumulated touch events
-	protected ArrayList<MotionEvent> motionEvents = new ArrayList<MotionEvent>();
-	
-	// Accumulated key events
-	protected ArrayList<KeyEvent> keysEvents = new ArrayList<KeyEvent>();
-	
-	public Game( Class<? extends Scene> c ) {
-		super();
-		sceneClass = c;
-	}
-	
-	@Override
-	protected void onCreate( Bundle savedInstanceState ) {
-		super.onCreate( savedInstanceState );
-		
-		BitmapCache.context = TextureCache.context = instance = this;
-		
-		DisplayMetrics m = new DisplayMetrics();
-		getWindowManager().getDefaultDisplay().getMetrics( m );
-		density = m.density;
-		
-		try {
-			version = getPackageManager().getPackageInfo( getPackageName(), 0 ).versionName;
-		} catch (NameNotFoundException e) {
-			version = "???";
-		}
-		try {
-			versionCode = getPackageManager().getPackageInfo( getPackageName(), 0 ).versionCode;
-		} catch (NameNotFoundException e) {
-			versionCode = 0;
-		}
-		
-		setVolumeControlStream( AudioManager.STREAM_MUSIC );
-		
-		view = new GLSurfaceView( this );
-		view.setEGLContextClientVersion( 2 );
-		view.setEGLConfigChooser( 5, 6, 5, 0, 0, 0 );
-		view.setRenderer( this );
-		view.setOnTouchListener( this );
-		setContentView( view );
-	}
-	
-	@Override
-	public void onResume() {
-		super.onResume();
-		
-		now = 0;
-		view.onResume();
-		
-		Music.INSTANCE.resume();
-		Sample.INSTANCE.resume();
-	}
-	
-	@Override
-	public void onPause() {
-		super.onPause();
-		
-		if (scene != null) {
-			scene.pause();
-		}
-		
-		view.onPause();
-		Script.reset();
-		
-		Music.INSTANCE.pause();
-		Sample.INSTANCE.pause();
-	}
-	
-	@Override
-	public void onDestroy() {
-		super.onDestroy();
-		destroyGame();
-		
-		Music.INSTANCE.mute();
-		Sample.INSTANCE.reset();
-	}
+    public static Game instance;
 
-	@SuppressLint({ "Recycle", "ClickableViewAccessibility" })
-	@Override
-	public boolean onTouch( View view, MotionEvent event ) {
-		synchronized (motionEvents) {
-			motionEvents.add( MotionEvent.obtain( event ) );
-		}
-		return true;
-	}
-	
-	@Override
-	public boolean onKeyDown( int keyCode, KeyEvent event ) {
-		
-		if (keyCode != Keys.BACK &&
-				keyCode != Keys.MENU) {
-			return false;
-		}
-		
-		synchronized (motionEvents) {
-			keysEvents.add( event );
-		}
-		return true;
-	}
-	
-	@Override
-	public boolean onKeyUp( int keyCode, KeyEvent event ) {
+    public static int dispWidth;
+    public static int dispHeight;
+    public static int width;
+    public static int height;
+    public static float density = 1;
+    public static String version;
+    public static int versionCode;
+    public static PlatformSupport platform;
 
-		if (keyCode != Keys.BACK &&
-				keyCode != Keys.MENU) {
-			return false;
-		}
-		
-		synchronized (motionEvents) {
-			keysEvents.add( event );
-		}
-		return true;
-	}
-	
-	@Override
-	public void onDrawFrame( GL10 gl ) {
-		
-		if (width == 0 || height == 0) {
-			return;
-		}
-		
-		SystemTime.tick();
-		long rightNow = SystemTime.now;
-		step = (now == 0 ? 0 : rightNow - now);
-		now = rightNow;
-		
-		step();
+    protected Scene scene;
+    protected Scene requestedScene;
+    protected boolean requestedReset = true;
+    protected SceneChangeCallback onChange;
+    protected static Class<? extends Scene> sceneClass;
 
-		NoosaScript.get().resetCamera();
-		NoosaScriptNoLighting.get().resetCamera();
-		GLES20.glDisable( GLES20.GL_SCISSOR_TEST );
-		GLES20.glClear( GLES20.GL_COLOR_BUFFER_BIT );
-		draw();
-	}
+    protected long now;
+    protected long step;
 
-	@Override
-	public void onSurfaceChanged( GL10 gl, int width, int height ) {
+    public static float timeScale = 1f;
+    public static float elapsed = 0f;
+    public static float timeTotal = 0f;
 
-		GLES20.glViewport(0, 0, width, height);
+    protected InputHandler inputHandler;
+    private boolean paused;
+    private Thread renderThread;
 
-		if (height != Game.height || width != Game.width) {
+    public Game(Class<? extends Scene> initialScene) {
+        this(initialScene, new PlatformSupport());
+    }
 
-			Game.width = width;
-			Game.height = height;
+    public Game(Class<? extends Scene> initialScene, PlatformSupport platformSupport) {
+        sceneClass = initialScene;
+        instance = this;
+        platform = platformSupport;
+    }
 
-			resetScene();
-		}
-	}
+    public boolean isPaused() {
+        return paused;
+    }
 
-	@Override
-	public void onSurfaceCreated( GL10 gl, EGLConfig config ) {
-		GLES20.glEnable( GL10.GL_BLEND );
-		GLES20.glBlendFunc( GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA );
+    @Override
+    public void create() {
+        renderThread = Thread.currentThread();
+        density = Gdx.graphics.getDensity();
+        dispWidth = Gdx.graphics.getDisplayMode().width;
+        dispHeight = Gdx.graphics.getDisplayMode().height;
 
-		//refreshes texture and vertex data stored on the gpu
-		TextureCache.reload();
-		RenderedText.reloadCache();
-		Vertexbuffer.refreshAllBuffers();
-	}
-	
-	protected void destroyGame() {
-		if (scene != null) {
-			scene.destroy();
-			scene = null;
-		}
-		
-		//instance = null;
-	}
-	
-	public static void resetScene() {
-		switchScene( instance.sceneClass );
-	}
+        inputHandler = new InputHandler();
+        Gdx.input.setInputProcessor(inputHandler);
+        Gdx.input.setCatchKey(Keys.BACK, true);
+        Gdx.input.setCatchKey(Keys.MENU, true);
 
-	public static void switchScene(Class<? extends Scene> c) {
-		switchScene(c, null);
-	}
-	
-	public static void switchScene(Class<? extends Scene> c, SceneChangeCallback callback) {
-		instance.sceneClass = c;
-		instance.requestedReset = true;
-		instance.onChange = callback;
-	}
-	
-	public static Scene scene() {
-		return instance.scene;
-	}
-	
-	protected void step() {
-		
-		if (requestedReset) {
-			requestedReset = false;
+        Gdx.gl.glEnable(Gdx.gl.GL_BLEND);
+        Gdx.gl.glBlendFunc(Gdx.gl.GL_SRC_ALPHA, Gdx.gl.GL_ONE_MINUS_SRC_ALPHA);
 
-			try {
-				requestedScene = sceneClass.newInstance();
-				switchScene();
-			} catch (InstantiationException e){
-				e.printStackTrace();
-			} catch (IllegalAccessException e) {
-				e.printStackTrace();
-			}
+        TextureCache.reload();
+        RenderedText.reloadCache();
+        Vertexbuffer.refreshAllBuffers();
+    }
 
-		}
-		
-		update();
-	}
-	
-	protected void draw() {
-		scene.draw();
-	}
-	
-	protected void switchScene() {
+    @Override
+    public void resize(int width, int height) {
+        Gdx.gl.glViewport(0, 0, width, height);
+        dispWidth = width;
+        dispHeight = height;
 
-		Camera.reset();
-		
-		if (scene != null) {
-			scene.destroy();
-		}
-		scene = requestedScene;
-		if (onChange != null) onChange.beforeCreate();
-		scene.create();
-		if (onChange != null) onChange.afterCreate();
-		onChange = null;
-		
-		Game.elapsed = 0f;
-		Game.timeScale = 1f;
-		Game.timeTotal = 0f;
-	}
-	
-	protected void update() {
-		Game.elapsed = Game.timeScale * step * 0.001f;
-		Game.timeTotal += Game.elapsed;
-		
-		synchronized (motionEvents) {
-			Touchscreen.processTouchEvents( motionEvents );
-			motionEvents.clear();
-		}
-		synchronized (keysEvents) {
-			Keys.processTouchEvents( keysEvents );
-			keysEvents.clear();
-		}
-		
-		scene.update();
-		Camera.updateAll();
-	}
-	
-	public static void vibrate( int milliseconds ) {
-		((Vibrator)instance.getSystemService( VIBRATOR_SERVICE )).vibrate( milliseconds );
-	}
+        if (height != Game.height || width != Game.width) {
+            Game.width = width;
+            Game.height = height;
+            resetScene();
+        }
+    }
 
-	public interface SceneChangeCallback{
-		void beforeCreate();
-		void afterCreate();
-	}
+    @Override
+    public void render() {
+        renderThread = Thread.currentThread();
+        if (width == 0 || height == 0) {
+            return;
+        }
+
+        SystemTime.tick();
+        long rightNow = SystemTime.now;
+        step = now == 0 ? 0 : rightNow - now;
+        now = rightNow;
+        step();
+
+        NoosaScript.get().resetCamera();
+        NoosaScriptNoLighting.get().resetCamera();
+        Gdx.gl.glDisable(Gdx.gl.GL_SCISSOR_TEST);
+        Gdx.gl.glClear(Gdx.gl.GL_COLOR_BUFFER_BIT);
+        draw();
+        Gdx.gl.glFlush();
+    }
+
+    @Override
+    public void pause() {
+        paused = true;
+        if (scene != null) {
+            scene.pause();
+        }
+        Script.reset();
+        Music.INSTANCE.pause();
+        Sample.INSTANCE.pause();
+    }
+
+    @Override
+    public void resume() {
+        paused = false;
+        now = 0;
+        if (scene != null) {
+            scene.resume();
+        }
+        Music.INSTANCE.resume();
+        Sample.INSTANCE.resume();
+    }
+
+    @Override
+    public void dispose() {
+        destroyGame();
+        Music.INSTANCE.mute();
+        Sample.INSTANCE.reset();
+    }
+
+    public void finish() {
+        Gdx.app.exit();
+    }
+
+    protected void destroyGame() {
+        if (scene != null) {
+            scene.destroy();
+            scene = null;
+        }
+    }
+
+    public static void resetScene() {
+        switchScene(sceneClass);
+    }
+
+    public static void switchScene(Class<? extends Scene> scene) {
+        switchScene(scene, null);
+    }
+
+    public static void switchScene(Class<? extends Scene> scene, SceneChangeCallback callback) {
+        sceneClass = scene;
+        instance.requestedReset = true;
+        instance.onChange = callback;
+    }
+
+    public static Scene scene() {
+        return instance.scene;
+    }
+
+    protected void step() {
+        if (requestedReset) {
+            requestedReset = false;
+            try {
+                requestedScene = sceneClass.newInstance();
+                switchScene();
+            } catch (InstantiationException | IllegalAccessException e) {
+                e.printStackTrace();
+            }
+        }
+        update();
+    }
+
+    protected void draw() {
+        if (scene != null) {
+            scene.draw();
+        }
+    }
+
+    protected void switchScene() {
+        Camera.reset();
+        if (scene != null) {
+            scene.destroy();
+        }
+        scene = requestedScene;
+        if (onChange != null) onChange.beforeCreate();
+        scene.create();
+        if (onChange != null) onChange.afterCreate();
+        onChange = null;
+
+        elapsed = 0f;
+        timeScale = 1f;
+        timeTotal = 0f;
+    }
+
+    protected void update() {
+        elapsed = timeScale * step * 0.001f;
+        timeTotal += elapsed;
+        inputHandler.processAllEvents();
+        scene.update();
+        Camera.updateAll();
+    }
+
+    public static void vibrate(int milliseconds) {
+        Gdx.input.vibrate(milliseconds);
+    }
+
+    public static boolean isOnRenderThread() {
+        return instance != null && Thread.currentThread() == instance.renderThread;
+    }
+
+    /** Queues work on the render thread without blocking the caller. */
+    public static void runOnRenderThread(Runnable runnable) {
+        if (isOnRenderThread()) {
+            runnable.run();
+        } else {
+            Gdx.app.postRunnable(runnable);
+        }
+    }
+
+    public static void runOnRenderThreadAndWait(Runnable runnable) {
+        if (isOnRenderThread()) {
+            runnable.run();
+            return;
+        }
+
+        CountDownLatch completed = new CountDownLatch(1);
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        Gdx.app.postRunnable(() -> {
+            try {
+                runnable.run();
+            } catch (Throwable throwable) {
+                failure.set(throwable);
+            } finally {
+                completed.countDown();
+            }
+        });
+
+        try {
+            completed.await();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Interrupted while waiting for the render thread", e);
+        }
+
+        Throwable throwable = failure.get();
+        if (throwable instanceof RuntimeException) throw (RuntimeException) throwable;
+        if (throwable instanceof Error) throw (Error) throwable;
+        if (throwable != null) throw new RuntimeException(throwable);
+    }
+
+    public interface SceneChangeCallback {
+        void beforeCreate();
+        void afterCreate();
+    }
 }

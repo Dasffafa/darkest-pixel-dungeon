@@ -63,7 +63,7 @@ public class RenderedTextMultiline extends Component {
     if (text != null && !text.equals("")) {
       //conversion for chinese text
 
-      chinese = text.replaceAll("\\p{Han}", "").length() != text.length();
+      chinese = text.replaceAll("\\p{IsHan}", "").length() != text.length();
 
       if (chinese) {
         tokens = Arrays.asList(text.split(""));

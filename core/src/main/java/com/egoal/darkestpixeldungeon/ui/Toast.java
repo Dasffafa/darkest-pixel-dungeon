@@ -51,7 +51,7 @@ public class Toast extends Component {
     add(bg);
 
     close = new SimpleButton(Icons.Companion.get(Icons.CLOSE)) {
-      protected void onClick() {
+      public void onClick() {
         onClose();
       }
 

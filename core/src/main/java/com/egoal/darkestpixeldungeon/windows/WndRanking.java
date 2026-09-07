@@ -225,7 +225,7 @@ public class WndRanking extends WndTabbed {
 
         PerkSlot ps = new PerkSlot(perk) {
           @Override
-          protected void onClick() {
+          public void onClick() {
             Game.scene().add(new WndMessage(perk.description()));
           }
         };
@@ -408,7 +408,7 @@ public class WndRanking extends WndTabbed {
     ;
 
     @Override
-    protected void onClick() {
+    public void onClick() {
       Game.scene().add(new WndItem(null, item));
     }
   }
@@ -456,7 +456,7 @@ public class WndRanking extends WndTabbed {
     ;
 
     @Override
-    protected void onClick() {
+    public void onClick() {
       Game.scene().add(new WndItem(null, item));
     }
   }

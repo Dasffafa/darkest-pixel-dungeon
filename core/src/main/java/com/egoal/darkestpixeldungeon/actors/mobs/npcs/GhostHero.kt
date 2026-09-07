@@ -57,7 +57,7 @@ class GhostHero(var roseLevel: Int = 0) : NPC(), Callback {
     override fun interact(): Boolean {
         if (!DriedRose.TalkedTo) {
             DriedRose.TalkedTo = true
-            GameScene.show(WndQuest(this, Messages.get(this, "introduce")))
+            GameScene.show { WndQuest(this, Messages.get(this, "introduce")) }
             return false
         } else {
             // swap 

@@ -50,7 +50,7 @@ class KnightCore : Special() {
     }
 
     override fun use(hero: Hero) {
-        GameScene.show(WndActionList(ItemSprite(image, null), name, actions))
+        GameScene.show { WndActionList(ItemSprite(image, null), name, actions) }
     }
 
     fun onEnemySlayed(ch: Char) {

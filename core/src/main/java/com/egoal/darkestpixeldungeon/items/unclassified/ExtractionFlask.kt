@@ -33,6 +33,9 @@ import com.egoal.darkestpixeldungeon.utils.GLog
 import com.egoal.darkestpixeldungeon.windows.IconTitle
 import com.egoal.darkestpixeldungeon.windows.WndBag
 import com.egoal.darkestpixeldungeon.windows.WndMessage
+import com.watabou.input.Keys
+import com.badlogic.gdx.Input
+import com.watabou.utils.DeviceCompat
 import com.egoal.darkestpixeldungeon.windows.WndOptions
 import com.watabou.noosa.NinePatch
 import com.watabou.noosa.audio.Sample
@@ -84,8 +87,8 @@ class ExtractionFlask : Item(), GreatBlueprint.Enchantable {
         super.execute(hero, action)
 
         when (action) {
-            AC_REFINE -> GameScene.show(WndCraft(this, MODE_REFINE))
-            AC_STRENGTHEN -> GameScene.show(WndCraft(this, MODE_STRENGTHEN))
+            AC_REFINE -> GameScene.show { WndCraft(this, MODE_REFINE) }
+            AC_STRENGTHEN -> GameScene.show { WndCraft(this, MODE_STRENGTHEN) }
             AC_PURIFY -> {
                 curUser = hero
                 purifyWater()
@@ -103,13 +106,15 @@ class ExtractionFlask : Item(), GreatBlueprint.Enchantable {
                 val ops = mutableListOf(AC_REFINE)
                 if (reinforced) ops.add(AC_STRENGTHEN)
                 if (enhanced) ops.add(AC_PURIFY)
-                if (ops.size == 1) GameScene.show(WndCraft(this, MODE_REFINE))
-                else GameScene.show(object : WndOptions(ItemSprite(image, null), name, "",
-                        *ops.map { M.L(ExtractionFlask::class.java, "ac_" + it) }.toTypedArray()) {
-                    override fun onSelect(index: Int) {
-                        execute(hero, ops[index])
+                if (ops.size == 1) GameScene.show { WndCraft(this, MODE_REFINE) }
+                else GameScene.show {
+                    object : WndOptions(ItemSprite(image, null), name, "",
+                            *ops.map { M.L(ExtractionFlask::class.java, "ac_" + it) }.toTypedArray()) {
+                        override fun onSelect(index: Int) {
+                            execute(hero, ops[index])
+                        }
                     }
-                })
+                }
             }
         }
     }
@@ -326,6 +331,8 @@ class ExtractionFlask : Item(), GreatBlueprint.Enchantable {
             private lateinit var btnItem_2: ItemButton
             private var btnPressed: ItemButton? = null
             private var btnCraft: RedButton
+            private var selected = 0 // 0/1: item buttons, 2: craft button
+            private var lastItem = 0
 
             init {
                 val title = IconTitle(ItemSprite(flask.image(), null), Messages.get(this, "prompt")).apply {
@@ -335,7 +342,7 @@ class ExtractionFlask : Item(), GreatBlueprint.Enchantable {
 
                 // first one be seed or potion
                 btnItem_1 = object : ItemButton() {
-                    override fun onClick() {
+                    public override fun onClick() {
                         btnPressed = btnItem_1
 
                         val bagmode = if (mode == MODE_REFINE) WndBag.Mode.SEED else WndBag.Mode.POTION
@@ -350,7 +357,7 @@ class ExtractionFlask : Item(), GreatBlueprint.Enchantable {
 
                 // second one is just seed
                 btnItem_2 = object : ItemButton() {
-                    override fun onClick() {
+                    public override fun onClick() {
                         btnPressed = btnItem_2
 
                         GameScene.selectItem(itemSelector, WndBag.Mode.SEED, Messages.get(WndCraft::class.java, "select_seed"))
@@ -359,9 +366,10 @@ class ExtractionFlask : Item(), GreatBlueprint.Enchantable {
                     setRect(btnItem_1.right() + WND_BTN_GAP, btnItem_1.top(), WND_BTN_SIZE, WND_BTN_SIZE)
                 }
                 add(btnItem_2)
+                btnItem_1.focused = true
 
                 btnCraft = object : RedButton(Messages.get(this, "done")) {
-                    override fun onClick() {
+                    public override fun onClick() {
                         if (mode == MODE_REFINE)
                             flask.refine(btnItem_1.item as Plant.Seed, btnItem_2.item as Plant.Seed)
                         else
@@ -380,6 +388,51 @@ class ExtractionFlask : Item(), GreatBlueprint.Enchantable {
                 add(btnCraft)
 
                 resize(WND_WIDTH.toInt(), btnCraft.bottom().toInt())
+            }
+
+            override fun onSignal(key: Keys.Key): Boolean {
+                if (DeviceCompat.isDesktop() && key.pressed) {
+                    when (key.code) {
+                        Input.Keys.LEFT, Input.Keys.RIGHT -> {
+                            if (selected != 2) {
+                                selected = 1 - selected
+                                updateFocus()
+                            }
+                            return true
+                        }
+                        Input.Keys.DOWN -> {
+                            if (selected != 2) {
+                                lastItem = selected
+                                selected = 2
+                                updateFocus()
+                            }
+                            return true
+                        }
+                        Input.Keys.UP -> {
+                            if (selected == 2) {
+                                selected = lastItem
+                                updateFocus()
+                            }
+                            return true
+                        }
+                        Input.Keys.ENTER -> {
+                            when (selected) {
+                                0 -> btnItem_1.onClick()
+                                1 -> btnItem_2.onClick()
+                                2 -> if (btnCraft.active) btnCraft.onClick()
+                            }
+                            return true
+                        }
+                    }
+                }
+                return super.onSignal(key)
+            }
+
+            private fun updateFocus() {
+                btnItem_1.focused = selected == 0
+                btnItem_2.focused = selected == 1
+                btnItem_1.refreshFocus(); btnItem_2.refreshFocus()
+                btnCraft.textColor(if (selected == 2) TITLE_COLOR else 0xFFFFFF)
             }
 
             private val itemSelector = WndBag.Listener { item ->
@@ -406,7 +459,7 @@ class ExtractionFlask : Item(), GreatBlueprint.Enchantable {
                     if (result == null)
                         btnCraft.enable(true)
                     else {
-                        GameScene.show(WndMessage(result))
+                        GameScene.show { WndMessage(result) }
                         btnCraft.enable(false)
                     }
                 }
@@ -431,6 +484,7 @@ class ExtractionFlask : Item(), GreatBlueprint.Enchantable {
             private lateinit var bg: NinePatch
             private lateinit var slot: ItemSlot
             var item: Item? = null
+            var focused = false
 
             override fun createChildren() {
                 super.createChildren()
@@ -448,7 +502,7 @@ class ExtractionFlask : Item(), GreatBlueprint.Enchantable {
                         bg.resetColor()
                     }
 
-                    override fun onClick() {
+                    public override fun onClick() {
                         this@ItemButton.onClick()
                     }
                 }.apply {
@@ -457,7 +511,7 @@ class ExtractionFlask : Item(), GreatBlueprint.Enchantable {
                 add(slot)
             }
 
-            protected abstract fun onClick()
+            abstract fun onClick()
 
             override fun layout() {
                 super.layout()
@@ -467,7 +521,10 @@ class ExtractionFlask : Item(), GreatBlueprint.Enchantable {
                 bg.size(width, height)
 
                 slot.setRect(x + 2, y + 2, width - 4, height - 4)
+                refreshFocus()
             }
+
+            fun refreshFocus() { if (::bg.isInitialized) bg.brightness(if (focused && DeviceCompat.isDesktop()) 1.35f else 1f) }
 
             fun item(item: Item?) {
                 this.item = item

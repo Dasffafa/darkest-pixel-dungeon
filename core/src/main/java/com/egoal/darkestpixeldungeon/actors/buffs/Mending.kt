@@ -1,6 +1,5 @@
 package com.egoal.darkestpixeldungeon.actors.buffs
 
-import android.widget.GridLayout
 
 import com.egoal.darkestpixeldungeon.actors.Char
 import com.egoal.darkestpixeldungeon.actors.hero.Hero

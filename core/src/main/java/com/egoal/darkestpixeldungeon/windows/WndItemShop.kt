@@ -1,11 +1,13 @@
 package com.egoal.darkestpixeldungeon.windows
 
 import com.egoal.darkestpixeldungeon.Assets
-import com.egoal.darkestpixeldungeon.actors.mobs.npcs.Merchant
 import com.egoal.darkestpixeldungeon.items.Item
 import com.egoal.darkestpixeldungeon.scenes.PixelScene
 import com.egoal.darkestpixeldungeon.ui.ItemSlot
 import com.egoal.darkestpixeldungeon.ui.Window
+import com.watabou.utils.DeviceCompat
+import com.badlogic.gdx.Input
+import com.watabou.input.Keys
 import com.watabou.noosa.BitmapText
 import com.watabou.noosa.ColorBlock
 import com.watabou.noosa.audio.Sample
@@ -13,6 +15,7 @@ import com.watabou.noosa.audio.Sample
 class WndItemShop : Window() {
     private val items = listOf<Item>()
     private val goodsButtons = arrayListOf<GoodsButton>()
+    private var selected = 0
 
     init {
         val it = IconTitle()
@@ -43,6 +46,10 @@ class WndItemShop : Window() {
             btn.setPos(c * (btn.width() + SLOT_MARGIN), top + r * (btn.actualHeight() + SLOT_MARGIN))
             add(btn)
             goodsButtons.add(btn)
+            if (goodsButtons.size == 1) {
+                btn.focused = true
+                btn.refreshFocus()
+            }
         }
 
         val rows = (items.size - 1) / SLOT_COLS + 1
@@ -53,9 +60,35 @@ class WndItemShop : Window() {
 
     }
 
+    override fun onSignal(key: Keys.Key): Boolean {
+        if (DeviceCompat.isDesktop() && key.pressed && goodsButtons.isNotEmpty()) {
+            var next = selected
+            when (key.code) {
+                Input.Keys.LEFT -> next--
+                Input.Keys.RIGHT -> next++
+                Input.Keys.UP -> next -= SLOT_COLS
+                Input.Keys.DOWN -> next += SLOT_COLS
+                Input.Keys.ENTER -> {
+                    goodsButtons[selected].onClick()
+                    return true
+                }
+                else -> return super.onSignal(key)
+            }
+            if (next in goodsButtons.indices) {
+                goodsButtons[selected].focused = false
+                selected = next
+                goodsButtons[selected].focused = true
+                goodsButtons[selected].refreshFocus()
+            }
+            return true
+        }
+        return super.onSignal(key)
+    }
+
     private open class GoodsButton(item: Item) : ItemSlot(item) {
         private lateinit var bg: ColorBlock
         private lateinit var price: BitmapText
+        internal var focused = false
 
         init {
 //            price.text(buyPrice(item).toString())
@@ -91,6 +124,11 @@ class WndItemShop : Window() {
 
             price.x = bg.x + bg.width() / 2f - price.width() / 2f
             price.y = bg.y + bg.height() + GAP
+            refreshFocus()
+        }
+
+        internal fun refreshFocus() {
+            bg.brightness(if (focused && DeviceCompat.isDesktop()) 1.35f else 1f)
         }
 
         override fun onTouchDown() {

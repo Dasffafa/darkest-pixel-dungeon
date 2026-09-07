@@ -157,6 +157,7 @@ class GoodAppetite : Perk() {
             HeroClass.SORCERESS -> {
                 hero.buff(Hunger::class.java)!!.satisfy(food.enery * 0.25f)
             }
+            else -> {}
         }
     }
 

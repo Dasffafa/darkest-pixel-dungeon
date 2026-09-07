@@ -145,7 +145,7 @@ class HeroSprite : CharSprite() {
         fun avatar(cl: HeroClass, armorTier: Int): Image {
             val patch = tiers().get(armorTier)
             val avatar = Image(cl.spritesheet())
-            val frame = avatar.texture.uvRect(1, 0, FRAME_WIDTH, FRAME_HEIGHT)
+            val frame = avatar.texture.uvRect(1f, 0f, FRAME_WIDTH.toFloat(), FRAME_HEIGHT.toFloat())
             frame.offset(patch.left, patch.top)
             avatar.frame(frame)
 

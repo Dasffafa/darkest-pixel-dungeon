@@ -8,13 +8,6 @@ import com.egoal.darkestpixeldungeon.actors.hero.perks.PerkImageSheet
 import com.egoal.darkestpixeldungeon.effects.PerkGain
 import com.egoal.darkestpixeldungeon.messages.M
 import com.egoal.darkestpixeldungeon.scenes.GameScene
-import com.egoal.darkestpixeldungeon.scenes.PixelScene
-import com.egoal.darkestpixeldungeon.ui.PerkSlot
-import com.egoal.darkestpixeldungeon.ui.RedButton
-import com.egoal.darkestpixeldungeon.ui.RenderedTextMultiline
-import com.egoal.darkestpixeldungeon.ui.Window
-import com.watabou.noosa.ColorBlock
-import com.watabou.utils.Bundle
 
 class WndGainNewPerk(title: String, perks: List<Perk>) : WndSelectPerk(title, perks) {
 
@@ -42,7 +35,7 @@ class WndGainNewPerk(title: String, perks: List<Perk>) : WndSelectPerk(title, pe
         Dungeon.hero.spawnedPerks.clear()
         Dungeon.hero.spawnedPerks.addAll(alterperks.map { it.newInstance() as Perk })
 
-        GameScene.show(WndGainNewPerk(M.L(WndGainNewPerk::class.java, "title"), Dungeon.hero.spawnedPerks))
+        GameScene.show { WndGainNewPerk(M.L(WndGainNewPerk::class.java, "title"), Dungeon.hero.spawnedPerks) }
     }
 
     class RandomAnotherPerk : Perk() {
@@ -50,6 +43,7 @@ class WndGainNewPerk(title: String, perks: List<Perk>) : WndSelectPerk(title, pe
     }
 
     companion object {
+        @JvmStatic
         fun Show(hero: Hero) {
             // spawn
             if (hero.spawnedPerks.isEmpty()) {
@@ -58,7 +52,7 @@ class WndGainNewPerk(title: String, perks: List<Perk>) : WndSelectPerk(title, pe
                 hero.spawnedPerks.add(RandomAnotherPerk())
             }
 
-            GameScene.show(WndGainNewPerk(M.L(WndGainNewPerk::class.java, "title"), hero.spawnedPerks))
+            GameScene.show { WndGainNewPerk(M.L(WndGainNewPerk::class.java, "title"), hero.spawnedPerks) }
         }
     }
 }

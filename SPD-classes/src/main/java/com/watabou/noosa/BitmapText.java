@@ -29,8 +29,8 @@ import com.watabou.glwrap.Matrix;
 import com.watabou.glwrap.Quad;
 import com.watabou.glwrap.Vertexbuffer;
 
-import android.graphics.Bitmap;
-import android.graphics.RectF;
+import com.badlogic.gdx.graphics.Pixmap;
+import com.watabou.utils.RectF;
 
 public class BitmapText extends Visual {
 
@@ -264,7 +264,7 @@ public class BitmapText extends Visual {
 			lineHeight = baseLine = height;
 		}
 
-		protected void splitBy( Bitmap bitmap, int height, int color, String chars ) {
+		protected void splitBy( Pixmap bitmap, int height, int color, String chars ) {
 
 			int length = chars.length();
 			
@@ -277,7 +277,7 @@ public class BitmapText extends Visual {
 		spaceMeasuring:
 			for (pos=0; pos <  width; pos++) {
 				for (int j=0; j < height; j++) {
-					if (bitmap.getPixel( pos, j ) != color) {
+					if (colorNotMatch(bitmap, pos, j, color)) {
 						break spaceMeasuring;
 					}
 				}
@@ -302,7 +302,7 @@ public class BitmapText extends Visual {
 						}
 						found = false;
 						for (int j=line; j < line + height; j++) {
-							if (bitmap.getPixel( separator, j ) != color) {
+							if (colorNotMatch(bitmap, separator, j, color)) {
 								found = true;
 								break;
 							}
@@ -320,7 +320,7 @@ public class BitmapText extends Visual {
 						}
 						found = true;
 						for (int j=line; j < line + height; j++) {
-							if (bitmap.getPixel( separator, j ) != color) {
+							if (colorNotMatch(bitmap, separator, j, color)) {
 								found = false;
 								break;
 							}
@@ -334,14 +334,22 @@ public class BitmapText extends Visual {
 			
 			lineHeight = baseLine = height( frames.get( chars.charAt( 0 ) ) );
 		}
+
+		private boolean colorNotMatch(Pixmap bitmap, int x, int y, int color) {
+			int pixel = bitmap.getPixel(x, y);
+			if ((pixel & 0xFF) == 0) {
+				return color != 0;
+			}
+			return pixel != color;
+		}
 		
-		public static Font colorMarked( Bitmap bmp, int color, String chars ) {
+		public static Font colorMarked( Pixmap bmp, int color, String chars ) {
 			Font font = new Font( TextureCache.get( bmp ) );
 			font.splitBy( bmp, bmp.getHeight(), color, chars );
 			return font;
 		}
 		 
-		public static Font colorMarked( Bitmap bmp, int height, int color, String chars ) {
+		public static Font colorMarked( Pixmap bmp, int height, int color, String chars ) {
 			Font font = new Font( TextureCache.get( bmp ) );
 			font.splitBy( bmp, height, color, chars );
 			return font;

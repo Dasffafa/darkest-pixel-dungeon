@@ -76,7 +76,7 @@ class MagesStaff(w: Wand? = null) : MeleeWeapon() {
             Item.curUser = hero
             GameScene.selectItem(wandImbuer, WndBag.Mode.WAND, M.L(this, "prompt"))
         } else if (action == AC_ZAP) {
-            if (wand == null) GameScene.show(WndItem(null, this, true))
+            if (wand == null) GameScene.show { WndItem(null, this, true) }
             else wand!!.execute(hero, AC_ZAP)
         }
     }
@@ -208,13 +208,15 @@ class MagesStaff(w: Wand? = null) : MeleeWeapon() {
                     if (level() > 0) w.level() + 1 else w.level()
                 } else level()
 
-                GameScene.show(object : WndOptions("", M.L(MagesStaff::class.java, "warning", newLevel),
-                        M.L(MagesStaff::class.java, "yes"),
-                        M.L(MagesStaff::class.java, "no")) {
-                    override fun onSelect(index: Int) {
-                        if (index == 0) applyWand(w)
+                GameScene.show {
+                    object : WndOptions("", M.L(MagesStaff::class.java, "warning", newLevel),
+                            M.L(MagesStaff::class.java, "yes"),
+                            M.L(MagesStaff::class.java, "no")) {
+                        override fun onSelect(index: Int) {
+                            if (index == 0) applyWand(w)
+                        }
                     }
-                })
+                }
             }
         }
 

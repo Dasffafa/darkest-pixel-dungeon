@@ -81,7 +81,9 @@ object Chasm {
     }
 
     fun MobFall(mob: Mob) {
-        mob.die(null)
+        // Falling is a separate removal path; passing Chasm prevents mob-specific
+        // death effects (such as the Skeleton's explosion) from being triggered.
+        mob.die(Chasm::class.java)
         (mob.sprite as MobSprite).fall()
     }
 }

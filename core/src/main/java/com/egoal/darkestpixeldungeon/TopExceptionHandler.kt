@@ -1,17 +1,15 @@
 package com.egoal.darkestpixeldungeon
 
-import android.app.Activity
-import android.util.Log
-import com.watabou.noosa.Game
+import com.badlogic.gdx.Gdx
 import com.watabou.utils.Bundle
 import java.io.IOException
 
-class TopExceptionHandler(private val app: Activity) : Thread.UncaughtExceptionHandler {
+class TopExceptionHandler : Thread.UncaughtExceptionHandler {
     private val defaultUEH = Thread.getDefaultUncaughtExceptionHandler()
 
     override fun uncaughtException(t: Thread, e: Throwable) {
         WriteErrorFile(e)
-        defaultUEH.uncaughtException(t, e)
+        defaultUEH?.uncaughtException(t, e) ?: Gdx.app.exit()
     }
 
     companion object {
@@ -35,43 +33,29 @@ class TopExceptionHandler(private val app: Activity) : Thread.UncaughtExceptionH
                 put(STR_ERROR, strError.toTypedArray()) // Log.getStackTraceString(tr))
             }
             try {
-                val fout = Game.instance.openFileOutput(ERROR_FILE, Game.MODE_PRIVATE)
-                Bundle.write(bundle, fout)
-                fout.close()
+                com.watabou.utils.FileUtils.bundleToFile(ERROR_FILE, bundle)
             } catch (ignored: IOException) {
             }
 
-            Log.e("dpd", Log.getStackTraceString(tr))
+            Gdx.app.error("dpd", "Unhandled exception", tr)
         }
 
         fun LoadErrorString(): String? = try {
-            val fin = Game.instance.openFileInput(ERROR_FILE)
-            val bundle = Bundle.read(fin)
-            fin.close()
-
-            bundle.getString(STR_ERROR)
+            com.watabou.utils.FileUtils.bundleFromFile(ERROR_FILE).getString(STR_ERROR)
         } catch (e: IOException) {
             null
         }
 
         fun LoadErrorStrings(): Array<String>? = try {
-            val fin = Game.instance.openFileInput(ERROR_FILE)
-            val bundle = Bundle.read(fin)
-            fin.close()
-            bundle.getStringArray(STR_ERROR)
+            com.watabou.utils.FileUtils.bundleFromFile(ERROR_FILE).getStringArray(STR_ERROR)
         } catch (e: IOException) {
             null
         }
 
-        fun HasErrorFile(): Boolean = try {
-            Game.instance.openFileInput(ERROR_FILE).close()
-            true
-        } catch (e: IOException) {
-            false
-        }
+        fun HasErrorFile(): Boolean = com.watabou.utils.FileUtils.fileExists(ERROR_FILE)
 
         fun DeleteErrorFile() {
-            Game.instance.deleteFile(ERROR_FILE)
+            com.watabou.utils.FileUtils.deleteFile(ERROR_FILE)
         }
 
         private const val ERROR_FILE = "error.dat"

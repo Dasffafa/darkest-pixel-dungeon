@@ -13,9 +13,14 @@ import com.watabou.noosa.Image
 import com.watabou.noosa.NinePatch
 import com.watabou.noosa.audio.Sample
 import com.watabou.noosa.ui.Button
+import com.watabou.input.Keys
+import com.badlogic.gdx.Input
 
 // refactor from wnd options
 abstract class WndDialogue(image: Image?, text: String, what: String, vararg options: String) : Window() {
+    private val optionButtons = ArrayList<OptionButton>()
+    private var selectedIndex = 0
+
     init {
         val width = if (DarkestPixelDungeon.landscape()) WIDTH_L else WIDTH_P
 
@@ -58,15 +63,39 @@ abstract class WndDialogue(image: Image?, text: String, what: String, vararg opt
                 }
                 btn.setRect(MARGIN, top, innerWidth.toFloat(), 0f)
                 add(btn)
+                optionButtons += btn
 
                 top = btn.bottom() + MARGIN
             }
+            updateSelectionHighlight()
         }
 
         resize(width, top.toInt())
     }
 
     abstract fun onSelect(idx: Int)
+
+    override fun onSignal(key: Keys.Key): Boolean {
+        if (key.pressed && optionButtons.isNotEmpty()) {
+            when (key.code) {
+                Input.Keys.UP -> selectedIndex = (selectedIndex - 1 + optionButtons.size) % optionButtons.size
+                Input.Keys.DOWN -> selectedIndex = (selectedIndex + 1) % optionButtons.size
+                Input.Keys.ENTER -> {
+                    hide()
+                    onSelect(selectedIndex)
+                    return true
+                }
+                else -> return super.onSignal(key)
+            }
+            updateSelectionHighlight()
+            return true
+        }
+        return super.onSignal(key)
+    }
+
+    private fun updateSelectionHighlight() {
+        optionButtons.forEachIndexed { index, button -> button.select(index == selectedIndex) }
+    }
 
     companion object {
         private const val WIDTH_P = 120
@@ -75,11 +104,11 @@ abstract class WndDialogue(image: Image?, text: String, what: String, vararg opt
         private const val MARGIN = 2f
 
         fun Show(mob: Mob, content: String, vararg options: String, callback: (Int) -> Unit) {
-            GameScene.show(object : WndDialogue(mob.sprite(), mob.name, content, *options) {
+            GameScene.show { object : WndDialogue(mob.sprite(), mob.name, content, *options) {
                 override fun onSelect(idx: Int) {
                     callback(idx)
                 }
-            })
+            } }
         }
 
         private const val COLOR_GRAY = 0x101010
@@ -127,6 +156,10 @@ abstract class WndDialogue(image: Image?, text: String, what: String, vararg opt
         fun enable(value: Boolean) {
             active = value
             text.hardlight(COLOR_GRAY)
+        }
+
+        fun select(value: Boolean) {
+            if (active) text.hardlight(if (value) Window.TITLE_COLOR else 0xFFFFFF)
         }
     }
 }

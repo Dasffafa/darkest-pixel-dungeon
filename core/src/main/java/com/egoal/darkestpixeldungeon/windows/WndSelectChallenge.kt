@@ -54,7 +54,7 @@ open class WndSelectChallenge : Window() {
 
         val btnInfo = object : RedButton("?") {
             override fun onClick() {
-                GameScene.show(WndOptions(challenge.title(), challenge.desc()))
+                GameScene.show { WndOptions(challenge.title(), challenge.desc()) }
             }
         }.apply {
             setRect(WIDTH - MARGIN - WIDTH_HELP_BUTTON, y, WIDTH_HELP_BUTTON, BTN_HEIGHT)

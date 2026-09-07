@@ -20,7 +20,7 @@
  */
 package com.egoal.darkestpixeldungeon.messages;
 
-import android.util.Log;
+import com.watabou.utils.Log;
 
 import com.egoal.darkestpixeldungeon.DarkestPixelDungeon;
 
@@ -93,15 +93,6 @@ public class Messages {
         String key = keys.nextElement();
         String value = bundle.getString(key);
 
-        //android 2.2 doesn't use UTF-8 by default, need to force it.
-        if (android.os.Build.VERSION.SDK_INT == 8) {
-          try {
-            value = new String(value.getBytes("ISO-8859-1"), "UTF-8");
-          } catch (Exception e) {
-            DarkestPixelDungeon.reportException(e);
-          }
-        }
-
         strings.put(key, value);
       }
     }
@@ -128,10 +119,18 @@ public class Messages {
     } else
       key = k;
 
-    if (strings.containsKey(key.toLowerCase(Locale.ENGLISH))) {
+    String normalizedKey = key.toLowerCase(Locale.ENGLISH);
+    String variantKey = getVariant(normalizedKey);
+
+    // A variant is preferred, while the original key remains the fallback.
+    if (variantKey != null && strings.containsKey(variantKey)) {
       if (args.length > 0)
-        return format(strings.get(key.toLowerCase(Locale.ENGLISH)), args);
-      else return strings.get(key.toLowerCase(Locale.ENGLISH));
+        return format(strings.get(variantKey), args);
+      else return strings.get(variantKey);
+    } else if (strings.containsKey(normalizedKey)) {
+      if (args.length > 0)
+        return format(strings.get(normalizedKey), args);
+      else return strings.get(normalizedKey);
     } else {
       //this is so child classes can inherit properties from their parents.
       //in cases where text is commonly grabbed as a utility from classes
@@ -141,10 +140,22 @@ public class Messages {
       if (c != null && c.getSuperclass() != null) {
         return get(c.getSuperclass(), k, args);
       } else {
-        Log.d("dpd", "missed string: " + k + " || " + key);
+        // Missing variants are optional and should not produce noisy diagnostics.
+        if (variantKey == null || variantKey.equals(normalizedKey)) {
+          Log.d("dpd", "missing string (" + lang.getNativeName() + "): " + key);
+        }
         return key; // missed string.
       }
     }
+  }
+
+  /**
+   * Returns the key to try before the ordinary key. Add game-wide state
+   * conditions here when a localized variant should be selected.
+   * Returning the original key (the default) preserves existing behaviour.
+   */
+  public static String getVariant(String key) {
+    return key;
   }
 
 

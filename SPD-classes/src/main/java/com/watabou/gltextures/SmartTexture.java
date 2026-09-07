@@ -21,10 +21,12 @@
 
 package com.watabou.gltextures;
 
-import android.graphics.Bitmap;
-import android.graphics.RectF;
+import com.watabou.utils.RectF;
 
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.Pixmap;
 import com.watabou.glwrap.Texture;
+import com.watabou.noosa.Game;
 
 public class SmartTexture extends Texture {
 
@@ -36,23 +38,26 @@ public class SmartTexture extends Texture {
 	
 	public int wModeH;
 	public int wModeV;
+
+	private volatile boolean filterDirty;
+	private volatile boolean wrapDirty;
 	
-	public Bitmap bitmap;
+	public Pixmap bitmap;
 	
 	public Atlas atlas;
 
 	protected SmartTexture( ) {
 		//useful for subclasses which want to manage their own texture data
-		// in cases where android.graphics.bitmap isn't fast enough.
+		// in cases where pixmap isn't fast enough.
 
 		//subclasses which use this MUST also override some mix of reload/generate/bind
 	}
 	
-	public SmartTexture( Bitmap bitmap ) {
+	public SmartTexture( Pixmap bitmap ) {
 		this( bitmap, NEAREST, CLAMP, false );
 	}
 
-	public SmartTexture( Bitmap bitmap, int filtering, int wrapping, boolean premultiplied ) {
+	public SmartTexture( Pixmap bitmap, int filtering, int wrapping, boolean premultiplied ) {
 
 		this.bitmap = bitmap;
 		width = bitmap.getWidth();
@@ -66,38 +71,51 @@ public class SmartTexture extends Texture {
 	@Override
 	protected void generate() {
 		super.generate();
-		bitmap( bitmap, premultiplied );
+		bitmap( bitmap );
 		filter( fModeMin, fModeMax );
 		wrap( wModeH, wModeV );
 	}
 
 	@Override
-	public void filter(int minMode, int maxMode) {
+	public synchronized void filter(int minMode, int maxMode) {
 		fModeMin = minMode;
 		fModeMax = maxMode;
-		if (id != -1)
-			super.filter( fModeMin = minMode, fModeMax = maxMode);
+		filterDirty = true;
+		if (id != -1 && Game.isOnRenderThread()) applyFilter();
 	}
 	
 	@Override
-	public void wrap( int s, int t ) {
+	public synchronized void wrap( int s, int t ) {
 		wModeH = s;
 		wModeV = t;
-		if (id != -1)
-			super.wrap( wModeH = s, wModeV = t );
+		wrapDirty = true;
+		if (id != -1 && Game.isOnRenderThread()) applyWrap();
+	}
+
+	@Override
+	public synchronized void bind() {
+		super.bind();
+		if (filterDirty) applyFilter();
+		if (wrapDirty) applyWrap();
+	}
+
+	private void applyFilter() {
+		super.bind();
+		Gdx.gl.glTexParameterf(Gdx.gl.GL_TEXTURE_2D, Gdx.gl.GL_TEXTURE_MIN_FILTER, fModeMin);
+		Gdx.gl.glTexParameterf(Gdx.gl.GL_TEXTURE_2D, Gdx.gl.GL_TEXTURE_MAG_FILTER, fModeMax);
+		filterDirty = false;
+	}
+
+	private void applyWrap() {
+		super.bind();
+		Gdx.gl.glTexParameterf(Gdx.gl.GL_TEXTURE_2D, Gdx.gl.GL_TEXTURE_WRAP_S, wModeH);
+		Gdx.gl.glTexParameterf(Gdx.gl.GL_TEXTURE_2D, Gdx.gl.GL_TEXTURE_WRAP_T, wModeV);
+		wrapDirty = false;
 	}
 	
 	@Override
-	public void bitmap( Bitmap bitmap ) {
-		bitmap( bitmap, false );
-	}
-	
-	public void bitmap( Bitmap bitmap, boolean premultiplied ) {
-		if (premultiplied) {
-			super.bitmap( bitmap );
-		} else {
-			handMade( bitmap, true );
-		}
+	public void bitmap( Pixmap bitmap ) {
+		super.bitmap( bitmap );
 		
 		this.bitmap = bitmap;
 		width = bitmap.getWidth();
@@ -115,15 +133,20 @@ public class SmartTexture extends Texture {
 		super.delete();
 
 		if (bitmap != null)
-			bitmap.recycle();
+			bitmap.dispose();
 		bitmap = null;
 	}
 	
-	public RectF uvRect( int left, int top, int right, int bottom ) {
+	public RectF uvRect( float left, float top, float right, float bottom ) {
 		return new RectF(
 			(float)left		/ width,
 			(float)top		/ height,
 			(float)right	/ width,
 			(float)bottom	/ height );
+	}
+
+	/** Keeps the original integer-coordinate API available to callers. */
+	public RectF uvRect( int left, int top, int right, int bottom ) {
+		return uvRect((float) left, (float) top, (float) right, (float) bottom);
 	}
 }

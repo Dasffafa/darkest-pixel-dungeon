@@ -1,9 +1,8 @@
 package com.egoal.darkestpixeldungeon
 
-import android.util.Log
+import com.badlogic.gdx.Gdx
 import com.egoal.darkestpixeldungeon.actors.Char
 import com.egoal.darkestpixeldungeon.actors.Damage
-import com.watabou.noosa.Game
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.*
@@ -19,13 +18,13 @@ object Database {
     val DummyMobConfig: MobsLine by lazy { ConfigOfMob("DUMMY")!! }
 
     init {
-        val br = Game.instance.assets.open(DATA_FILE).bufferedReader().readText()
+        val br = Gdx.files.internal(DATA_FILE).readString("UTF-8")
         val database = Json.decodeFromString<Map<String, JsonElement>>(br)
         val mobsheet = database["sheets"]!!.jsonArray.find { it.jsonObject["name"]!!.jsonPrimitive.content == "Mobs" }
 
         _mobLines = mobsheet!!.jsonObject["lines"]!!.jsonArray.map { Json.decodeFromJsonElement(it) }
 
-        Log.d("dpd", "database file loaded: ${_mobLines.size} mobs loaded.")
+        Gdx.app.log("dpd", "database file loaded: ${_mobLines.size} mobs loaded.")
     }
 
     @Serializable

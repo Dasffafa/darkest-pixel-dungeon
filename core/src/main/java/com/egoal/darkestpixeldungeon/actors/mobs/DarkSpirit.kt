@@ -18,7 +18,6 @@ import com.egoal.darkestpixeldungeon.items.potions.PotionOfHealing
 import com.egoal.darkestpixeldungeon.sprites.CharSprite
 import com.egoal.darkestpixeldungeon.sprites.HeroSprite
 import com.egoal.darkestpixeldungeon.sprites.MobSprite
-import com.watabou.noosa.Game
 import com.watabou.noosa.TextureFilm
 import com.watabou.noosa.audio.Sample
 import com.watabou.utils.Bundle
@@ -191,7 +190,7 @@ class DarkSpirit : Mob() {
             if (depth < 0 && !Load()) return null
             if (depth != Dungeon.depth || Dungeon.IsChallenged()) return null
 
-            Game.instance.deleteFile(DS_FILE)
+            com.watabou.utils.FileUtils.deleteFile(DS_FILE)
             depth = -1
 
             return DarkSpirit()
@@ -208,9 +207,7 @@ class DarkSpirit : Mob() {
             heroClass.storeInBundle(b)
 
             try {
-                val fout = Game.instance.openFileOutput(DS_FILE, Game.MODE_PRIVATE)
-                Bundle.write(b, fout)
-                fout.close()
+                com.watabou.utils.FileUtils.bundleToFile(DS_FILE, b)
             } catch (e: IOException) {
                 DarkestPixelDungeon.reportException(e)
             }
@@ -218,9 +215,7 @@ class DarkSpirit : Mob() {
 
         fun Load(): Boolean {
             try {
-                val fin = Game.instance.openFileInput(DS_FILE)
-                val bundle = Bundle.read(fin)
-                fin.close()
+                val bundle = com.watabou.utils.FileUtils.bundleFromFile(DS_FILE)
 
                 depth = bundle.getInt(LEVEL)
                 heroClass = HeroClass.RestoreFromBundle(bundle)

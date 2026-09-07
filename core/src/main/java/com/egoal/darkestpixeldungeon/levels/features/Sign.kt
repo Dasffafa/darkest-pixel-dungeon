@@ -18,10 +18,10 @@ object Sign {
 
     fun Read(pos: Int) {
         if (Dungeon.level is DeadEndLevel)
-            GameScene.show(WndMessage(Messages.get(Sign::class.java, "dead_end")))
+            GameScene.show { WndMessage(Messages.get(Sign::class.java, "dead_end")) }
         else {
             if (ShowInDepth(Dungeon.depth))
-                GameScene.show(WndMessage(Messages.get(Sign::class.java, "tip_${Dungeon.depth}")))
+                GameScene.show { WndMessage(Messages.get(Sign::class.java, "tip_${Dungeon.depth}")) }
             else {
                 // destroy 
                 Dungeon.level.destroy(pos)

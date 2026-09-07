@@ -68,38 +68,29 @@ class Toolbar : Component() {
 
     override fun createChildren() {
         add(object : Tool(24, 0, 20, 24) {
-            override fun onClick() {
-                examining = false
-                hero.rest(false)
+            public override fun onClick() {
+                waitTurn()
             }
 
             override fun onLongClick(): Boolean {
-                examining = false
-                hero.rest(true)
+                rest()
                 return true
             }
         }.also { btnWait = it })
         add(object : Tool(44, 0, 20, 24) {
-            override fun onClick() {
-                if (!examining) {
-                    GameScene.selectCell(informer)
-                    examining = true
-                } else {
-                    informer.onSelect(null)
-                    hero.search(true)
-                }
+            public override fun onClick() {
+                examine()
             }
 
             override fun onLongClick(): Boolean {
-                hero.search(true)
+                search()
                 return true
             }
         }.also { btnSearch = it })
         btnSwitchSlots = object : Tool(125, 0, 15, 24) {
-            override fun onClick() {
+            public override fun onClick() {
                 Sample.INSTANCE.play(Assets.SND_CLICK)
-                currentQuickSlotTab = (currentQuickSlotTab + 1) % TAB_QUICK_SLOTS
-                updateLayout()
+                switchQuickSlotTab()
             }
         }
         add(btnSwitchSlots)
@@ -120,13 +111,12 @@ class Toolbar : Component() {
 
         add(object : Tool(0, 0, 24, 26) {
             private var gold: GoldIndicator? = null
-            override fun onClick() {
-                GameScene.show(WndBag(hero.belongings.backpack, null,
-                        WndBag.Mode.ALL, null))
+            public override fun onClick() {
+                inventory()
             }
 
             override fun onLongClick(): Boolean {
-                GameScene.show(WndCatalogs())
+                GameScene.show { WndCatalogs() }
                 return true
             }
 
@@ -212,6 +202,14 @@ class Toolbar : Component() {
         btnSwitchSlots.setPos(switchRight - btnSwitchSlots.width(), if (moreSlots) visibleY else invisibleY)
     }
 
+    fun switchQuickSlotTab() {
+        if (!DarkestPixelDungeon.moreQuickSlots()) return
+        currentQuickSlotTab = (currentQuickSlotTab + 1) % TAB_QUICK_SLOTS
+        updateLayout()
+    }
+
+    fun quickSlotIndex(localIndex: Int): Int = currentQuickSlotTab * NUM_QUICK_SLOTS + localIndex
+
     override fun top(): Float {
         val moreSlots = DarkestPixelDungeon.moreQuickSlots()
         return if (moreSlots) y - 10 else y
@@ -241,6 +239,35 @@ class Toolbar : Component() {
                 btnInventory.centerX(),
                 btnInventory.centerY(),
                 false)
+    }
+
+    fun waitTurn() {
+        examining = false
+        hero.rest(false)
+    }
+
+    fun rest() {
+        examining = false
+        hero.rest(true)
+    }
+
+    fun search() {
+        examining = false
+        hero.search(true)
+    }
+
+    fun examine() {
+        if (!examining) {
+            GameScene.selectCell(informer)
+            examining = true
+        } else {
+            informer.onSelect(null)
+            hero.search(true)
+        }
+    }
+
+    fun inventory() {
+        GameScene.show { WndBag(hero.belongings.backpack, null, WndBag.Mode.ALL, null) }
     }
 
     private open class Tool(x: Int, y: Int, width: Int, height: Int) : Button() {
@@ -387,8 +414,19 @@ class Toolbar : Component() {
 
         @JvmStatic
         fun updateLayout() {
-            instance?.layout()
+            instance?.let {
+                if (!DarkestPixelDungeon.moreQuickSlots()) it.currentQuickSlotTab = 0
+                it.layout()
+            }
         }
+
+        @JvmStatic
+        fun switchQuickSlotTabFromKey() {
+            instance?.switchQuickSlotTab()
+        }
+
+        @JvmStatic
+        fun currentQuickSlotIndex(localIndex: Int): Int = instance?.quickSlotIndex(localIndex) ?: localIndex
 
         private val informer: CellSelector.Listener = object : CellSelector.Listener {
             override fun onSelect(cell: Int?) {

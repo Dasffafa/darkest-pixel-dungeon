@@ -1,6 +1,6 @@
 package com.egoal.darkestpixeldungeon.levels.features
 
-import android.util.Log
+import com.watabou.utils.Log
 import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.DungeonTilemap
 import com.egoal.darkestpixeldungeon.effects.Halo

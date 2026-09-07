@@ -105,6 +105,7 @@ open class Item : Bundlable {
     }
 
     open fun doThrow(hero: Hero) {
+        if (!QuickSlotButton.isTargeting()) QuickSlotButton.beginTargeting(this)
         GameScene.selectCell(thrower)
     }
 
@@ -367,6 +368,10 @@ open class Item : Bundlable {
     }
 
     open fun cast(user: Hero, dst: Int) {
+        // A used-up item (quantity 0, e.g. a quick-slot placeholder) must not be
+        // thrown: detach() would return null and crash when the missile lands.
+        if (quantity <= 0) return
+
         val cell = throwPos(user, dst)
         user.sprite.zap(cell)
         user.busy()
@@ -383,7 +388,7 @@ open class Item : Bundlable {
         val finalDelay = delay
 
         (user.sprite.parent.recycle(MissileSprite::class.java) as MissileSprite).reset(user.pos, cell, this, Callback {
-            this@Item.detach(user.belongings.backpack)!!.onThrow(cell)
+            this@Item.detach(user.belongings.backpack)?.onThrow(cell)
             user.spendAndNext(finalDelay)
         })
     }

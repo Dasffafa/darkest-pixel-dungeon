@@ -8,6 +8,8 @@ import com.egoal.darkestpixeldungeon.ui.RedButton
 import com.egoal.darkestpixeldungeon.ui.RenderedTextMultiline
 import com.egoal.darkestpixeldungeon.ui.Window
 import com.watabou.noosa.ColorBlock
+import com.watabou.input.Keys
+import com.badlogic.gdx.Input
 
 open class WndSelectPerk(title: String, perks: List<Perk>) : Window() {
     private var index = 0
@@ -43,7 +45,7 @@ open class WndSelectPerk(title: String, perks: List<Perk>) : Window() {
         bottom += MARGIN * 2f + DESCRIPTION_HEIGHT
 
         confirm = object : RedButton(M.L(WndSelectPerk::class.java, "confirm")) {
-            override fun onClick() {
+            public override fun onClick() {
                 hide()
                 onPerkSelected(perks[index])
             }
@@ -69,6 +71,20 @@ open class WndSelectPerk(title: String, perks: List<Perk>) : Window() {
         } else confirm.enable(false)
     }
 
+    override fun onSignal(key: Keys.Key): Boolean {
+        if (key.pressed) {
+            when (key.code) {
+                Input.Keys.LEFT -> index = (index - 1 + perkButtons.size) % perkButtons.size
+                Input.Keys.RIGHT -> index = (index + 1) % perkButtons.size
+                Input.Keys.ENTER -> { hide(); onPerkSelected(perkButtons[index].perk()); return true }
+                else -> return super.onSignal(key)
+            }
+            updateStates()
+            return true
+        }
+        return super.onSignal(key)
+    }
+
     inner class PerkButton(val index: Int, perk: Perk) : PerkSlot(perk) {
         private lateinit var bg: ColorBlock
 
@@ -89,7 +105,7 @@ open class WndSelectPerk(title: String, perks: List<Perk>) : Window() {
             bg.y = y + (height - 18) / 2
         }
 
-        override fun onClick() {
+        public override fun onClick() {
             this@WndSelectPerk.index = index
             updateStates()
         }

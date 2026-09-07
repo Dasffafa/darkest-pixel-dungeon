@@ -63,7 +63,7 @@ class Imp : NPC.Unbreakable() {
 
             val tokens = Dungeon.hero.belongings.getItem(DwarfToken::class.java)
             if (tokens != null && tokens.quantity() >= 8) {
-                GameScene.show(WndImp(this, tokens))
+                GameScene.show { WndImp(this, tokens) }
             } else {
                 tell(M.L(this, "quest_2", Dungeon.hero.givenName()))
             }

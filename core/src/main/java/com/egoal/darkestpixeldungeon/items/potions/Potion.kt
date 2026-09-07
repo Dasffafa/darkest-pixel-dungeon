@@ -20,7 +20,7 @@
  */
 package com.egoal.darkestpixeldungeon.items.potions
 
-import android.util.Log
+import com.watabou.utils.Log
 import com.egoal.darkestpixeldungeon.Assets
 import com.egoal.darkestpixeldungeon.Badges
 import com.egoal.darkestpixeldungeon.Challenge

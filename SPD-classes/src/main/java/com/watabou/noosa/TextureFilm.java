@@ -26,7 +26,7 @@ import java.util.HashMap;
 import com.watabou.gltextures.SmartTexture;
 import com.watabou.gltextures.TextureCache;
 
-import android.graphics.RectF;
+import com.watabou.utils.RectF;
 
 public class TextureFilm {
 

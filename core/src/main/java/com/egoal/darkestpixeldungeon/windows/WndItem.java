@@ -29,12 +29,18 @@ import com.egoal.darkestpixeldungeon.ui.ItemSlot;
 import com.egoal.darkestpixeldungeon.ui.RedButton;
 import com.egoal.darkestpixeldungeon.ui.RenderedTextMultiline;
 import com.egoal.darkestpixeldungeon.ui.Window;
+import com.watabou.utils.DeviceCompat;
+import com.watabou.input.Keys;
+import com.badlogic.gdx.Input;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 
 public class WndItem extends Window {
+
+  private final ArrayList<RedButton> actionButtons = new ArrayList<>();
+  private int selectedAction = 0;
 
   private static final float BUTTON_HEIGHT = 16;
 
@@ -73,11 +79,13 @@ public class WndItem extends Window {
 
     if (Dungeon.INSTANCE.getHero().isAlive() && options) {
       ArrayList<RedButton> line = new ArrayList<>();
-      for (final String action : item.actions(Dungeon.INSTANCE.getHero())) {
+      ArrayList<String> actions = item.actions(Dungeon.INSTANCE.getHero());
+      boolean hasDefault = false;
+      for (final String action : actions) {
 
         RedButton btn = new RedButton(Messages.get(item, "ac_" + action), 8) {
           @Override
-          protected void onClick() {
+          public void onClick() {
             hide();
             if (owner != null && owner.parent != null) owner.hide();
             item.execute(Dungeon.INSTANCE.getHero(), action);
@@ -94,18 +102,52 @@ public class WndItem extends Window {
         }
         x++;
         add(btn);
+        actionButtons.add(btn);
         line.add(btn);
 
         if (action.equals(item.getDefaultAction())) {
+          selectedAction = actionButtons.size() - 1;
           btn.textColor(TITLE_COLOR);
+          hasDefault = true;
         }
 
         x += btn.width();
       }
+
+      if (!hasDefault) {
+        for (int i = 0; i < actions.size(); i++) {
+          if (!actions.get(i).equals(Item.AC_DROP) && !actions.get(i).equals(Item.AC_THROW)) {
+            selectedAction = i;
+            actionButtons.get(i).textColor(TITLE_COLOR);
+            break;
+          }
+        }
+      }
+
       layoutButtons(line, width - x, y);
     }
 
     resize(width, (int) (y + (x > 0 ? BUTTON_HEIGHT : 0)));
+  }
+
+  @Override
+  public boolean onSignal(Keys.Key key) {
+    if (DeviceCompat.isDesktop() && key.pressed && !actionButtons.isEmpty()) {
+      int next = selectedAction;
+      if (key.code == Input.Keys.LEFT || key.code == Input.Keys.UP) next--;
+      else if (key.code == Input.Keys.RIGHT || key.code == Input.Keys.DOWN) next++;
+      else if (key.code == Input.Keys.ENTER) {
+        actionButtons.get(selectedAction).onClick();
+        return true;
+      } else return super.onSignal(key);
+      if (next >= 0 && next < actionButtons.size()) {
+        actionButtons.get(selectedAction).textColor(0xFFFFFF);
+        selectedAction = next;
+        actionButtons.get(selectedAction).textColor(TITLE_COLOR);
+      }
+      return true;
+    }
+    return super.onSignal(key);
   }
 
   //this method assumes a max of 3 buttons per line

@@ -1,17 +1,14 @@
 package com.egoal.darkestpixeldungeon
 
 import com.egoal.darkestpixeldungeon.actors.hero.Hero
-import com.egoal.darkestpixeldungeon.actors.hero.perks.Perk
-import com.egoal.darkestpixeldungeon.items.Item
 import com.egoal.darkestpixeldungeon.items.Generator
+import com.egoal.darkestpixeldungeon.items.Item
 import com.egoal.darkestpixeldungeon.items.artifacts.Artifact
 import com.egoal.darkestpixeldungeon.items.unclassified.Gold
 import com.egoal.darkestpixeldungeon.items.weapon.missiles.MissileWeapon
-import com.watabou.noosa.Game
 import com.watabou.utils.Bundle
 import com.watabou.utils.Random
 import java.io.IOException
-import java.lang.Exception
 import kotlin.math.min
 
 object Bones {
@@ -39,9 +36,7 @@ object Bones {
             put(ITEM, item)
         }
         try {
-            val fout = Game.instance.openFileOutput(BONES_FILE, Game.MODE_PRIVATE)
-            Bundle.write(b, fout)
-            fout.close()
+            com.watabou.utils.FileUtils.bundleToFile(BONES_FILE, b)
         } catch (e: IOException) {
             DarkestPixelDungeon.reportException(e)
         }
@@ -53,7 +48,7 @@ object Bones {
         if (depth != Dungeon.depth || Dungeon.IsChallenged()) return null
 
         // drop
-        Game.instance.deleteFile(BONES_FILE)
+        com.watabou.utils.FileUtils.deleteFile(BONES_FILE)
         depth = 0
 
         if (item is Artifact) {
@@ -124,9 +119,7 @@ object Bones {
 
     private fun loadBones(): Boolean {
         try {
-            val fin = Game.instance.openFileInput(BONES_FILE)
-            val bundle = Bundle.read(fin)
-            fin.close()
+            val bundle = com.watabou.utils.FileUtils.bundleFromFile(BONES_FILE)
 
             depth = bundle.getInt(LEVEL)
             item = bundle.get(ITEM) as Item?

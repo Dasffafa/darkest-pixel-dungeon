@@ -46,7 +46,7 @@ public class WndEnchanting extends Window {
 
     btnItemSrc_ = new ItemButton() {
       @Override
-      protected void onClick() {
+      public void onClick() {
         btnPressed_ = btnItemSrc_;
         GameScene.selectItem(itemSelector, WndBag.Mode.ENCHANTABLE,
                 Messages.get(WndEnchanting.class, "select_source"));
@@ -63,7 +63,7 @@ public class WndEnchanting extends Window {
 
     btnItemTgt_ = new ItemButton() {
       @Override
-      protected void onClick() {
+      public void onClick() {
         btnPressed_ = btnItemTgt_;
         GameScene.selectItem(itemSelector, WndBag.Mode.ENCHANTABLE,
                 Messages.get(WndEnchanting.class, "select_target"));
@@ -75,7 +75,7 @@ public class WndEnchanting extends Window {
 
     btnDone_ = new RedButton(Messages.get(this, "transform")) {
       @Override
-      protected void onClick() {
+      public void onClick() {
         if (EnchantingStation.INSTANCE.Transform(btnItemSrc_.item, btnItemTgt_.item)) {
           // destroy source, collect targetpos
           btnItemSrc_.item(null);
@@ -121,7 +121,7 @@ public class WndEnchanting extends Window {
         // take from the backpack
         // the equipped item showed be take off, in case lack of room space
         if (item instanceof EquipableItem && item.isEquipped(Dungeon.INSTANCE.getHero())) {
-          GameScene.show(new WndMessage(Messages.get(WndEnchanting.class,
+          GameScene.show(() -> new WndMessage(Messages.get(WndEnchanting.class,
                   "first_unequip")));
           return;
         }
@@ -134,7 +134,7 @@ public class WndEnchanting extends Window {
           if (result == null)
             btnDone_.enable(true);
           else {
-            GameScene.show(new WndMessage(result));
+            GameScene.show(() -> new WndMessage(result));
             btnDone_.enable(false);
           }
         }
@@ -171,7 +171,7 @@ public class WndEnchanting extends Window {
         }
 
         @Override
-        protected void onClick() {
+        public void onClick() {
           WndEnchanting.ItemButton.this.onClick();
         }
       };
@@ -179,7 +179,7 @@ public class WndEnchanting extends Window {
       add(slot);
     }
 
-    protected void onClick() {
+    public void onClick() {
     }
 
     @Override

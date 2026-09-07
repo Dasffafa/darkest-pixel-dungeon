@@ -20,7 +20,7 @@
  */
 package com.egoal.darkestpixeldungeon.scenes;
 
-import android.opengl.GLES20;
+import com.badlogic.gdx.Gdx;
 import com.egoal.darkestpixeldungeon.DarkestPixelDungeon;
 import com.egoal.darkestpixeldungeon.ui.RenderedTextMultiline;
 import com.egoal.darkestpixeldungeon.Assets;
@@ -35,7 +35,6 @@ import com.watabou.noosa.Game;
 import com.watabou.noosa.Image;
 import com.watabou.noosa.audio.Sample;
 
-import javax.microedition.khronos.opengles.GL10;
 import java.util.UUID;
 
 public class WelcomeScene extends PixelScene {
@@ -82,9 +81,9 @@ public class WelcomeScene extends PixelScene {
 
       @Override
       public void draw() {
-        GLES20.glBlendFunc(GL10.GL_SRC_ALPHA, GL10.GL_ONE);
+        Gdx.gl.glBlendFunc(Gdx.gl.GL_SRC_ALPHA, Gdx.gl.GL_ONE);
         super.draw();
-        GLES20.glBlendFunc(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
+        Gdx.gl.glBlendFunc(Gdx.gl.GL_SRC_ALPHA, Gdx.gl.GL_ONE_MINUS_SRC_ALPHA);
       }
     };
     signs.x = title.x + (title.width() - signs.width()) / 2f;
@@ -93,7 +92,7 @@ public class WelcomeScene extends PixelScene {
 
     DarkRedButton okay = new DarkRedButton(Messages.get(this, "continue")) {
       @Override
-      protected void onClick() {
+      public void onClick() {
         super.onClick();
         updateVersion(previousVersion);
         DarkestPixelDungeon.switchScene(TitleScene.class);
@@ -104,7 +103,7 @@ public class WelcomeScene extends PixelScene {
       DarkRedButton changes = new DarkRedButton(Messages.get(this, 
               "changelist")) {
         @Override
-        protected void onClick() {
+        public void onClick() {
           super.onClick();
           updateVersion(previousVersion);
           DarkestPixelDungeon.switchScene(ChangesScene.class);

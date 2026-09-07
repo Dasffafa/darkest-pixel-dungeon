@@ -20,7 +20,7 @@
  */
 package com.egoal.darkestpixeldungeon
 
-import android.util.Log
+import com.watabou.utils.Log
 
 import com.egoal.darkestpixeldungeon.actors.Actor
 import com.egoal.darkestpixeldungeon.actors.Char
@@ -516,16 +516,10 @@ object Dungeon {
             Badges.saveLocal(badges)
             bundle.put(BADGES, badges)
 
-            val output = Game.instance.openFileOutput(fileName, Game
-                    .MODE_PRIVATE)
-            Bundle.write(bundle, output)
-            output.close()
+            com.watabou.utils.FileUtils.bundleToFile(fileName, bundle)
 
             if (backupFile != null) {
-                val os = Game.instance.openFileOutput(backupFile, Game
-                        .MODE_PRIVATE)
-                Bundle.write(bundle, os)
-                os.close()
+                com.watabou.utils.FileUtils.bundleToFile(backupFile, bundle)
             }
 
         } catch (e: IOException) {
@@ -540,14 +534,10 @@ object Dungeon {
         val bundle = Bundle()
         bundle.put(LEVEL, level)
 
-        val output = Game.instance.openFileOutput(depthFile, Game.MODE_PRIVATE)
-        Bundle.write(bundle, output)
-        output.close()
+        com.watabou.utils.FileUtils.bundleToFile(depthFile, bundle)
 
         if (backupFile != null) {
-            val os = Game.instance.openFileOutput(backupFile, Game.MODE_PRIVATE)
-            Bundle.write(bundle, os)
-            os.close()
+            com.watabou.utils.FileUtils.bundleToFile(backupFile, bundle)
         }
     }
 
@@ -670,9 +660,7 @@ object Dungeon {
         nullLevel()
         Actor.clear()
 
-        val fin = Game.instance.openFileInput(filename)
-        val bundle = Bundle.read(fin)
-        fin.close()
+        val bundle = com.watabou.utils.FileUtils.bundleFromFile(filename)
 
         return bundle.get("level") as Level
     }
@@ -683,11 +671,7 @@ object Dungeon {
 
     @Throws(IOException::class)
     fun gameBundle(fileName: String): Bundle {
-        val input = Game.instance.openFileInput(fileName)
-        val bundle = Bundle.read(input)
-        input.close()
-
-        return bundle
+        return com.watabou.utils.FileUtils.bundleFromFile(fileName)
     }
 
     fun preview(info: GamesInProgress.Info, bundle: Bundle) {

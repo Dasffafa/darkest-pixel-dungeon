@@ -67,7 +67,7 @@ public class WndBlacksmith extends Window {
 
     btnItem1 = new ItemButton() {
       @Override
-      protected void onClick() {
+      public void onClick() {
         btnPressed = btnItem1;
         GameScene.selectItem(itemSelector, WndBag.Mode.UPGRADEABLE, Messages
                 .get(WndBlacksmith.class, "select"));
@@ -79,7 +79,7 @@ public class WndBlacksmith extends Window {
 
     btnItem2 = new ItemButton() {
       @Override
-      protected void onClick() {
+      public void onClick() {
         btnPressed = btnItem2;
         GameScene.selectItem(itemSelector, WndBag.Mode.UPGRADEABLE, Messages
                 .get(WndBlacksmith.class, "select"));
@@ -90,7 +90,7 @@ public class WndBlacksmith extends Window {
 
     btnReforge = new RedButton(Messages.get(this, "reforge")) {
       @Override
-      protected void onClick() {
+      public void onClick() {
         Blacksmith.Companion.upgrade(btnItem1.item, btnItem2.item);
         hide();
       }
@@ -112,7 +112,7 @@ public class WndBlacksmith extends Window {
         if (btnItem1.item != null && btnItem2.item != null) {
           String result = Blacksmith.Companion.verify(btnItem1.item, btnItem2.item);
           if (result != null) {
-            GameScene.show(new WndMessage(result));
+            GameScene.show(() -> new WndMessage(result));
             btnReforge.enable(false);
           } else {
             btnReforge.enable(true);
@@ -151,7 +151,7 @@ public class WndBlacksmith extends Window {
         }
 
         @Override
-        protected void onClick() {
+        public void onClick() {
           ItemButton.this.onClick();
         }
       };
@@ -159,7 +159,7 @@ public class WndBlacksmith extends Window {
       add(slot);
     }
 
-    protected void onClick() {
+    public void onClick() {
     }
 
     ;

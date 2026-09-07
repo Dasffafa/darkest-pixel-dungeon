@@ -31,8 +31,11 @@ import com.egoal.darkestpixeldungeon.sprites.ItemSprite;
 import com.egoal.darkestpixeldungeon.ui.RedButton;
 import com.egoal.darkestpixeldungeon.ui.Window;
 import com.egoal.darkestpixeldungeon.utils.GLog;
+import com.watabou.input.Keys;
+import com.badlogic.gdx.Input;
 
 public class WndImp extends Window {
+  private RedButton rewardButton;
 
   private static final int WIDTH = 120;
   private static final int BTN_HEIGHT = 20;
@@ -54,17 +57,27 @@ public class WndImp extends Window {
     message.setPos(0, titlebar.bottom() + GAP);
     add(message);
 
-    RedButton btnReward = new RedButton(Messages.get(this, "reward")) {
+    RedButton btnReward = rewardButton = new RedButton(Messages.get(this, "reward")) {
       @Override
-      protected void onClick() {
+      public void onClick() {
         takeReward(imp, tokens, Imp.Quest.INSTANCE.getReward());
       }
     };
     btnReward.setRect(0, message.top() + message.height() + GAP, WIDTH, 
             BTN_HEIGHT);
     add(btnReward);
+    btnReward.textColor(TITLE_COLOR);
 
     resize(WIDTH, (int) btnReward.bottom());
+  }
+
+  @Override
+  public boolean onSignal(Keys.Key key) {
+    if (key.pressed && key.code == Input.Keys.ENTER) {
+      rewardButton.onClick();
+      return true;
+    }
+    return super.onSignal(key);
   }
 
   private void takeReward(Imp imp, DwarfToken tokens, Item reward) {

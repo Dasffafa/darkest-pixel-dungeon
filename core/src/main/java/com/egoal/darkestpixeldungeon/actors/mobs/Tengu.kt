@@ -160,7 +160,8 @@ class Tengu : Mob() {
             Dungeon.level.drop(item, cell).sprite.drop(pos)
         }
 
-        if (Random.Int(3) == 0) Dungeon.level.drop(TengusKatana().identify(), pos).sprite.drop()
+        // 掉落的tengu之剑可能也会有等级铭文之类的调整项，因为一把+0三阶武器看起来，不太能应对三区的危险状况了
+        if (Random.Int(3) == 0) Dungeon.level.drop(TengusKatana().random().identify(), pos).sprite.drop()
 
         GameScene.bossSlain()
         super.die(cause)
@@ -213,7 +214,8 @@ class Tengu : Mob() {
             sprite.move(pos, shuffledposes[0])
             sprite.turnTo(pos, enemypos)
             move(shuffledposes[0])
-
+            // TheCatist: 天狗在瞬移的时候，应该重新渲染地图，避免玩家有灵视也看不到的问题
+            Dungeon.observe()
             spend(Random.Float(0.01f, 0.05f))
         }
 
@@ -243,6 +245,9 @@ class Tengu : Mob() {
 
         sprite.move(pos, newpos)
         move(newpos)
+
+        // TheCatist: 天狗在瞬移的时候，应该重新渲染地图，避免玩家有灵视也看不到的问题
+        Dungeon.observe()
 
         if (Dungeon.visible[newpos]) CellEmitter.get(newpos).burst(Speck.factory(Speck.WOOL), 6)
 

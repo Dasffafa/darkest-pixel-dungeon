@@ -20,7 +20,7 @@
  */
 package com.egoal.darkestpixeldungeon.levels
 
-import android.util.Log
+import com.watabou.utils.Log
 import com.egoal.darkestpixeldungeon.Assets
 import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.Statistics
@@ -103,6 +103,8 @@ abstract class Level : Bundlable {
     var traps = SparseArray<Trap>()
     var customTiles = HashSet<CustomTileVisual>()
     var luminaries = HashSet<Luminary>()
+    // TheCatist: 光照的脏加载，也许是光照系统导致了游戏的卡顿，只在发光体移动的时候重新渲染LightMap
+    private var lightMapDirty = true
 
     protected var itemsToSpawn = ArrayList<Item>()
 
@@ -361,7 +363,7 @@ abstract class Level : Bundlable {
     protected abstract fun createItems()
 
     fun loadMapDataFromFile(mapfile: String): Boolean {
-        val br = Game.instance.assets.open(mapfile).bufferedReader()
+        val br = com.badlogic.gdx.Gdx.files.internal(mapfile).reader("UTF-8").buffered()
         val header = br.readLine()
         val wh = header.split(' ')
         val w = wh[0].toInt()
@@ -429,11 +431,12 @@ abstract class Level : Bundlable {
     }
 
     fun addLuminary(lum: Luminary) {
-        luminaries.add(lum)
+        if (luminaries.add(lum)) invalidateLightMap()
     }
 
     fun removeLuminary(lum: Luminary) {
-        luminaries.remove(lum)
+        if (!luminaries.remove(lum)) return
+        invalidateLightMap()
         val lv = lum.visual()
         if (lv != null) visuals.remove(lv)
     }
@@ -531,10 +534,19 @@ abstract class Level : Bundlable {
         return null
     }
 
-    // call this each time luminary is modified
+    fun invalidateLightMap() {
+        lightMapDirty = true
+    }
+
+    // Modified by TheCatist: rebuild only after a light source changes.
     fun updateLightMap() {
         BArray.setFalse(lighted)
         for (lum in luminaries.toTypedArray()) lum.light(this)
+        lightMapDirty = false
+    }
+
+    private fun updateLightMapIfNeeded() {
+        if (lightMapDirty) updateLightMap()
     }
 
     protected fun buildFlagMaps() {
@@ -860,7 +872,7 @@ abstract class Level : Bundlable {
         val sighted = c.buff(Blindness::class.java) == null &&
                 c.buff(Shadows::class.java) == null && c.isAlive
         if (sighted) {
-            updateLightMap()
+            updateLightMapIfNeeded()
             ShadowCaster.castShadowRecursively(cx, cy, fieldOfView, c.viewDistance(), c.seeDistance())
         } else {
             BArray.setFalse(fieldOfView)

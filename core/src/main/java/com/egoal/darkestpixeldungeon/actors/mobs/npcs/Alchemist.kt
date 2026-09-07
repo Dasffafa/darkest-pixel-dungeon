@@ -49,7 +49,7 @@ class Alchemist : NPC.Unbreakable() {
 
         if (!Quest.hasGiven_) {
             // give quest
-            GameScene.show(object : WndQuest(this, Messages.get(this, "hello")) {
+            GameScene.show { object : WndQuest(this, Messages.get(this, "hello")) {
                 override fun onBackPressed() {
                     super.onBackPressed()
 
@@ -65,7 +65,7 @@ class Alchemist : NPC.Unbreakable() {
 
                     Dungeon.limitedDrops.dewVial.drop()
                 }
-            })
+            } }
 
             // todo: add journal
 
@@ -84,12 +84,12 @@ class Alchemist : NPC.Unbreakable() {
                                     dv.full -> M.L(Alchemist::class.java, "full")
                                     else -> M.L(Alchemist::class.java, "enough")
                                 }
-                                GameScene.show(object : WndQuest(this, responds) {
+                                GameScene.show { object : WndQuest(this, responds) {
                                     override fun onBackPressed() {
                                         super.onBackPressed()
                                         drink()
                                     }
-                                })
+                                } }
                             }
                         }
 

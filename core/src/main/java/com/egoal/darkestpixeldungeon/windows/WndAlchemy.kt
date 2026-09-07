@@ -1,11 +1,10 @@
 package com.egoal.darkestpixeldungeon.windows
 
-import android.util.Log
 import com.egoal.darkestpixeldungeon.Assets
 import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.DungeonTilemap
-import com.egoal.darkestpixeldungeon.items.unclassified.ExtractionFlask
 import com.egoal.darkestpixeldungeon.items.Item
+import com.egoal.darkestpixeldungeon.items.unclassified.ExtractionFlask
 import com.egoal.darkestpixeldungeon.levels.Terrain
 import com.egoal.darkestpixeldungeon.levels.features.AlchemyPot
 import com.egoal.darkestpixeldungeon.messages.M
@@ -52,7 +51,7 @@ class WndAlchemy : Window() {
         h += (BTN_SIZE + BTN_GAP) * ((inputButtons.size + 1) / 3)
 
         refineButton = object : RedButton(Messages.get(this, "refine")) {
-            override fun onClick() {
+            public override fun onClick() {
                 super.onClick()
                 combine()
             }

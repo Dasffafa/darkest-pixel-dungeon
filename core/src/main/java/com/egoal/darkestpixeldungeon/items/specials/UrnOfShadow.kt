@@ -53,7 +53,7 @@ class UrnOfShadow : Special() {
     }
 
     override fun use(hero: Hero) {
-        GameScene.show(WndUrnOfShadow())
+        GameScene.show { WndUrnOfShadow() }
     }
 
     fun collectSoul(mob: Mob) {
@@ -297,9 +297,11 @@ class UrnOfShadow : Special() {
 
             val btnHelp = object : RedButton("?") {
                 override fun onClick() {
-                    GameScene.show(WndTitledMessage(ItemSprite(image(), null),
-                            M.L(UrnOfShadow::class.java, spell),
-                            M.L(UrnOfShadow::class.java, spell + "_desc") + M.L(UrnOfShadow::class.java, "cost", cost)))
+                    GameScene.show {
+                        WndTitledMessage(ItemSprite(image(), null),
+                                M.L(UrnOfShadow::class.java, spell),
+                                M.L(UrnOfShadow::class.java, spell + "_desc") + M.L(UrnOfShadow::class.java, "cost", cost))
+                    }
                 }
             }.apply { setRect(WIN_WIDTH - WIDTH_HELP_BUTTON, btnCast.top(), WIDTH_HELP_BUTTON, BTN_HEIGHT) }
             add(btnHelp)

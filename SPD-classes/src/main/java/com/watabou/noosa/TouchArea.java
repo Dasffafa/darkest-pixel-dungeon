@@ -22,8 +22,10 @@
 package com.watabou.noosa;
 
 import com.watabou.input.Touchscreen;
+import com.badlogic.gdx.Input;
 import com.watabou.input.Touchscreen.Touch;
 import com.watabou.utils.Signal;
+import com.watabou.noosa.Game;
 
 public class TouchArea extends Visual implements Signal.Listener<Touchscreen.Touch> {
 
@@ -31,6 +33,9 @@ public class TouchArea extends Visual implements Signal.Listener<Touchscreen.Tou
     public Visual target;
 
     protected Touchscreen.Touch touch = null;
+    private float holdTime;
+    private long pressStartedAt;
+    private boolean longPressed;
 
     //if true, this TouchArea will always block input, even when it is inactive
     public boolean blockWhenInactive = false;
@@ -66,6 +71,12 @@ public class TouchArea extends Visual implements Signal.Listener<Touchscreen.Tou
             if (touch.down) {
                 if (this.touch == null) {
                     this.touch = touch;
+                    holdTime = 0;
+                    longPressed = false;
+                    pressStartedAt = System.nanoTime();
+                    if (touch.button == Input.Buttons.RIGHT) {
+                        longPressed = onLongClick(touch);
+                    }
                 }
                 onTouchDown(touch);
 
@@ -75,7 +86,12 @@ public class TouchArea extends Visual implements Signal.Listener<Touchscreen.Tou
 
                 if (this.touch == touch) {
                     this.touch = null;
-                    onClick(touch);
+                    if (!longPressed && pressStartedAt > 0
+                            && (System.nanoTime() - pressStartedAt) >= 500_000_000L) {
+                        longPressed = onLongClick(touch);
+                    }
+                    if (!longPressed) onClick(touch);
+                    longPressed = false;
                 }
 
             }
@@ -83,6 +99,10 @@ public class TouchArea extends Visual implements Signal.Listener<Touchscreen.Tou
         } else {
 
             if (touch == null && this.touch != null) {
+                holdTime += Game.elapsed;
+                if (!longPressed && holdTime >= 0.5f) {
+                    longPressed = onLongClick(this.touch);
+                }
                 onDrag(this.touch);
             } else if (this.touch != null && !touch.down) {
                 onTouchUp(touch);
@@ -100,14 +120,19 @@ public class TouchArea extends Visual implements Signal.Listener<Touchscreen.Tou
     protected void onTouchUp(Touch touch) {
     }
 
-    protected void onClick(Touch touch) {
+    public void onClick(Touch touch) {
     }
 
     protected void onDrag(Touch touch) {
     }
 
+    protected boolean onLongClick(Touch touch) { return false; }
+
     public void reset() {
         touch = null;
+        holdTime = 0;
+        longPressed = false;
+        pressStartedAt = 0;
     }
 
     @Override

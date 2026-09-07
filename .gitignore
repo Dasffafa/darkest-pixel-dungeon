@@ -7,6 +7,19 @@
 # Java class files
 *.class
 
+# Python bytecode caches
+__pycache__/
+*.py[cod]
+
+# Eclipse / VS Code Java build output
+bin/
+**/bin/
+
+# Eclipse / Buildship metadata generated for local LSP tooling
+.classpath
+.project
+.settings/
+
 # Gradle files
 .gradle/
 build/
@@ -20,6 +33,13 @@ local.properties
 
 # disable xlsx backup
 ~*
+.~lock.*#
+
+# Generated LibGDX native libraries and local desktop runtime data
+/android/src/main/jniLibs/
+/SPD-classes/src/main/jniLibs/
+/desktop/*.dat
+/desktop/error.dat
 
 dev/messages
 dev/posts
@@ -28,3 +48,7 @@ dev/reddit.md
 .vscode
 
 core/release
+/core/google-services.json
+/android/google-services.json
+/雪色bouquet/
+/AGENTS.md

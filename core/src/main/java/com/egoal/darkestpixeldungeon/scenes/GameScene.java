@@ -20,8 +20,7 @@
  */
 package com.egoal.darkestpixeldungeon.scenes;
 
-import android.opengl.GLES20;
-import android.util.Log;
+import com.badlogic.gdx.Gdx;
 
 import com.egoal.darkestpixeldungeon.Badges;
 import com.egoal.darkestpixeldungeon.DungeonTilemap;
@@ -33,6 +32,7 @@ import com.egoal.darkestpixeldungeon.actors.hero.perks.LevelPerception;
 import com.egoal.darkestpixeldungeon.actors.mobs.Mob;
 import com.egoal.darkestpixeldungeon.effects.BubbleText;
 import com.egoal.darkestpixeldungeon.items.unclassified.Honeypot;
+import com.egoal.darkestpixeldungeon.input.DPDAction;
 import com.egoal.darkestpixeldungeon.items.bags.SeedPouch;
 import com.egoal.darkestpixeldungeon.items.scrolls.ScrollOfTeleportation;
 import com.egoal.darkestpixeldungeon.levels.RegularLevel;
@@ -53,6 +53,8 @@ import com.egoal.darkestpixeldungeon.effects.Flare;
 import com.egoal.darkestpixeldungeon.effects.FloatingText;
 import com.egoal.darkestpixeldungeon.effects.Ripple;
 import com.egoal.darkestpixeldungeon.effects.SpellSprite;
+import com.egoal.darkestpixeldungeon.effects.shaders.FilteredMapGroup;
+import com.egoal.darkestpixeldungeon.effects.shaders.MapFilter;
 import com.egoal.darkestpixeldungeon.items.Heap;
 import com.egoal.darkestpixeldungeon.items.Item;
 import com.egoal.darkestpixeldungeon.items.bags.PotionBandolier;
@@ -81,6 +83,8 @@ import com.egoal.darkestpixeldungeon.ui.Window;
 import com.egoal.darkestpixeldungeon.windows.WndBag;
 import com.egoal.darkestpixeldungeon.windows.WndGame;
 import com.egoal.darkestpixeldungeon.windows.WndHero;
+import com.egoal.darkestpixeldungeon.windows.WndGainNewPerk;
+import com.egoal.darkestpixeldungeon.windows.WndJournal;
 import com.egoal.darkestpixeldungeon.windows.WndInfoCell;
 import com.egoal.darkestpixeldungeon.windows.WndInfoItem;
 import com.egoal.darkestpixeldungeon.windows.WndInfoMob;
@@ -101,14 +105,19 @@ import com.watabou.noosa.Visual;
 import com.watabou.noosa.audio.Music;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.noosa.particles.Emitter;
+import com.watabou.input.Keys;
+import com.watabou.input.ScrollEvent;
 import com.watabou.utils.GameMath;
+import com.watabou.utils.Signal;
+import com.watabou.utils.DeviceCompat;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Locale;
 import java.util.function.DoubleUnaryOperator;
+import java.util.function.Supplier;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-import javax.microedition.khronos.opengles.GL10;
 
 public class GameScene extends PixelScene {
 
@@ -143,6 +152,7 @@ public class GameScene extends PixelScene {
   private Group statuses;
   private Group emoicons;
   private Group sentences;
+  private FilteredMapGroup filteredMap;
 
   private Toolbar toolbar;
   private Toast prompt;
@@ -151,6 +161,8 @@ public class GameScene extends PixelScene {
   private LootIndicator loot;
   private ActionIndicator action;
   private ResumeIndicator resume;
+  private Signal.Listener<Keys.Key> keyListener;
+  private Signal.Listener<ScrollEvent> scrollListener;
 
   @Override
   public void create() {
@@ -167,8 +179,11 @@ public class GameScene extends PixelScene {
 
     scene = this;
 
+    filteredMap = new FilteredMapGroup();
+    add(filteredMap);
+
     terrain = new Group();
-    add(terrain);
+    filteredMap.add(terrain);
 
     water = new SkinnedBlock(
             Dungeon.INSTANCE.getLevel().width() * DungeonTilemap.SIZE,
@@ -183,9 +198,9 @@ public class GameScene extends PixelScene {
       @Override
       public void draw() {
         //water has no alpha component, this improves performance
-        GLES20.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ZERO);
+        Gdx.gl.glBlendFunc(Gdx.gl.GL_ONE, Gdx.gl.GL_ZERO);
         super.draw();
-        GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA);
+        Gdx.gl.glBlendFunc(Gdx.gl.GL_SRC_ALPHA, Gdx.gl.GL_ONE_MINUS_SRC_ALPHA);
       }
     };
     terrain.add(water);
@@ -204,10 +219,10 @@ public class GameScene extends PixelScene {
     }
 
     levelVisuals = Dungeon.INSTANCE.getLevel().addVisuals();
-    add(levelVisuals);
+    filteredMap.add(levelVisuals);
 
     traps = new Group();
-    add(traps);
+    filteredMap.add(traps);
 
     int size = Dungeon.INSTANCE.getLevel().getTraps().size();
     for (int i = 0; i < size; i++) {
@@ -215,7 +230,7 @@ public class GameScene extends PixelScene {
     }
 
     plants = new Group();
-    add(plants);
+    filteredMap.add(plants);
 
     size = Dungeon.INSTANCE.getLevel().getPlants().size();
     for (int i = 0; i < size; i++) {
@@ -223,7 +238,7 @@ public class GameScene extends PixelScene {
     }
 
     heaps = new Group();
-    add(heaps);
+    filteredMap.add(heaps);
 
     size = Dungeon.INSTANCE.getLevel().getHeaps().size();
     for (int i = 0; i < size; i++) {
@@ -235,7 +250,7 @@ public class GameScene extends PixelScene {
     emoicons = new Group();
 
     mobs = new Group();
-    add(mobs);
+    filteredMap.add(mobs);
 
     for (Mob mob : Dungeon.INSTANCE.getLevel().getMobs()) {
       addMobSprite(mob);
@@ -244,11 +259,11 @@ public class GameScene extends PixelScene {
       }
     }
 
-    add(emitters);
-    add(effects);
+    filteredMap.add(emitters);
+    filteredMap.add(effects);
 
     gases = new Group();
-    add(gases);
+    filteredMap.add(gases);
 
     for (Blob blob : Dungeon.INSTANCE.getLevel().getBlobs().values()) {
       blob.setEmitter(null);
@@ -256,18 +271,18 @@ public class GameScene extends PixelScene {
     }
 
     fog = new FogOfWar(Dungeon.INSTANCE.getLevel().width(), Dungeon.INSTANCE.getLevel().height());
-    add(fog);
+    filteredMap.add(fog);
 
     spells = new Group();
-    add(spells);
+    filteredMap.add(spells);
 
     statuses = new Group();
-    add(statuses);
+    filteredMap.add(statuses);
 
-    add(emoicons);
+    filteredMap.add(emoicons);
 
     sentences = new Group();
-    add(sentences);
+    filteredMap.add(sentences);
 
 //    heroDoll = new DollSprite();
 //    heroDoll.place(Dungeon.hero.pos+ 1);
@@ -310,6 +325,13 @@ public class GameScene extends PixelScene {
     resume = new ResumeIndicator();
     resume.camera = uiCamera;
     add(resume);
+
+    Keys.event.add(keyListener = key -> handleKey(key));
+    ScrollEvent.addScrollListener(scrollListener = event -> {
+      if (hasOpenWindow() || event.amount == 0) return false;
+      cellSelector.zoomBy(event.amount > 0 ? -1 : 1);
+      return true;
+    });
 
     log = new GameLog();
     log.camera = uiCamera;
@@ -423,7 +445,220 @@ public class GameScene extends PixelScene {
     scene = null;
     Badges.INSTANCE.saveGlobal();
 
+    Keys.event.remove(keyListener);
+    ScrollEvent.removeScrollListener(scrollListener);
+
     super.destroy();
+  }
+
+  private boolean handleKey(Keys.Key key) {
+    if (isPanKey(key.code)) {
+      if (key.pressed) {
+        heldPanX = key.code == com.badlogic.gdx.Input.Keys.A ? -1 : key.code == com.badlogic.gdx.Input.Keys.D ? 1 : 0;
+        heldPanY = key.code == com.badlogic.gdx.Input.Keys.W ? -1 : key.code == com.badlogic.gdx.Input.Keys.S ? 1 : 0;
+      } else {
+        if (key.code == com.badlogic.gdx.Input.Keys.A || key.code == com.badlogic.gdx.Input.Keys.D) heldPanX = 0;
+        if (key.code == com.badlogic.gdx.Input.Keys.W || key.code == com.badlogic.gdx.Input.Keys.S) heldPanY = 0;
+      }
+      return true;
+    }
+    if (isMoveKey(key.code)) {
+      if (key.pressed) {
+        heldMoveKey = key.code;
+        Dungeon.INSTANCE.getHero().setContinuousMoving(true);
+      } else if (heldMoveKey == key.code) {
+        heldMoveKey = -1;
+        Dungeon.INSTANCE.getHero().stopContinuousMoving();
+      }
+      if (!key.pressed) return true;
+    }
+    if (!key.pressed) return false;
+
+    // Windows own all input while they are visible. This is especially
+    // important for held movement keys: without this guard a key that opened
+    // a dialogue could keep selecting cells behind the window.
+    if (hasOpenWindow()) return true;
+    if (key.code == com.badlogic.gdx.Input.Keys.GRAVE) {
+      Toolbar.switchQuickSlotTabFromKey();
+      return true;
+    }
+    if (DeviceCompat.isDesktop()) {
+      if (key.code == com.badlogic.gdx.Input.Keys.Z) { cellSelector.zoomBy(1); return true; }
+      if (key.code == com.badlogic.gdx.Input.Keys.X) { cellSelector.zoomBy(-1); return true; }
+    }
+    if (DeviceCompat.isDesktop() && (key.code == com.badlogic.gdx.Input.Keys.PERIOD || key.code == com.badlogic.gdx.Input.Keys.COMMA)) {
+      int target = key.code == com.badlogic.gdx.Input.Keys.PERIOD ? Dungeon.INSTANCE.getLevel().getExit() : Dungeon.INSTANCE.getLevel().getEntrance();
+      if (target >= 0 && target < Dungeon.INSTANCE.getLevel().length()) {
+        Dungeon.INSTANCE.getHero().handle(target);
+        Dungeon.INSTANCE.getHero().next();
+      } else {
+        GLog.w(key.code == com.badlogic.gdx.Input.Keys.PERIOD ? "No downstairs here." : "No upstairs here.");
+      }
+      return true;
+    }
+    if (key.code >= com.badlogic.gdx.Input.Keys.NUM_1 && key.code <= com.badlogic.gdx.Input.Keys.NUM_8) {
+      int configured = DarkestPixelDungeon.quickSlots();
+      int number = key.code - com.badlogic.gdx.Input.Keys.NUM_1 + 1;
+      if (number <= configured) {
+        QuickSlotButton.use(Toolbar.currentQuickSlotIndex(configured - number));
+        return true;
+      }
+    }
+    DPDAction command = DPDAction.fromKey(key.code);
+    if (command == null) return false;
+
+    if (!Dungeon.INSTANCE.getHero().getReady() && command != DPDAction.ZOOM_IN &&
+            command != DPDAction.ZOOM_OUT) return true;
+
+    int width = Dungeon.INSTANCE.getLevel().width();
+    int offset = 0;
+    if (QuickSlotButton.isTargeting()) {
+      switch (command) {
+        case NORTH: QuickSlotButton.moveTarget(0, -1); return true;
+        case WEST: QuickSlotButton.moveTarget(-1, 0); return true;
+        case SOUTH: QuickSlotButton.moveTarget(0, 1); return true;
+        case EAST: QuickSlotButton.moveTarget(1, 0); return true;
+        case NORTH_WEST: QuickSlotButton.moveTarget(-1, -1); return true;
+        case NORTH_EAST: QuickSlotButton.moveTarget(1, -1); return true;
+        case SOUTH_WEST: QuickSlotButton.moveTarget(-1, 1); return true;
+        case SOUTH_EAST: QuickSlotButton.moveTarget(1, 1); return true;
+        case CYCLE_TARGET: QuickSlotButton.cycleTarget(); return true;
+        case TAG_LOOT:
+          if (QuickSlotButton.confirmExternalTarget()) return true;
+          break;
+      }
+    }
+    switch (command) {
+      case NORTH: offset = -width; break;
+      case WEST: offset = -1; break;
+      case SOUTH: offset = width; break;
+      case EAST: offset = 1; break;
+      case NORTH_WEST: offset = -width - 1; break;
+      case NORTH_EAST: offset = -width + 1; break;
+      case SOUTH_WEST: offset = width - 1; break;
+      case SOUTH_EAST: offset = width + 1; break;
+      case WAIT_OR_PICKUP:
+        if (Dungeon.INSTANCE.getLevel().getHeaps().get(Dungeon.INSTANCE.getHero().getPos()) != null) {
+          if (Dungeon.INSTANCE.getHero().handle(Dungeon.INSTANCE.getHero().getPos())) {
+            Dungeon.INSTANCE.getHero().next();
+          }
+        } else {
+          toolbar.waitTurn();
+        }
+        break;
+      case INVENTORY: toolbar.inventory(); break;
+      case EXAMINE: toolbar.examine(); break;
+      case REST: toolbar.rest(); break;
+      case QUICK_SLOT_1: QuickSlotButton.use(0); break;
+      case QUICK_SLOT_2: QuickSlotButton.use(1); break;
+      case QUICK_SLOT_3: QuickSlotButton.use(2); break;
+      case QUICK_SLOT_4: QuickSlotButton.use(3); break;
+      case QUICK_SLOT_5: QuickSlotButton.use(4); break;
+      case QUICK_SLOT_6: QuickSlotButton.use(5); break;
+      case TAG_ATTACK: attack.trigger(); break;
+      case TAG_ACTION: action.trigger(); break;
+      case TAG_LOOT: loot.trigger(); break;
+      case TAG_RESUME: resume.trigger(); break;
+      case CYCLE_TARGET: attack.cycleTarget(); break;
+      case HERO_INFO: show(() -> new WndHero()); break;
+      case TORCH: pane.toggleTorch(); break;
+      case PERK:
+        if (Dungeon.INSTANCE.getHero().getReservedPerks() > 0) {
+          WndGainNewPerk.Show(Dungeon.INSTANCE.getHero());
+        }
+        break;
+      case JOURNAL: show(() -> new WndJournal()); break;
+      case ZOOM_IN: cellSelector.zoomBy(1); break;
+      case ZOOM_OUT: cellSelector.zoomBy(-1); break;
+    }
+    if (offset != 0 && Dungeon.INSTANCE.getHero().getReady() &&
+            cellSelector.listener == defaultCellListener) {
+      handleCell(Dungeon.INSTANCE.getHero().getPos() + offset);
+    }
+    return true;
+  }
+
+  private boolean hasOpenWindow() {
+    if (windowPending.get()) return true;
+    for (Gizmo member : members) {
+      if (member instanceof Window && member.alive) return true;
+    }
+    return false;
+  }
+
+  private boolean isPanKey(int code) {
+    return DeviceCompat.isDesktop() && (code == com.badlogic.gdx.Input.Keys.W || code == com.badlogic.gdx.Input.Keys.A ||
+            code == com.badlogic.gdx.Input.Keys.S || code == com.badlogic.gdx.Input.Keys.D);
+  }
+
+  private boolean isMoveKey(int code) {
+    return code == com.badlogic.gdx.Input.Keys.UP || code == com.badlogic.gdx.Input.Keys.DOWN ||
+            code == com.badlogic.gdx.Input.Keys.LEFT || code == com.badlogic.gdx.Input.Keys.RIGHT ||
+            code == com.badlogic.gdx.Input.Keys.NUMPAD_1 || code == com.badlogic.gdx.Input.Keys.NUMPAD_2 ||
+            code == com.badlogic.gdx.Input.Keys.NUMPAD_3 || code == com.badlogic.gdx.Input.Keys.NUMPAD_4 ||
+            code == com.badlogic.gdx.Input.Keys.NUMPAD_6 || code == com.badlogic.gdx.Input.Keys.NUMPAD_7 ||
+            code == com.badlogic.gdx.Input.Keys.NUMPAD_8 || code == com.badlogic.gdx.Input.Keys.NUMPAD_9;
+  }
+
+  private void updateHeldInput() {
+    if (hasOpenWindow()) {
+      heldPanX = 0;
+      heldPanY = 0;
+      if (heldMoveKey != -1) {
+        heldMoveKey = -1;
+        Dungeon.INSTANCE.getHero().stopContinuousMoving();
+      }
+      return;
+    }
+    // Poll the live key state before committing another step. The key-up event
+    // is dispatched once per frame and can arrive one frame late, so an
+    // edge-triggered release lets one more step slip through after the player
+    // has already let go. Checking the physical state here makes the release
+    // synchronous with the movement decision and prevents that phantom step.
+    if (heldMoveKey != -1 && !Gdx.input.isKeyPressed(heldMoveKey)) {
+      heldMoveKey = -1;
+      Dungeon.INSTANCE.getHero().stopContinuousMoving();
+      return;
+    }
+    if (heldPanX != 0 || heldPanY != 0) {
+      Camera.main.target = null;
+      float maxX = Math.max(0, Dungeon.INSTANCE.getLevel().width() * DungeonTilemap.SIZE - Camera.main.width);
+      float maxY = Math.max(0, Dungeon.INSTANCE.getLevel().height() * DungeonTilemap.SIZE - Camera.main.height);
+      Camera.main.scroll.x = Math.max(0, Math.min(maxX, Camera.main.scroll.x + heldPanX * 4));
+      Camera.main.scroll.y = Math.max(0, Math.min(maxY, Camera.main.scroll.y + heldPanY * 4));
+    }
+    if (heldMoveKey == -1 || !Dungeon.INSTANCE.getHero().getReady() ||
+            Dungeon.INSTANCE.getHero().visibleEnemies() > 0 || cellSelector.listener != defaultCellListener) {
+      if (Dungeon.INSTANCE.getHero().visibleEnemies() > 0) {
+        heldMoveKey = -1;
+        Dungeon.INSTANCE.getHero().stopContinuousMoving();
+      }
+      return;
+    }
+    DPDAction command = DPDAction.fromKey(heldMoveKey);
+    if (command == null) return;
+    int width = Dungeon.INSTANCE.getLevel().width();
+    int offset = command == DPDAction.NORTH ? -width : command == DPDAction.SOUTH ? width :
+            command == DPDAction.WEST ? -1 : command == DPDAction.EAST ? 1 :
+            command == DPDAction.NORTH_WEST ? -width - 1 : command == DPDAction.NORTH_EAST ? -width + 1 :
+            command == DPDAction.SOUTH_WEST ? width - 1 : command == DPDAction.SOUTH_EAST ? width + 1 : 0;
+    if (offset != 0) {
+      int next = Dungeon.INSTANCE.getHero().getPos() + offset;
+      if (next >= 0 && next < Dungeon.INSTANCE.getLevel().length()) {
+        com.egoal.darkestpixeldungeon.levels.traps.Trap trap = Dungeon.INSTANCE.getLevel().getTraps().get(next);
+        if (trap != null && trap.getVisible()) {
+          heldMoveKey = -1;
+          Dungeon.INSTANCE.getHero().stopContinuousMoving();
+          return;
+        }
+      }
+      handleCell(next);
+    }
+  }
+
+  public static void stopContinuousMove() {
+    if (scene != null) scene.heldMoveKey = -1;
+    if (!Dungeon.INSTANCE.isHeroNull()) Dungeon.INSTANCE.getHero().stopContinuousMoving();
   }
 
   @Override
@@ -438,6 +673,11 @@ public class GameScene extends PixelScene {
   }
 
   private Thread t;
+  /** Set before an asynchronous window handoff so input cannot slip through. */
+  private final AtomicBoolean windowPending = new AtomicBoolean(false);
+  private int heldMoveKey = -1;
+  private int heldPanX;
+  private int heldPanY;
 
   @Override
   public synchronized void update() {
@@ -446,6 +686,8 @@ public class GameScene extends PixelScene {
     }
 
     super.update();
+
+    updateHeldInput();
 
     if (!freezeEmitters) water.offset(0, -5 * Game.elapsed);
 
@@ -489,10 +731,23 @@ public class GameScene extends PixelScene {
     cellSelector.enable(Dungeon.INSTANCE.getHero().getReady());
   }
 
+  public Thread actorThread() {
+    return t;
+  }
+
+  public static Thread currentActorThread() {
+    return scene == null ? null : scene.actorThread();
+  }
+
   private boolean tagAttack = false;
   private boolean tagLoot = false;
   private boolean tagAction = false;
   private boolean tagResume = false;
+
+  /** Applies a post-process filter to the map layers while leaving the UI untouched. */
+  public static void mapFilter(MapFilter filter) {
+    if (scene != null) scene.filteredMap.setFilter(filter);
+  }
 
   public static void layoutTags() {
 
@@ -537,8 +792,12 @@ public class GameScene extends PixelScene {
 
   @Override
   protected void onBackPressed() {
+    if (QuickSlotButton.isTargeting()) {
+      QuickSlotButton.cancel();
+      return;
+    }
     if (!cancel()) {
-      add(new WndGame());
+      show(() -> new WndGame());
     }
   }
 
@@ -644,13 +903,17 @@ public class GameScene extends PixelScene {
 
   public static void add(Heap heap) {
     if (scene != null) {
-      scene.addHeapSprite(heap);
+      com.watabou.noosa.Game.runOnRenderThreadAndWait(() -> {
+        if (scene != null) scene.addHeapSprite(heap);
+      });
     }
   }
 
   public static void discard(Heap heap) {
     if (scene != null) {
-      scene.addDiscardedSprite(heap);
+      com.watabou.noosa.Game.runOnRenderThreadAndWait(() -> {
+        if (scene != null) scene.addDiscardedSprite(heap);
+      });
     }
   }
 
@@ -754,8 +1017,38 @@ public class GameScene extends PixelScene {
   }
 
   public static void show(Window wnd) {
-    cancelCellSelector();
-    scene.addToFront(wnd);
+    if (wnd == null) return;
+    if (scene == null || !scene.windowPending.compareAndSet(false, true)) {
+      wnd.destroy();
+      return;
+    }
+    com.watabou.noosa.Game.runOnRenderThread(() -> {
+      if (scene == null) {
+        wnd.destroy();
+        return;
+      }
+      cancelCellSelector();
+      scene.addToFront(wnd);
+      scene.windowPending.set(false);
+    });
+  }
+
+  /** Queues window construction and attachment on the LibGDX render thread. */
+  public static void show(Supplier<? extends Window> factory) {
+    if (factory == null) return;
+    if (scene == null || !scene.windowPending.compareAndSet(false, true)) return;
+    com.watabou.noosa.Game.runOnRenderThread(() -> {
+      try {
+        if (scene == null) return;
+        Window wnd = factory.get();
+        if (wnd != null) {
+          cancelCellSelector();
+          scene.addToFront(wnd);
+        }
+      } finally {
+        if (scene != null) scene.windowPending.set(false);
+      }
+    });
   }
 
   public static void updateFog() {
@@ -811,9 +1104,9 @@ public class GameScene extends PixelScene {
 
     @Override
     public void draw() {
-      GLES20.glBlendFunc(GL10.GL_SRC_ALPHA, GL10.GL_ONE);
+      Gdx.gl.glBlendFunc(Gdx.gl.GL_SRC_ALPHA, Gdx.gl.GL_ONE);
       super.draw();
-      GLES20.glBlendFunc(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
+      Gdx.gl.glBlendFunc(Gdx.gl.GL_SRC_ALPHA, Gdx.gl.GL_ONE_MINUS_SRC_ALPHA);
     }
   }
   // ^^^ may not a good idea...
@@ -878,7 +1171,7 @@ public class GameScene extends PixelScene {
                                             WndBag.lastBag(listener, mode,
                                                     title);
 
-    scene.addToFront(wnd);
+    show(wnd);
 
     return wnd;
   }
@@ -888,7 +1181,7 @@ public class GameScene extends PixelScene {
     cancelCellSelector();
     WndBag wnd = new WndBag(Dungeon.INSTANCE.getHero().getBelongings().getBackpack(), listener,
             title, filter);
-    scene.addToFront(wnd);
+    show(wnd);
 
     return wnd;
   }
@@ -919,7 +1212,7 @@ public class GameScene extends PixelScene {
 
     if (cell < 0 || cell > Dungeon.INSTANCE.getLevel().length() || (!Dungeon.INSTANCE.getLevel()
             .getVisited()[cell] && !Dungeon.INSTANCE.getLevel().getMapped()[cell])) {
-      GameScene.show(new WndMessage(Messages.get(GameScene.class,
+      GameScene.show(() -> new WndMessage(Messages.get(GameScene.class,
               "dont_know")));
       return;
     }
@@ -959,11 +1252,11 @@ public class GameScene extends PixelScene {
     }
 
     if (objects.isEmpty()) {
-      GameScene.show(new WndInfoCell(cell));
+      GameScene.show(() -> new WndInfoCell(cell));
     } else if (objects.size() == 1) {
       examineObject(objects.get(0));
     } else {
-      GameScene.show(new WndOptions(Messages.get(GameScene.class,
+      GameScene.show(() -> new WndOptions(Messages.get(GameScene.class,
               "choose_examine"),
               Messages.get(GameScene.class, "multiple_examine"), names
               .toArray(new String[names.size()])) {
@@ -978,18 +1271,18 @@ public class GameScene extends PixelScene {
 
   public static void examineObject(Object o) {
     if (o == Dungeon.INSTANCE.getHero()) {
-      GameScene.show(new WndHero());
+      GameScene.show(() -> new WndHero());
     } else if (o instanceof Mob) {
-      GameScene.show(new WndInfoMob((Mob) o));
+      GameScene.show(() -> new WndInfoMob((Mob) o));
     } else if (o instanceof Heap) {
       Heap heap = (Heap) o;
-      GameScene.show(new WndInfoItem(heap));
+      GameScene.show(() -> new WndInfoItem(heap));
     } else if (o instanceof Plant) {
-      GameScene.show(new WndInfoPlant((Plant) o));
+      GameScene.show(() -> new WndInfoPlant((Plant) o));
     } else if (o instanceof Trap) {
-      GameScene.show(new WndInfoTrap((Trap) o));
+      GameScene.show(() -> new WndInfoTrap((Trap) o));
     } else {
-      GameScene.show(new WndMessage(Messages.get(GameScene.class,
+      GameScene.show(() -> new WndMessage(Messages.get(GameScene.class,
               "dont_know")));
     }
   }

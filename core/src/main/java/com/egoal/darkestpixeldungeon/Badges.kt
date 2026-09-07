@@ -36,7 +36,6 @@ import com.egoal.darkestpixeldungeon.messages.M
 import com.egoal.darkestpixeldungeon.messages.Messages
 import com.egoal.darkestpixeldungeon.scenes.PixelScene
 import com.egoal.darkestpixeldungeon.utils.GLog
-import com.watabou.noosa.Game
 import com.watabou.utils.Bundle
 import com.watabou.utils.Callback
 import java.io.IOException
@@ -209,9 +208,7 @@ object Badges {
         if (::global.isInitialized) return
 
         try {
-            val input = Game.instance.openFileInput(BADGES_FILE)
-            val bundle = Bundle.read(input)
-            input.close()
+            val bundle = com.watabou.utils.FileUtils.bundleFromFile(BADGES_FILE)
 
             global = restore(bundle)
 
@@ -227,10 +224,7 @@ object Badges {
             store(bundle, global!!)
 
             try {
-                val output = Game.instance.openFileOutput(BADGES_FILE, Game
-                        .MODE_PRIVATE)
-                Bundle.write(bundle, output)
-                output.close()
+                com.watabou.utils.FileUtils.bundleToFile(BADGES_FILE, bundle)
                 saveNeeded = false
             } catch (e: IOException) {
                 DarkestPixelDungeon.reportException(e)
@@ -791,6 +785,7 @@ object Badges {
             HeroClass.ROGUE -> badge = Badge.VICTORY_ROGUE
             HeroClass.HUNTRESS -> badge = Badge.VICTORY_HUNTRESS
             HeroClass.SORCERESS -> badge = Badge.VICTORY_SORCERESS
+            else -> {}
         }
         local.add(badge)
         if (!global!!.contains(badge)) {

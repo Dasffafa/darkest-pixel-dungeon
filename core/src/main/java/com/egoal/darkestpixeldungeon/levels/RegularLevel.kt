@@ -1,6 +1,6 @@
 package com.egoal.darkestpixeldungeon.levels
 
-import android.util.Log
+import com.watabou.utils.Log
 import com.egoal.darkestpixeldungeon.Bones
 import com.egoal.darkestpixeldungeon.Challenge
 import com.egoal.darkestpixeldungeon.Dungeon

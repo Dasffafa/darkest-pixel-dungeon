@@ -67,7 +67,7 @@ public class ExitButton extends Button {
   }
 
   @Override
-  protected void onClick() {
+  public void onClick() {
     if (Game.scene() instanceof TitleScene) {
       Game.instance.finish();
     } else {

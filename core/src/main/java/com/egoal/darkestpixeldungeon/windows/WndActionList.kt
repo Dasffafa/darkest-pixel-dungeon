@@ -33,7 +33,7 @@ class WndActionList(icon: Image, title: String, actions: List<Action>) : Window(
             } else {
                 val btnHelp = object : RedButton("?") {
                     override fun onClick() {
-                        GameScene.show(WndOptions(pr.value.Name(), pr.value.Info()))
+                        GameScene.show { WndOptions(pr.value.Name(), pr.value.Info()) }
                     }
                 }
                 btnHelp.textColor(0xffffff)

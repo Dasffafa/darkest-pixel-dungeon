@@ -20,7 +20,6 @@
  */
 package com.egoal.darkestpixeldungeon.effects;
 
-import android.text.style.AbsoluteSizeSpan;
 import com.egoal.darkestpixeldungeon.Assets;
 import com.watabou.noosa.Image;
 

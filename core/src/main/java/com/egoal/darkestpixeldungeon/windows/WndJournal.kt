@@ -32,7 +32,7 @@ class WndJournal : Window() {
         btnCatalogues = object : RedButton(M.L(WndCatalogs::class.java, "title"), 9) {
             override fun onClick() {
                 hide()
-                GameScene.show(WndCatalogs())
+                GameScene.show { WndCatalogs() }
             }
         }.apply {
             setRect(WIDTH / 2f + 1, 0f, WIDTH / 2f - 1, reqHeight())

@@ -1,6 +1,6 @@
 package com.egoal.darkestpixeldungeon.actors.mobs.npcs
 
-import android.util.Log
+import com.watabou.utils.Log
 import com.egoal.darkestpixeldungeon.Assets
 import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.Journal
@@ -72,7 +72,7 @@ open class Merchant : NPC() {
     protected open fun execute(action: String) {
         if (action == AC_BUY) {
             if (items.isEmpty()) tell(M.L(this, "nothing_more"))
-            else GameScene.show(WndShop())
+            else GameScene.show { WndShop() }
         } else if (action == AC_SWAP) {
             swapPosition(Dungeon.hero)
             Dungeon.hero.spendAndNext(1f / Dungeon.hero.speed());

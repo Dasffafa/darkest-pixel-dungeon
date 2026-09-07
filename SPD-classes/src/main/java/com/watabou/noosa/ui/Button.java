@@ -52,7 +52,7 @@ public class Button extends Component {
 				Button.this.onTouchUp();
 			};
 			@Override
-			protected void onClick( Touch touch ) {
+			public void onClick( Touch touch ) {
 				if (!processed) {
 					Button.this.onClick();
 				}
@@ -84,7 +84,7 @@ public class Button extends Component {
 	
 	protected void onTouchDown() {};
 	protected void onTouchUp() {};
-	protected void onClick() {};
+	public void onClick() {};
 	
 	protected boolean onLongClick() {
 		return false;

@@ -20,8 +20,7 @@
  */
 package com.egoal.darkestpixeldungeon;
 
-import android.content.SharedPreferences;
-import com.watabou.noosa.Game;
+import com.badlogic.gdx.Gdx;
 import com.watabou.utils.GameMath;
 
 enum Preferences {
@@ -53,11 +52,11 @@ enum Preferences {
   public static final String KEY_HERO_NAME = "hero_name";
   public static final String KEY_MORE_SLOTS = "more_slots";
 
-  private SharedPreferences prefs;
+  private com.badlogic.gdx.Preferences prefs;
 
-  private SharedPreferences get() {
+  private com.badlogic.gdx.Preferences get() {
     if (prefs == null) {
-      prefs = Game.instance.getPreferences(Game.MODE_PRIVATE);
+      prefs = Gdx.app.getPreferences("DarkestPixelDungeon");
     }
     return prefs;
   }
@@ -68,7 +67,7 @@ enum Preferences {
 
   int getInt(String key, int defValue, int min, int max) {
     try {
-      int i = get().getInt(key, defValue);
+      int i = get().getInteger(key, defValue);
       if (i < min || i > max) {
         int val = (int) GameMath.INSTANCE.gate(min, i, max);
         put(key, val);
@@ -114,14 +113,14 @@ enum Preferences {
   }
 
   void put(String key, int value) {
-    get().edit().putInt(key, value).commit();
+    get().putInteger(key, value).flush();
   }
 
   void put(String key, boolean value) {
-    get().edit().putBoolean(key, value).commit();
+    get().putBoolean(key, value).flush();
   }
 
   void put(String key, String value) {
-    get().edit().putString(key, value).commit();
+    get().putString(key, value).flush();
   }
 }

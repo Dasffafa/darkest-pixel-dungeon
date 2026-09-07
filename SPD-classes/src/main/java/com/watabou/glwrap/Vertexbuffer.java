@@ -21,7 +21,7 @@
 
 package com.watabou.glwrap;
 
-import android.opengl.GLES20;
+import com.badlogic.gdx.Gdx;
 
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
@@ -32,12 +32,10 @@ public class Vertexbuffer {
 	private FloatBuffer vertices;
 	private int updateStart, updateEnd;
 
-	private static ArrayList<Vertexbuffer> buffers = new ArrayList<>();
+	private static final ArrayList<Vertexbuffer> buffers = new ArrayList<>();
 
 	public Vertexbuffer( FloatBuffer vertices ) {
-		int[] ptr = new int[1];
-		GLES20.glGenBuffers( 1, ptr, 0 );
-		id = ptr[0];
+		id = Gdx.gl.glGenBuffer();
 
 		this.vertices = vertices;
 		buffers.add(this);
@@ -78,9 +76,9 @@ public class Vertexbuffer {
 		bind();
 
 		if (updateStart == 0 && updateEnd == vertices.limit()){
-			GLES20.glBufferData(GLES20.GL_ARRAY_BUFFER, vertices.limit()*4, vertices, GLES20.GL_DYNAMIC_DRAW);
+			Gdx.gl.glBufferData(Gdx.gl.GL_ARRAY_BUFFER, vertices.limit()*4, vertices, Gdx.gl.GL_DYNAMIC_DRAW);
 		} else {
-			GLES20.glBufferSubData(GLES20.GL_ARRAY_BUFFER, updateStart*4, (updateEnd - updateStart)*4, vertices);
+			Gdx.gl.glBufferSubData(Gdx.gl.GL_ARRAY_BUFFER, updateStart*4, (updateEnd - updateStart)*4, vertices);
 		}
 
 		release();
@@ -88,15 +86,15 @@ public class Vertexbuffer {
 	}
 
 	public void bind(){
-		GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, id);
+		Gdx.gl.glBindBuffer(Gdx.gl.GL_ARRAY_BUFFER, id);
 	}
 
 	public void release(){
-		GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0);
+		Gdx.gl.glBindBuffer(Gdx.gl.GL_ARRAY_BUFFER, 0);
 	}
 
 	public void delete(){
-		GLES20.glDeleteBuffers(1, new int[]{id}, 0);
+		Gdx.gl.glDeleteBuffer(id);
 		buffers.remove(this);
 	}
 

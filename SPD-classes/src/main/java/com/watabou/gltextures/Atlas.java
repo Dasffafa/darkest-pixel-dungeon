@@ -23,7 +23,7 @@ package com.watabou.gltextures;
 
 import java.util.HashMap;
 
-import android.graphics.RectF;
+import com.watabou.utils.RectF;
 
 public class Atlas {
 

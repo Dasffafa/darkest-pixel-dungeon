@@ -1,6 +1,6 @@
 package com.egoal.darkestpixeldungeon.actors.hero
 
-import android.util.Log
+import com.watabou.utils.Log
 import com.egoal.darkestpixeldungeon.*
 import com.egoal.darkestpixeldungeon.actors.Actor
 import com.egoal.darkestpixeldungeon.actors.Char
@@ -659,7 +659,7 @@ class Hero : Char() {
     }
 
     override fun takeDamage(dmg: Damage): Int {
-        if (damageInterrupt && !(dmg.from is Hunger || dmg.from is Viscosity.DeferedDamage)) {
+        if (damageInterrupt && dmg.from !is Hunger) {
             interrupt()
             resting = false
         }
@@ -685,6 +685,10 @@ class Hero : Char() {
         }
 
         val dmgToken = super.takeDamage(dmg)
+        if (dmg.from is Hunger && HP <= HT / 4) {
+            interrupt()
+            resting = false
+        }
         heroPerk.get(LowHealthRegeneration::class.java)?.onDamageTaken(this)
         heroPerk.get(BaredRelieve::class.java)?.onDamageTaken(this, dmg)
         buff(ThornsOfPain.Pain::class.java)?.onDamageTaken(this, dmg)
@@ -779,8 +783,15 @@ class Hero : Char() {
         ready = false
     }
 
+    var continuousMoving = false
+
+    fun stopContinuousMoving() {
+        continuousMoving = false
+        if (ready && sprite.looping()) sprite.idle()
+    }
+
     fun ready() {
-        if (sprite.looping()) sprite.idle()
+        if (!continuousMoving && sprite.looping()) sprite.idle()
         curAction = null
         damageInterrupt = true
         ready = true
@@ -796,6 +807,7 @@ class Hero : Char() {
     }
 
     fun interrupt() {
+        GameScene.stopContinuousMove()
         if (isAlive &&
                 ((curAction is HeroAction.Move && curAction!!.dst != pos) ||
                         curAction is HeroAction.Descend ||
@@ -807,7 +819,7 @@ class Hero : Char() {
     fun resume() {
         curAction = lastAction
         lastAction = null
-        damageInterrupt = false
+        damageInterrupt = true
         next()
     }
 
@@ -834,6 +846,8 @@ class Hero : Char() {
         }
 
         if (newFound) {
+            // Refresh rendered visibility when Telepath detects a newly sensed enemy.
+            Dungeon.observe()
             interrupt()
             resting = false
         }
@@ -939,6 +953,7 @@ class Hero : Char() {
         if (cell == -1) return false
 
         curAction = defineAction(cell)
+        if (curAction !is HeroAction.Move) stopContinuousMoving()
         if (curAction is HeroAction.Move) lastAction = null // move cancel last action
 
         return true
@@ -1090,7 +1105,7 @@ class Hero : Char() {
         if (belongings.helmet is CollarOfSlave)
             stealth += (belongings.helmet as CollarOfSlave).stealth()
 
-        if (heroPerk.has(BaredStealth::class.java)) stealth += 3
+        if (heroPerk.has(BaredStealth::class.java) && belongings.armor == null) stealth += 3
 
         buff(Catwalk::class.java)?.let { stealth += 1 }
 
@@ -1116,7 +1131,7 @@ class Hero : Char() {
                 ankh = item
 
         val revive = { hpRatio: Float, color: Int ->
-            HP = round(HT * hpRatio).toInt()
+            HP = max(1, round(HT * hpRatio).toInt())
             //ensures that you'll get to act first in almost any case, to prevent
             // reviving and then instantly dying again.
             recoverSanity(min(20f, pressure.pressure * 0.25f))
@@ -1168,7 +1183,7 @@ class Hero : Char() {
         if (ankh == null) ReallyDie(src)
         else {
             Dungeon.deleteGame(false, true)
-            GameScene.show(WndResurrect(ankh, src))
+            GameScene.show { WndResurrect(ankh, src) }
         }
     }
 
@@ -1383,6 +1398,7 @@ class Hero : Char() {
                 when (it.type) {
                     Heap.Type.SKELETON, Heap.Type.REMAINS -> Sample.INSTANCE.play(Assets.SND_BONES)
                     Heap.Type.LOCKED_CHEST, Heap.Type.CRYSTAL_CHEST -> belongings.specialKeys[Dungeon.depth]--
+                    else -> {}
                 }
                 StatusPane.needsKeyUpdate = true
                 it.open(Dungeon.hero) // fixme

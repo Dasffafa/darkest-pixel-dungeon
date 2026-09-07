@@ -20,7 +20,7 @@
  */
 package com.egoal.darkestpixeldungeon.actors
 
-import android.util.SparseArray
+import com.watabou.utils.SparseArray
 import com.egoal.darkestpixeldungeon.DarkestPixelDungeon
 import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.Statistics

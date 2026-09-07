@@ -20,12 +20,6 @@
  */
 package com.egoal.darkestpixeldungeon;
 
-import android.annotation.SuppressLint;
-import android.content.pm.ActivityInfo;
-import android.os.Bundle;
-import android.util.DisplayMetrics;
-import android.view.View;
-
 import com.egoal.darkestpixeldungeon.messages.Languages;
 import com.egoal.darkestpixeldungeon.scenes.GameScene;
 import com.egoal.darkestpixeldungeon.scenes.PixelScene;
@@ -34,15 +28,22 @@ import com.watabou.noosa.Game;
 import com.watabou.noosa.RenderedText;
 import com.watabou.noosa.audio.Music;
 import com.watabou.noosa.audio.Sample;
+import com.watabou.utils.PlatformSupport;
 
-import javax.microedition.khronos.opengles.GL10;
-
-import java.util.Locale;
+import java.util.Map;
 
 public class DarkestPixelDungeon extends Game {
+  private volatile long renderHeartbeat;
+  private volatile boolean watchdogReported;
+  private volatile long actorProcessingSince;
+  private volatile boolean actorTimeoutReported;
 
   public DarkestPixelDungeon() {
-    super(WelcomeScene.class);
+    this(new PlatformSupport());
+  }
+
+  public DarkestPixelDungeon(PlatformSupport platformSupport) {
+    super(WelcomeScene.class, platformSupport);
 
     // we can add alias to compatible with older saves, but no need for me 23333
     // like:
@@ -56,16 +57,55 @@ public class DarkestPixelDungeon extends Game {
 
   @SuppressWarnings("deprecation")
   @Override
-  protected void onCreate(Bundle savedInstanceState) {
-    super.onCreate(savedInstanceState);
+  public void create() {
+    super.create();
 
-    Thread.setDefaultUncaughtExceptionHandler(new TopExceptionHandler(this));
+    renderHeartbeat = System.currentTimeMillis();
+    Thread watchdog = new Thread(() -> {
+      while (true) {
+        try { Thread.sleep(1000L); } catch (InterruptedException ignored) { return; }
+        long stalled = System.currentTimeMillis() - renderHeartbeat;
+        if (!watchdogReported && stalled >= 10000L) {
+          watchdogReported = true;
+          StringBuilder detail = new StringBuilder("Render thread stalled for more than 10 seconds.\n");
+          for (Map.Entry<Thread, StackTraceElement[]> entry : Thread.getAllStackTraces().entrySet()) {
+            detail.append("\n--- ").append(entry.getKey().getName()).append(" ---\n");
+            for (StackTraceElement element : entry.getValue()) detail.append("at ").append(element).append('\n');
+          }
+          RuntimeException timeout = new RuntimeException(detail.toString());
+          TopExceptionHandler.Companion.WriteErrorFile(timeout);
+          platform.reportException(timeout);
+          return;
+        } else if (stalled < 10000L) {
+          watchdogReported = false;
+        }
+
+        Thread actor = GameScene.currentActorThread();
+        if (actor != null && actor.isAlive() && com.egoal.darkestpixeldungeon.actors.Actor.Companion.processing()) {
+          if (actorProcessingSince == 0L) actorProcessingSince = System.currentTimeMillis();
+          if (!actorTimeoutReported && System.currentTimeMillis() - actorProcessingSince >= 10000L) {
+            actorTimeoutReported = true;
+            RuntimeException timeout = new RuntimeException(
+                    "Actor thread blocked for more than 10 seconds. depth=" + Dungeon.INSTANCE.getDepth());
+            timeout.setStackTrace(actor.getStackTrace());
+            TopExceptionHandler.Companion.WriteErrorFile(timeout);
+            platform.reportException(timeout);
+            return;
+          }
+        } else {
+          actorProcessingSince = 0L;
+          actorTimeoutReported = false;
+        }
+      }
+    }, "DPD Watchdog");
+    watchdog.setDaemon(true);
+    watchdog.start();
+
+    Thread.setDefaultUncaughtExceptionHandler(new TopExceptionHandler());
 
     updateImmersiveMode();
 
-    DisplayMetrics metrics = new DisplayMetrics();
-    instance.getWindowManager().getDefaultDisplay().getMetrics(metrics);
-    boolean landscape = metrics.widthPixels > metrics.heightPixels;
+    boolean landscape = width > height;
 
     if (Preferences.INSTANCE.getBoolean(Preferences.KEY_LANDSCAPE, false) !=
             landscape) {
@@ -142,13 +182,9 @@ public class DarkestPixelDungeon extends Game {
   }
 
   @Override
-  public void onWindowFocusChanged(boolean hasFocus) {
-
-    super.onWindowFocusChanged(hasFocus);
-
-    if (hasFocus) {
-      updateImmersiveMode();
-    }
+  public void render() {
+    renderHeartbeat = System.currentTimeMillis();
+    super.render();
   }
 
   public static void switchNoFade(Class<? extends PixelScene> c) {
@@ -170,7 +206,7 @@ public class DarkestPixelDungeon extends Game {
   }
 
   public static boolean debug() {
-    return Preferences.INSTANCE.getBoolean(Preferences.KEY_DEBUG, false);
+    return Boolean.getBoolean("dpd.debug") || Preferences.INSTANCE.getBoolean(Preferences.KEY_DEBUG, false);
   }
 
   public static void changeListChecked(boolean value) {
@@ -183,15 +219,7 @@ public class DarkestPixelDungeon extends Game {
   }
 
   public static void landscape(boolean value) {
-    if (android.os.Build.VERSION.SDK_INT >= 9) {
-      Game.instance.setRequestedOrientation(value ?
-              ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE :
-              ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT);
-    } else {
-      Game.instance.setRequestedOrientation(value ?
-              ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE :
-              ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-    }
+    Game.platform.setLandscape(value);
     Preferences.INSTANCE.put(Preferences.KEY_LANDSCAPE, value);
   }
 
@@ -207,22 +235,15 @@ public class DarkestPixelDungeon extends Game {
 
   private static boolean immersiveModeChanged = false;
 
-  @SuppressLint("NewApi")
   public static void immerse(boolean value) {
     Preferences.INSTANCE.put(Preferences.KEY_IMMERSIVE, value);
-
-    instance.runOnUiThread(new Runnable() {
-      @Override
-      public void run() {
-        updateImmersiveMode();
-        immersiveModeChanged = true;
-      }
-    });
+    updateImmersiveMode();
+    immersiveModeChanged = true;
   }
 
   @Override
-  public void onSurfaceChanged(GL10 gl, int width, int height) {
-    super.onSurfaceChanged(gl, width, height);
+  public void resize(int width, int height) {
+    super.resize(width, height);
 
     if (immersiveModeChanged) {
       requestedReset = true;
@@ -230,25 +251,8 @@ public class DarkestPixelDungeon extends Game {
     }
   }
 
-  @SuppressLint("NewApi")
   public static void updateImmersiveMode() {
-    if (android.os.Build.VERSION.SDK_INT >= 19) {
-      try {
-        // Sometime NullPointerException happens here
-        instance.getWindow().getDecorView().setSystemUiVisibility(
-                immersed() ?
-                        View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
-                                View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |
-                                View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
-                                View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
-                                View.SYSTEM_UI_FLAG_FULLSCREEN |
-                                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                        :
-                        0);
-      } catch (Exception e) {
-        reportException(e);
-      }
-    }
+    Game.platform.updateSystemUI();
   }
 
   public static boolean immersed() {
@@ -320,11 +324,7 @@ public class DarkestPixelDungeon extends Game {
   public static Languages language() {
     String code = Preferences.INSTANCE.getString(Preferences.KEY_LANG, null);
     if (code == null) {
-      Languages lang = Languages.Companion.matchLocale(Locale.getDefault());
-      if (lang.getStatus() == Languages.Status.REVIEWED)
-        return lang;
-      else
-        return Languages.ENGLISH;
+      return Languages.Companion.matchLocale(Game.platform.getSystemLocale());
     } else return Languages.Companion.matchCode(code);
   }
 
@@ -422,5 +422,6 @@ public class DarkestPixelDungeon extends Game {
 
   public static void reportException(Throwable tr) {
     TopExceptionHandler.Companion.WriteErrorFile(tr);
+    Game.platform.reportException(tr);
   }
 }

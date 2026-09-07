@@ -24,7 +24,7 @@ package com.watabou.noosa;
 import java.util.ArrayList;
 import java.util.regex.Pattern;
 
-import android.graphics.RectF;
+import com.watabou.utils.RectF;
 
 import com.watabou.glwrap.Quad;
 import com.watabou.utils.PointF;

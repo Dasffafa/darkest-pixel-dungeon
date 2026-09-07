@@ -244,7 +244,7 @@ abstract class Char : Actor() {
             }
             Damage.Type.MAGICAL ->
                 HP -= (dmg.value + dmg.add_value)
-//            Damage.Type.MENTAL -> 0
+            Damage.Type.MENTAL -> {}
         }
 
         if (HP <= 0) {
@@ -354,7 +354,7 @@ abstract class Char : Actor() {
 
     open fun die(src: Any?) {
         destroy()
-        sprite.die()
+        if (!sprite.hasPendingShaderDeath) sprite.die()
     }
 
     override fun spend(time: Float) {

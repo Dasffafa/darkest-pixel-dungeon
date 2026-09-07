@@ -38,7 +38,6 @@ import com.egoal.darkestpixeldungeon.messages.M
 import com.watabou.noosa.audio.Sample
 
 import java.util.ArrayList
-import javax.microedition.khronos.opengles.GL
 
 class Stylus : Item() {
 

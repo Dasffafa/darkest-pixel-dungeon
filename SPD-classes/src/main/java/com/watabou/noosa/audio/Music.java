@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2016 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,121 +21,71 @@
 
 package com.watabou.noosa.audio;
 
-import java.io.IOException;
+import com.badlogic.gdx.Gdx;
 
-import com.watabou.noosa.Game;
+public enum Music {
 
-import android.content.res.AssetFileDescriptor;
-import android.media.AudioManager;
-import android.media.MediaPlayer;
+    INSTANCE;
 
-public enum Music implements MediaPlayer.OnPreparedListener, MediaPlayer.OnErrorListener {
-	
-	INSTANCE;
-	
-	private MediaPlayer player;
-	
-	private String lastPlayed;
-	private boolean looping;
-	
-	private boolean enabled = true;
-	
-	public void play( String assetName, boolean looping ) {
-		
-		if (isPlaying() && lastPlayed.equals( assetName )) {
-			return;
-		}
-		
-		stop();
-		
-		lastPlayed = assetName;
-		this.looping = looping;
+    private com.badlogic.gdx.audio.Music player;
+    private String lastPlayed;
+    private boolean looping;
+    private boolean enabled = true;
+    private float volume = 1f;
 
-		if (!enabled || assetName == null) {
-			return;
-		}
-		
-		try {
-			
-			AssetFileDescriptor afd = Game.instance.getAssets().openFd( assetName );
-			
-			player = new MediaPlayer();
-			player.setAudioStreamType( AudioManager.STREAM_MUSIC );
-			player.setDataSource( afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength() );
-			player.setOnPreparedListener( this );
-			player.setOnErrorListener( this );
-			player.prepareAsync();
-			
-		} catch (IOException e) {
-			
-			player.release();
-			player = null;
-			
-		}
-	}
-	
-	public void mute() {
-		lastPlayed = null;
-		stop();
-	}
+    public void play(String assetName, boolean looping) {
+        if (isPlaying() && lastPlayed != null && lastPlayed.equals(assetName)) return;
+        stop();
+        lastPlayed = assetName;
+        this.looping = looping;
+        if (!enabled || assetName == null) return;
 
-	@Override
-	public void onPrepared( MediaPlayer player ) {
-		player.start();
-		player.setLooping(looping);
-	}
-	
-	@Override
-	public boolean onError( MediaPlayer mp, int what, int extra ) {
-		if (player != null) {
-			player.release();
-			player = null;
-		}
-		return true;
-	}
-	
-	public void pause() {
-		if (player != null) {
-			player.pause();
-		}
-	}
-	
-	public void resume() {
-		if (player != null) {
-			player.start();
-			player.setLooping(looping);
-		}
-	}
-	
-	public void stop() {
-		if (player != null) {
-			player.stop();
-			player.release();
-			player = null;
-		}
-	}
-	
-	public void volume( float value ) {
-		if (player != null) {
-			player.setVolume( value, value );
-		}
-	}
-	
-	public boolean isPlaying() {
-		return player != null && player.isPlaying();
-	}
-	
-	public void enable( boolean value ) {
-		enabled = value;
-		if (isPlaying() && !value) {
-			stop();
-		} else
-		if (!isPlaying() && value) {
-			play( lastPlayed, looping );
-		}
-	}
-	
-	public boolean isEnabled() {
-		return enabled;
-	}
+        player = Gdx.audio.newMusic(Gdx.files.internal(assetName));
+        player.setLooping(looping);
+        player.setVolume(volume);
+        player.play();
+    }
+
+    public void mute() {
+        lastPlayed = null;
+        stop();
+    }
+
+    public void pause() {
+        if (player != null) player.pause();
+    }
+
+    public void resume() {
+        if (player != null) {
+            player.play();
+            player.setLooping(looping);
+        }
+    }
+
+    public void stop() {
+        if (player != null) {
+            player.stop();
+            player.dispose();
+            player = null;
+        }
+    }
+
+    public void volume(float value) {
+        volume = value;
+        if (player != null) player.setVolume(value);
+    }
+
+    public boolean isPlaying() {
+        return player != null && player.isPlaying();
+    }
+
+    public void enable(boolean value) {
+        enabled = value;
+        if (isPlaying() && !value) stop();
+        else if (!isPlaying() && value) play(lastPlayed, looping);
+    }
+
+    public boolean isEnabled() {
+        return enabled;
+    }
 }

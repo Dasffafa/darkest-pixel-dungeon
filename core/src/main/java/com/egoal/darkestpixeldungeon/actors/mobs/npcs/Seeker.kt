@@ -1,7 +1,5 @@
 package com.egoal.darkestpixeldungeon.actors.mobs.npcs
 
-import android.content.Intent
-import android.net.Uri
 import com.egoal.darkestpixeldungeon.Assets
 import com.egoal.darkestpixeldungeon.messages.M
 import com.egoal.darkestpixeldungeon.sprites.SimpleMobSprite
@@ -20,11 +18,9 @@ class Seeker : NPC.Unbreakable() {
             WndDialogue.Show(this, M.L(this, "dungeons"), M.L(this, "check_info")) {
                 WndDialogue.Show(this, M.L(this, "desc_state"), M.L(this, "info_dpd"), M.L(this, "info_all"), M.L(this, "maybe_nexttime")) {
                     if (it == 0) {
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(WIKI_DPD))
-                        Game.instance.startActivity(intent)
+                        Game.platform.openURI(WIKI_DPD)
                     } else if (it == 1) {
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(WIKI_IDX))
-                        Game.instance.startActivity(intent)
+                        Game.platform.openURI(WIKI_IDX)
                     }
                 }
             }

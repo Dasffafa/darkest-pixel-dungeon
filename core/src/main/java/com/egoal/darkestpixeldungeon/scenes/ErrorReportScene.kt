@@ -7,6 +7,7 @@ import com.egoal.darkestpixeldungeon.TopExceptionHandler
 import com.egoal.darkestpixeldungeon.messages.M
 import com.egoal.darkestpixeldungeon.ui.*
 import com.watabou.noosa.Camera
+import com.watabou.noosa.Game
 import com.watabou.noosa.ui.Component
 
 class ErrorReportScene : PixelScene() {
@@ -66,14 +67,30 @@ class ErrorReportScene : PixelScene() {
             y = log.bottom() + 2f
         }
 
-        // delete button
+        // copy + delete buttons
+        val bw = (panel.innerWidth() - 4f - 2f) / 2f
+        val btnCopy = object : RedButton(M.L(this, "copy")) {
+            override fun onClick() {
+                val report = buildString {
+                    append(versionstr)
+                    TopExceptionHandler.LoadErrorStrings()?.forEach {
+                        append('\n')
+                        append(it)
+                    }
+                }
+                Game.platform.copyToClipboard(report)
+            }
+        }
+        btnCopy.setRect(2f, y + 2f, bw, 15f)
+        content.add(btnCopy)
+
         val btnDelete = object : RedButton(M.L(this, "delete")) {
             override fun onClick() {
                 TopExceptionHandler.DeleteErrorFile()
                 onBackPressed()
             }
         }
-        btnDelete.setRect(2f, y + 2f, panel.innerWidth() - 4f, 15f)
+        btnDelete.setRect(btnCopy.right() + 2f, y + 2f, bw, 15f)
         content.add(btnDelete)
 
         content.setSize(panel.innerWidth(), btnDelete.bottom())

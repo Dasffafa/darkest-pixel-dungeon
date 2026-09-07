@@ -62,7 +62,7 @@ open class BrokenSeal : Item(), GreatBlueprint.Enchantable {
             curItem = this
             GameScene.selectItem(armorSelector, WndBag.Mode.ARMOR, Messages.get(this, "prompt"))
         } else if (action == AC_INFO) {
-            GameScene.show(WndItem(null, this, true))
+            GameScene.show { WndItem(null, this, true) }
         }
     }
 

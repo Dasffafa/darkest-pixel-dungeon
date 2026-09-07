@@ -20,7 +20,7 @@
  */
 package com.egoal.darkestpixeldungeon.scenes;
 
-import android.opengl.GLES20;
+import com.badlogic.gdx.Gdx;
 
 import com.egoal.darkestpixeldungeon.Assets;
 import com.egoal.darkestpixeldungeon.DarkestPixelDungeon;
@@ -46,7 +46,6 @@ import com.watabou.noosa.audio.Music;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.noosa.ui.Button;
 
-import javax.microedition.khronos.opengles.GL10;
 
 public class TitleScene extends PixelScene {
 
@@ -97,9 +96,9 @@ public class TitleScene extends PixelScene {
 
             @Override
             public void draw() {
-                GLES20.glBlendFunc(GL10.GL_SRC_ALPHA, GL10.GL_ONE);
+                Gdx.gl.glBlendFunc(Gdx.gl.GL_SRC_ALPHA, Gdx.gl.GL_ONE);
                 super.draw();
-                GLES20.glBlendFunc(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_SRC_ALPHA);
+                Gdx.gl.glBlendFunc(Gdx.gl.GL_SRC_ALPHA, Gdx.gl.GL_ONE_MINUS_SRC_ALPHA);
             }
         };
         signs.x = title.x + (title.width() - signs.width()) / 2f;
@@ -110,43 +109,43 @@ public class TitleScene extends PixelScene {
         DashboardItem[] btnsMain = new DashboardItem[]{
                 new DashboardItem(Messages.get(this, "play"), 0) {
                     @Override
-                    protected void onClick() {
+                    public void onClick() {
                         DarkestPixelDungeon.switchNoFade(SlotSelectScene.class);
                     }
                 },
                 new DashboardItem(Messages.get(this, "rankings"), 2) {
                     @Override
-                    protected void onClick() {
+                    public void onClick() {
                         DarkestPixelDungeon.switchNoFade(RankingsScene.class);
                     }
                 },
                 new DashboardItem(Messages.get(this, "badges"), 3) {
                     @Override
-                    protected void onClick() {
+                    public void onClick() {
                         DarkestPixelDungeon.switchNoFade(BadgesScene.class);
                     }
                 },
                 new DashboardItem(Messages.get(this, "about"), 1) {
                     @Override
-                    protected void onClick() {
+                    public void onClick() {
                         DarkestPixelDungeon.switchNoFade(AboutScene.class);
                     }
                 },
                 new DashboardItem(Messages.get(this, "guide"), 4) {
                     @Override
-                    protected void onClick() {
+                    public void onClick() {
                         DarkestPixelDungeon.switchNoFade(GuideScene.class);
                     }
                 },
                 new DashboardItem(Messages.get(this, "settings"), 5) {
                     @Override
-                    protected void onClick() {
+                    public void onClick() {
                         parent.add(new WndSettings(true));
                     }
                 },
                 new DashboardItem(M.INSTANCE.L(this, "donate"), 6) {
                     @Override
-                    protected void onClick() {
+                    public void onClick() {
                         parent.add(new WndDonate());
                     }
                 }

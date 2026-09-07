@@ -1,9 +1,9 @@
 /*
  * Pixel Dungeon
- * Copyright (C) 2012-2015  Oleg Dolya
+ * Copyright (C) 2012-2015 Oleg Dolya
  *
  * Shattered Pixel Dungeon
- * Copyright (C) 2014-2016 Evan Debenham
+ * Copyright (C) 2014-2019 Evan Debenham
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,131 +21,75 @@
 
 package com.watabou.noosa.audio;
 
-import java.io.IOException;
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.audio.Sound;
+
 import java.util.HashMap;
-import java.util.LinkedList;
 
-import com.watabou.noosa.Game;
+public enum Sample {
 
-import android.content.res.AssetFileDescriptor;
-import android.content.res.AssetManager;
-import android.media.AudioManager;
-import android.media.SoundPool;
+    INSTANCE;
 
-public enum Sample implements SoundPool.OnLoadCompleteListener {
+    protected final HashMap<Object, Sound> ids = new HashMap<>();
+    private boolean enabled = true;
+    private float globalVolume = 1f;
 
-	INSTANCE;
+    public void reset() {
+        for (Sound sound : ids.values()) sound.dispose();
+        ids.clear();
+    }
 
-	public static final int MAX_STREAMS = 8;
+    public void pause() {
+        for (Sound sound : ids.values()) sound.pause();
+    }
 
-	protected SoundPool pool =
-			new SoundPool( MAX_STREAMS, AudioManager.STREAM_MUSIC, 0 );
+    public void resume() {
+        for (Sound sound : ids.values()) sound.resume();
+    }
 
-	protected HashMap<Object, Integer> ids =
-			new HashMap<>();
+    public void load(String... assets) {
+        for (String asset : assets) {
+            if (!ids.containsKey(asset)) {
+                ids.put(asset, Gdx.audio.newSound(Gdx.files.internal(asset)));
+            }
+        }
+    }
 
-	private boolean enabled = true;
-	private float volume = 1f;
+    public void unload(Object src) {
+        Sound sound = ids.remove(src);
+        if (sound != null) sound.dispose();
+    }
 
-	private LinkedList<String> loadingQueue = new LinkedList<>();
+    public long play(Object id) {
+        return play(id, 1);
+    }
 
-	public void reset() {
+    public long play(Object id, float volume) {
+        return play(id, volume, volume, 1);
+    }
 
-		ids.clear();
-		loadingQueue = new LinkedList<>();
-		pool.release();
+    public long play(Object id, float volume, float pitch) {
+        return play(id, volume, volume, pitch);
+    }
 
-		pool = new SoundPool( MAX_STREAMS, AudioManager.STREAM_MUSIC, 0 );
-		pool.setOnLoadCompleteListener( this );
+    public long play(Object id, float leftVolume, float rightVolume, float pitch) {
+        float volume = Math.max(leftVolume, rightVolume);
+        float pan = rightVolume - leftVolume;
+        if (enabled && ids.containsKey(id)) {
+            return ids.get(id).play(globalVolume * volume, pitch, pan);
+        }
+        return -1;
+    }
 
-	}
+    public void enable(boolean value) {
+        enabled = value;
+    }
 
-	public void pause() {
-		if (pool != null) {
-			pool.autoPause();
-		}
-	}
+    public void volume(float value) {
+        globalVolume = value;
+    }
 
-	public void resume() {
-		if (pool != null) {
-			pool.autoResume();
-		}
-	}
-
-	public void load( String... assets ) {
-
-		for (String asset : assets) {
-			loadingQueue.add( asset );
-		}
-		loadNext();
-	}
-
-	private void loadNext() {
-		final String asset = loadingQueue.poll();
-		if (asset != null) {
-			if (!ids.containsKey( asset )) {
-				try {
-					pool.setOnLoadCompleteListener( new SoundPool.OnLoadCompleteListener() {
-						@Override
-						public void onLoadComplete(SoundPool soundPool, int sampleId, int status) {
-							loadNext();
-						}
-					} );
-
-					AssetManager manager = Game.instance.getAssets();
-					AssetFileDescriptor fd = manager.openFd( asset );
-					int streamID = pool.load( fd, 1 ) ;
-					ids.put( asset, streamID );
-					fd.close();
-				} catch (IOException e) {
-					loadNext();
-				} catch (NullPointerException e) {
-					// Do nothing (stop loading sounds)
-				}
-			} else {
-				loadNext();
-			}
-		}
-	}
-
-	public void unload( Object src ) {
-
-		if (ids.containsKey( src )) {
-
-			pool.unload( ids.get( src ) );
-			ids.remove( src );
-		}
-	}
-
-	public int play( Object id ) {
-		return play( id, 1 );
-	}
-
-	public int play( Object id, float volume ) {
-		return play( id, volume, volume, 1 );
-	}
-
-	public int play( Object id, float leftVolume, float rightVolume, float rate ) {
-		if (enabled && ids.containsKey( id )) {
-			return pool.play( ids.get( id ), leftVolume*volume, rightVolume*volume, 0, 0, rate );
-		} else {
-			return -1;
-		}
-	}
-
-	public void enable( boolean value ) {
-		enabled = value;
-	}
-
-	public void volume( float value ) {
-		this.volume = value;
-	}
-
-	public boolean isEnabled() {
-		return enabled;
-	}
-
-	@Override
-	public void onLoadComplete( SoundPool soundPool, int sampleId, int status ) {
-	}
+    public boolean isEnabled() {
+        return enabled;
+    }
 }

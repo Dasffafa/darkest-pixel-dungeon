@@ -22,14 +22,16 @@ package com.egoal.darkestpixeldungeon.ui;
 
 import com.egoal.darkestpixeldungeon.scenes.PixelScene;
 import com.watabou.input.Touchscreen.Touch;
+import com.watabou.input.ScrollEvent;
 import com.watabou.noosa.Camera;
 import com.watabou.noosa.ColorBlock;
 import com.watabou.noosa.TouchArea;
 import com.watabou.noosa.ui.Component;
 import com.watabou.utils.Point;
 import com.watabou.utils.PointF;
+import com.watabou.utils.Signal;
 
-public class ScrollPane extends Component {
+public class ScrollPane extends Component implements Signal.Listener<ScrollEvent> {
 
   protected static final int THUMB_COLOR = 0xFF7b8073;
   protected static final float THUMB_ALPHA = 0.5f;
@@ -54,10 +56,12 @@ public class ScrollPane extends Component {
 
     content.camera = new Camera(0, 0, 1, 1, PixelScene.defaultZoom);
     Camera.add(content.camera);
+    ScrollEvent.addScrollListener(this);
   }
 
   @Override
   public void destroy() {
+    ScrollEvent.removeScrollListener(this);
     super.destroy();
     Camera.remove(content.camera);
   }
@@ -106,6 +110,23 @@ public class ScrollPane extends Component {
   public void onClick(float x, float y) {
   }
 
+  @Override
+  public boolean onSignal(ScrollEvent event) {
+    if (!isActive() || !controller.overlapsScreenPoint((int) event.pos.x, (int) event.pos.y)) {
+      return false;
+    }
+    scrollBy(0, event.amount * 10);
+    return true;
+  }
+
+  private void scrollBy(float dx, float dy) {
+    Camera c = content.camera;
+    c.scroll.offset(dx, dy);
+    c.scroll.x = Math.max(0, Math.min(c.scroll.x, Math.max(0, content.width() - width)));
+    c.scroll.y = Math.max(0, Math.min(c.scroll.y, Math.max(0, content.height() - height)));
+    thumb.y = y + height * c.scroll.y / content.height();
+  }
+
   public class TouchController extends TouchArea {
 
     private float dragThreshold;
@@ -140,21 +161,8 @@ public class ScrollPane extends Component {
 
         Camera c = content.camera;
 
-        c.scroll.offset(PointF.diff(lastPos, t.current).invScale(c.zoom));
-        if (c.scroll.x + width > content.width()) {
-          c.scroll.x = content.width() - width;
-        }
-        if (c.scroll.x < 0) {
-          c.scroll.x = 0;
-        }
-        if (c.scroll.y + height > content.height()) {
-          c.scroll.y = content.height() - height;
-        }
-        if (c.scroll.y < 0) {
-          c.scroll.y = 0;
-        }
-
-        thumb.y = y + height * c.scroll.y / content.height();
+        PointF delta = PointF.diff(lastPos, t.current).invScale(c.zoom);
+        scrollBy(delta.x, delta.y);
 
         lastPos.set(t.current);
 

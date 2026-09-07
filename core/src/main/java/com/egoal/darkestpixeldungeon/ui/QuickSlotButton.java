@@ -22,7 +22,6 @@ package com.egoal.darkestpixeldungeon.ui;
 
 import com.egoal.darkestpixeldungeon.DungeonTilemap;
 import com.egoal.darkestpixeldungeon.Dungeon;
-import com.egoal.darkestpixeldungeon.actors.Actor;
 import com.egoal.darkestpixeldungeon.actors.Char;
 import com.egoal.darkestpixeldungeon.items.Item;
 import com.egoal.darkestpixeldungeon.messages.Messages;
@@ -33,6 +32,10 @@ import com.egoal.darkestpixeldungeon.windows.WndBag;
 import com.watabou.noosa.Image;
 import com.watabou.noosa.ui.Button;
 import com.watabou.utils.PathFinder;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 
 public class QuickSlotButton extends Button implements WndBag.Listener {
   private static final int NUM_BUTTONS = 8* 2;
@@ -46,6 +49,9 @@ public class QuickSlotButton extends Button implements WndBag.Listener {
   private static Image crossM;
 
   private static boolean targeting = false;
+  private static int targetingSlot = -1;
+  private static int targetCell = -1;
+  private static Item targetingItem = null;
   public static Char lastTarget = null;
 
   public QuickSlotButton(int slotNum) {
@@ -67,6 +73,9 @@ public class QuickSlotButton extends Button implements WndBag.Listener {
     instance = new QuickSlotButton[NUM_BUTTONS];
 
     lastTarget = null;
+    targetingSlot = -1;
+    targetCell = -1;
+    targetingItem = null;
   }
 
   @Override
@@ -75,22 +84,8 @@ public class QuickSlotButton extends Button implements WndBag.Listener {
 
     slot = new ItemSlot() {
       @Override
-      protected void onClick() {
-        if (targeting) {
-          int cell = autoAim(lastTarget, select(slotNum));
-
-          if (cell != -1) {
-            GameScene.handleCell(cell);
-          } else {
-            //couldn't auto-aim, just targetpos the position and hope for the best.
-            GameScene.handleCell(lastTarget.getPos());
-          }
-        } else {
-          Item item = select(slotNum);
-          if (item.getUsesTargeting())
-            useTargeting();
-          item.execute(Dungeon.INSTANCE.getHero());
-        }
+      public void onClick() {
+        QuickSlotButton.this.useItem();
       }
 
       @Override
@@ -119,6 +114,61 @@ public class QuickSlotButton extends Button implements WndBag.Listener {
     crossM.copy(crossB);
   }
 
+  public static void use(int slotNum) {
+    // Keyboard shortcuts can arrive faster than the actor turn completes.
+    // Match the toolbar's disabled state and never execute an item while the
+    // hero is busy, otherwise a rapid press can reuse a detached stack item.
+    if (Dungeon.INSTANCE.isHeroNull() || !Dungeon.INSTANCE.getHero().getReady()) {
+      return;
+    }
+    if (slotNum >= 0 && slotNum < instance.length && instance[slotNum] != null) {
+      QuickSlotButton button = instance[slotNum];
+      if (!button.active) return;
+      if (select(slotNum) == null) {
+        if (targeting) cancel();
+        button.onClick();
+      } else {
+        button.useItem();
+      }
+    }
+  }
+
+  private void useItem() {
+//    // Targeting items have already been consumed when their action starts.
+//    // Re-clicking the same slot while waiting for a destination must not
+//    // execute the item a second time.
+//    if (targeting && targetingSlot == slotNum) return;
+    Item item = select(slotNum);
+    // A slot can be cleared (for example, when its item is removed) while the
+    // button or an in-progress targeting state is still present. Treat that as
+    // an empty slot instead of dereferencing a stale null item.
+    if (item == null) {
+      if (targeting) cancel();
+      return;
+    }
+    // Keyboard shortcuts reach this method without going through the disabled
+    // inner slot, so a used-up placeholder (quantity 0) can get here. Never
+    // execute a zero-quantity item: Item.cast would NPE when detach() returns
+    // null after the throw.
+    if (item.quantity() == 0) {
+      if (targeting) cancel();
+      return;
+    }
+
+    if (targeting) {
+      if (targetingSlot != slotNum) {
+        cancel();
+        useItem();
+        return;
+      }
+      int cell = lastTarget == null ? targetCell : autoAim(lastTarget, item);
+      GameScene.handleCell(cell != -1 ? cell : targetCell);
+    } else {
+      if (item.getUsesTargeting()) useTargeting(item);
+      item.execute(Dungeon.INSTANCE.getHero());
+    }
+  }
+
   @Override
   protected void layout() {
     super.layout();
@@ -131,7 +181,7 @@ public class QuickSlotButton extends Button implements WndBag.Listener {
   }
 
   @Override
-  protected void onClick() {
+  public void onClick() {
     GameScene.selectItem(this, WndBag.Mode.QUICKSLOT, Messages.get(this, 
             "select_item"));
   }
@@ -173,27 +223,92 @@ public class QuickSlotButton extends Button implements WndBag.Listener {
     slot.enable(Dungeon.INSTANCE.getQuickslot().isNonePlaceholder(slotNum));
   }
 
-  private void useTargeting() {
-
-    if (lastTarget != null &&
-            Actor.Companion.chars().contains(lastTarget) &&
-            lastTarget.isAlive() &&
-            Dungeon.INSTANCE.getVisible()[lastTarget.getPos()]) {
-
-      targeting = true;
-      lastTarget.getSprite().parent.add(crossM);
-      crossM.point(DungeonTilemap.tileToWorld(lastTarget.getPos()));
+  private void useTargeting(Item item) {
+    beginTargeting(item, slotNum);
+    if (targeting) {
       crossB.x = x + (width - crossB.width) / 2;
       crossB.y = y + (height - crossB.height) / 2;
       crossB.visible = true;
-
-    } else {
-
-      lastTarget = null;
-      targeting = false;
-
     }
+  }
 
+  public static void beginTargeting(Item item) {
+    beginTargeting(item, -1);
+  }
+
+  private static void beginTargeting(Item item, int slotNum) {
+    List<Char> targets = availableTargets(item);
+    lastTarget = targets.isEmpty() ? null : targets.get(0);
+    targeting = true;
+    targetingSlot = slotNum;
+    targetingItem = item;
+    if (lastTarget == null) {
+      targetCell = Dungeon.INSTANCE.getHero().getPos();
+      showTargetCell(targetCell);
+    } else {
+      targetCell = lastTarget.getPos();
+      showTarget(lastTarget);
+    }
+  }
+
+  public static boolean isTargeting() {
+    return targeting;
+  }
+
+  public static void cycleTarget() {
+    if (!targeting || targetingItem == null) return;
+    List<Char> targets = availableTargets(targetingItem);
+    if (targets.isEmpty()) return;
+    int index = targets.indexOf(lastTarget);
+    lastTarget = targets.get((index + 1) % targets.size());
+    showTarget(lastTarget);
+  }
+
+  public static void moveTarget(int dx, int dy) {
+    if (!targeting || targetingItem == null) return;
+    int width = Dungeon.INSTANCE.getLevel().width();
+    int height = Dungeon.INSTANCE.getLevel().height();
+    int x = targetCell % width + dx;
+    int y = targetCell / width + dy;
+    if (x >= 0 && x < width && y >= 0 && y < height) {
+      lastTarget = null;
+      targetCell = x + y * width;
+      showTargetCell(targetCell);
+    }
+  }
+
+  private static List<Char> availableTargets(Item item) {
+    ArrayList<Char> targets = new ArrayList<>();
+    for (int i = 0; i < Dungeon.INSTANCE.getHero().visibleEnemies(); i++) {
+      Char target = Dungeon.INSTANCE.getHero().visibleEnemy(i);
+      if (target.isAlive() && Dungeon.INSTANCE.getVisible()[target.getPos()] &&
+              autoAim(target, item) != -1) targets.add(target);
+    }
+    final int heroPos = Dungeon.INSTANCE.getHero().getPos();
+    targets.sort(Comparator.comparingInt(target ->
+            Dungeon.INSTANCE.getLevel().distance(heroPos, target.getPos())));
+    return targets;
+  }
+
+  private static void showTarget(Char target) {
+    targetCell = target.getPos();
+    crossM.remove();
+    target.getSprite().parent.add(crossM);
+    crossM.point(DungeonTilemap.tileToWorld(target.getPos()));
+    HealthIndicator.instance.target(target);
+  }
+
+  private static void showTargetCell(int cell) {
+    crossM.remove();
+    Dungeon.INSTANCE.getHero().getSprite().parent.add(crossM);
+    crossM.point(DungeonTilemap.tileToWorld(cell));
+    HealthIndicator.instance.target(null);
+  }
+
+  public static boolean confirmExternalTarget() {
+    if (!targeting || targetingSlot >= 0 || targetCell < 0) return false;
+    GameScene.handleCell(targetCell);
+    return true;
   }
 
   public static int autoAim(Char target) {
@@ -244,6 +359,9 @@ public class QuickSlotButton extends Button implements WndBag.Listener {
       crossB.visible = false;
       crossM.remove();
       targeting = false;
+      targetingSlot = -1;
+      targetCell = -1;
+      targetingItem = null;
     }
   }
 }

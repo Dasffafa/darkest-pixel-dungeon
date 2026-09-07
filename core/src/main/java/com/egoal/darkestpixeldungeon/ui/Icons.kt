@@ -83,7 +83,7 @@ enum class Icons {
         operator fun get(type: Icons): Image {
             val icon = Image(Assets.DPD_ICONS)
             when (type) {
-                SKULL -> icon.frame(icon.texture.uvRect(0, 0, 8, 8))
+                SKULL -> icon.frame(icon.texture.uvRect(0f, 0f, 8f, 8f))
                 BUSY -> icon.frame(icon.texture.uvRect(8, 0, 16, 8))
                 COMPASS -> icon.frame(icon.texture.uvRect(0, 8, 7, 13))
                 INFO -> icon.frame(icon.texture.uvRect(16, 0, 30, 14))

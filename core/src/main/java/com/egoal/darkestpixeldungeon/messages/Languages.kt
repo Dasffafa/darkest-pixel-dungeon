@@ -50,7 +50,21 @@ enum class Languages(val nativeName: String,
     companion object {
         private val DEFAULT = ENGLISH
 
-        fun matchLocale(locale: Locale): Languages = values().find { it.locale == locale } ?: DEFAULT
+        fun matchLocale(locale: Locale): Languages {
+            values().find { it.locale == locale }?.let { return it }
+
+            if (locale.language.equals(Locale.CHINESE.language, ignoreCase = true)) {
+                val traditional = locale.script.equals("Hant", ignoreCase = true) ||
+                        locale.country.equals("TW", ignoreCase = true) ||
+                        locale.country.equals("HK", ignoreCase = true) ||
+                        locale.country.equals("MO", ignoreCase = true)
+                return if (traditional) CHINESE_TR else CHINESE
+            }
+
+            return values().find {
+                it.locale.language.equals(locale.language, ignoreCase = true)
+            } ?: DEFAULT
+        }
 
         fun matchCode(code: String): Languages = values().find { it.code == code } ?: DEFAULT
     }

@@ -28,7 +28,7 @@ class BarterMan : Merchant() {
 
         if (action == AC_TRADE) {
             if (items.isEmpty()) tell(M.L(this, "nothing_more"))
-            else GameScene.show(WndTrade())
+            else GameScene.show { WndTrade() }
         }
     }
 

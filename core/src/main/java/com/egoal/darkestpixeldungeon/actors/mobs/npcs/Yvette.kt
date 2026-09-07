@@ -153,25 +153,27 @@ class Yvette : NPC() {
             val content = M.L(this, "thanks-for-scroll") + "\n\n" + M.L(this, "give-bow")
             WndDialogue.Show(this, content, M.L(this, "decline_bow"), M.L(this, "bye")) {
                 if (it == 0) {
-                    GameScene.show(object : WndQuest(this, M.L(this, "give_key")) {
-                        override fun onBackPressed() {
-                            super.onBackPressed()
-                            Quest.Completed = true
-                            Dungeon.hero.recoverSanity(Random.Float(10f, 25f)) // recover much more.
-                            Dungeon.level.drop(IronKey(20), pos).sprite.drop()
+                    GameScene.show {
+                        object : WndQuest(this, M.L(this, "give_key")) {
+                            override fun onBackPressed() {
+                                super.onBackPressed()
+                                Quest.Completed = true
+                                Dungeon.hero.recoverSanity(Random.Float(10f, 25f)) // recover much more.
+                                Dungeon.level.drop(IronKey(20), pos).sprite.drop()
 
-                            if (foodGotten) {
-                                val perk = IntendedTransportation()
-                                Dungeon.hero.heroPerk.add(perk)
+                                if (foodGotten) {
+                                    val perk = IntendedTransportation()
+                                    Dungeon.hero.heroPerk.add(perk)
 
-                                PerkGain.Show(Dungeon.hero, perk)
-                                GLog.p(Messages.get(Yvette::class.java, "taught", name))
+                                    PerkGain.Show(Dungeon.hero, perk)
+                                    GLog.p(Messages.get(Yvette::class.java, "taught", name))
+                                }
+
+                                this@Yvette.destroy()
+                                (sprite as Sprite).leave()
                             }
-
-                            this@Yvette.destroy()
-                            (sprite as Sprite).leave()
                         }
-                    })
+                    }
                 } else {
                     Quest.Completed = true
                     Dungeon.hero.recoverSanity(Random.Float(4f, 10f))
@@ -194,12 +196,14 @@ class Yvette : NPC() {
             val content = M.L(this, "thanks-for-scroll") + M.L(this, "give-items") +
                     if (foodGotten) "\n\n" + Messages.get(this, "teach-teleportation") else ""
 
-            GameScene.show(object : WndQuest(this, content) {
-                override fun onBackPressed() {
-                    super.onBackPressed()
-                    leave()
+            GameScene.show {
+                object : WndQuest(this, content) {
+                    override fun onBackPressed() {
+                        super.onBackPressed()
+                        leave()
+                    }
                 }
-            })
+            }
         }
     }
 

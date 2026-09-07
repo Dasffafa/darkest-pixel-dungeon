@@ -1,0 +1,246 @@
+apply plugin: 'application'
+
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 8
+}
+
+ext {
+    packrVersion = '2.4.2'
+    packrExeName = 'DarkestPixelDungeon'
+    packrMainClass = 'com.egoal.darkestpixeldungeon.desktop.DesktopLauncher'
+    // Windows x64 Temurin JDK 21 used as the source of Windows jmods for jlink.
+    // 国内网络访问 Adoptium 较慢时，可换成清华镜像的对应 jdk 压缩包直链。
+    packrWindowsJdkUrl = 'https://api.adoptium.net/v3/binary/latest/21/ga/windows/x64/jdk/hotspot/normal/eclipse?project=jdk'
+}
+
+application {
+    mainClass = 'com.egoal.darkestpixeldungeon.desktop.DesktopLauncher'
+}
+
+tasks.named('run', JavaExec) {
+    systemProperty 'Specification-Version', "${rootProject.ext.appVersionName}-desktop"
+    systemProperty 'Implementation-Version', rootProject.ext.appVersionCode
+}
+
+tasks.register('runDebug', JavaExec) {
+    group = 'application'
+    description = 'Runs the desktop game with debug items enabled for newly created heroes.'
+    dependsOn tasks.named('classes')
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = application.mainClass
+    systemProperty 'Specification-Version', "${rootProject.ext.appVersionName}-desktop"
+    systemProperty 'Implementation-Version', rootProject.ext.appVersionCode
+    systemProperty 'dpd.debug', 'true'
+}
+
+jar {
+    manifest {
+        attributes(
+                'Main-Class': application.mainClass.get(),
+                'Specification-Title': 'Darkest Pixel Dungeon',
+                'Specification-Version': "${rootProject.ext.appVersionName}-desktop",
+                'Implementation-Version': rootProject.ext.appVersionCode
+        )
+    }
+}
+
+tasks.register('release', Jar) {
+    group = 'build'
+    description = 'Builds a self-contained executable Desktop JAR.'
+    dependsOn tasks.named('classes')
+
+    archiveBaseName.set('darkest-pixel-dungeon')
+    archiveVersion.set("${rootProject.ext.appVersionName}-desktop")
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    from sourceSets.main.output
+    from {
+        configurations.runtimeClasspath.collect { dependency ->
+            dependency.isDirectory() ? dependency : zipTree(dependency)
+        }
+    }
+
+    exclude 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA'
+
+    manifest {
+        attributes(
+                'Main-Class': application.mainClass.get(),
+                'Specification-Title': 'Darkest Pixel Dungeon',
+                'Specification-Version': "${rootProject.ext.appVersionName}-desktop",
+                'Implementation-Version': rootProject.ext.appVersionCode
+        )
+    }
+}
+
+configurations {
+    packr
+}
+
+dependencies {
+    implementation project(':core')
+    implementation "com.badlogicgames.gdx:gdx:$gdx_version"
+    implementation "com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdx_version"
+    implementation "com.badlogicgames.gdx:gdx-platform:$gdx_version:natives-desktop"
+    implementation "com.badlogicgames.gdx:gdx-freetype-platform:$gdx_version:natives-desktop"
+    packr "com.nimblygames.packr:packr:$packrVersion"
+}
+
+repositories {
+    mavenCentral()
+}
+
+// ---------------------------------------------------------------------------
+// Windows .exe packaging: jlink (trimmed JRE) + Packr
+// 用法: ./gradlew :desktop:packrWindows
+// 产物: desktop/build/packr/dist/DarkestPixelDungeon.exe (+ 同目录 jre/ 与 jar，需整体分发)
+// ---------------------------------------------------------------------------
+
+def winJdkZip = layout.buildDirectory.file('packr/windows-jdk.zip')
+def winJdkRoot = layout.buildDirectory.dir('packr/windows-jdk')
+def winJre = layout.buildDirectory.dir('packr/windows-jre')
+def packrDist = layout.buildDirectory.dir('packr/dist')
+
+def winJdkDir = provider {
+    def jdk = winJdkRoot.get().asFile.listFiles()?.find { new File(it, 'jmods').isDirectory() }
+    if (jdk == null) {
+        throw new GradleException(
+                "Windows JDK not found under ${winJdkRoot.get().asFile} — run ':desktop:unzipWindowsJdk' first.")
+    }
+    jdk
+}
+
+def isValidZip = { File f ->
+    if (f == null || !f.exists() || f.length() == 0L) {
+        return false
+    }
+    try {
+        new java.util.zip.ZipFile(f).close()
+        return true
+    } catch (Exception ignored) {
+        return false
+    }
+}
+
+tasks.register('downloadWindowsJdk') {
+    group = 'packaging'
+    description = 'Downloads the Windows x64 JDK used as jlink module source.'
+    outputs.file(winJdkZip)
+    doLast {
+        def zip = winJdkZip.get().asFile
+        int attempts = 0
+        while (!isValidZip(zip)) {
+            attempts++
+            if (attempts > 3) {
+                throw new GradleException(
+                        "Failed to download a valid Windows JDK archive after ${attempts} attempts: ${zip.absolutePath}")
+            }
+            zip.parentFile.mkdirs()
+            println "Downloading Windows JDK (attempt ${attempts}): ${packrWindowsJdkUrl}"
+            URL url = new URL(packrWindowsJdkUrl)
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection()
+            conn.setInstanceFollowRedirects(true)
+            conn.setRequestProperty('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)')
+            conn.setConnectTimeout(120_000)
+            conn.setReadTimeout(120_000)
+            int code = conn.getResponseCode()
+            if (code != 200) {
+                throw new GradleException("Download failed with HTTP ${code} for ${packrWindowsJdkUrl}")
+            }
+            long expected = conn.getContentLengthLong()
+            conn.inputStream.withStream { input ->
+                zip.withOutputStream { output ->
+                    byte[] buffer = new byte[64 * 1024]
+                    int read
+                    while ((read = input.read(buffer)) != -1) {
+                        output.write(buffer, 0, read)
+                    }
+                }
+            }
+            if (expected > 0 && zip.length() != expected) {
+                println "Download truncated: ${zip.length()} of ${expected} bytes, retrying..."
+            }
+        }
+    }
+}
+
+tasks.register('unzipWindowsJdk') {
+    group = 'packaging'
+    description = 'Unzips the downloaded Windows JDK.'
+    dependsOn downloadWindowsJdk
+    inputs.file(winJdkZip)
+    outputs.dir(winJdkRoot)
+    doLast {
+        delete winJdkRoot.get().asFile
+        copy {
+            from zipTree(winJdkZip)
+            into winJdkRoot
+        }
+        winJdkDir.get()
+    }
+}
+
+tasks.register('buildWindowsJre') {
+    group = 'packaging'
+    description = 'Builds a trimmed Windows JRE via jlink (modules inferred by jdeps from the fat jar).'
+    dependsOn unzipWindowsJdk
+    dependsOn tasks.named('release')
+    inputs.file(tasks.named('release').flatMap { it.archiveFile })
+    outputs.dir(winJre)
+    doLast {
+        def fatJar = tasks.named('release').get().archiveFile.get().asFile
+
+        def jdepsOut = new ByteArrayOutputStream()
+        exec {
+            commandLine "${System.getProperty('java.home')}/bin/jdeps",
+                    '--multi-release', 'base', '--ignore-missing-deps', '--print-module-deps',
+                    fatJar.absolutePath
+            standardOutput = jdepsOut
+        }
+        def modules = jdepsOut.toString().trim()
+        modules = modules ? modules : 'java.base'
+        if (!modules.split(',').contains('jdk.unsupported')) {
+            modules += ',jdk.unsupported'
+        }
+        println "Packaging with JRE modules: ${modules}"
+
+        // jlink refuses to overwrite an existing output dir; clear leftovers from prior runs.
+        delete winJre.get().asFile
+
+        def winJmods = new File(winJdkDir.get(), 'jmods')
+        exec {
+            commandLine "${System.getProperty('java.home')}/bin/jlink",
+                    '--module-path', winJmods.absolutePath,
+                    '--add-modules', modules,
+                    '--no-header-files', '--no-man-pages', '--strip-debug', '--compress=zip-6',
+                    '--output', winJre.get().asFile.absolutePath
+        }
+    }
+}
+
+tasks.register('packrWindows') {
+    group = 'build'
+    description = 'Builds a self-contained Windows .exe (trimmed JRE bundled) via Packr.'
+    dependsOn buildWindowsJre
+    inputs.files(winJre)
+    inputs.file(tasks.named('release').flatMap { it.archiveFile })
+    outputs.dir(packrDist)
+    doLast {
+        def fatJar = tasks.named('release').get().archiveFile.get().asFile
+        javaexec {
+            mainClass = 'com.badlogicgames.packr.Packr'
+            classpath = configurations.packr
+            args = [
+                    '--platform', 'windows64',
+                    '--jdk', winJre.get().asFile.absolutePath,
+                    '--executable', packrExeName,
+                    '--classpath', fatJar.absolutePath,
+                    '--mainclass', packrMainClass,
+                    '--vmargs', 'Xmx1024M',
+                    '--output', packrDist.get().asFile.absolutePath
+            ]
+        }
+    }
+}

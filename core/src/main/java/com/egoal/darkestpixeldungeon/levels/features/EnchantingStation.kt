@@ -11,7 +11,7 @@ import com.egoal.darkestpixeldungeon.windows.WndEnchanting
 
 object EnchantingStation {
     fun Operate(hero: Hero) {
-        GameScene.show(WndEnchanting())
+        GameScene.show { WndEnchanting() }
     }
 
     fun CanTransform(src: Item, tgt: Item): String? = when {
