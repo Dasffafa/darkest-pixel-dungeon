@@ -79,7 +79,9 @@ public class WndItem extends Window {
 
     if (Dungeon.INSTANCE.getHero().isAlive() && options) {
       ArrayList<RedButton> line = new ArrayList<>();
-      for (final String action : item.actions(Dungeon.INSTANCE.getHero())) {
+      ArrayList<String> actions = item.actions(Dungeon.INSTANCE.getHero());
+      boolean hasDefault = false;
+      for (final String action : actions) {
 
         RedButton btn = new RedButton(Messages.get(item, "ac_" + action), 8) {
           @Override
@@ -106,10 +108,22 @@ public class WndItem extends Window {
         if (action.equals(item.getDefaultAction())) {
           selectedAction = actionButtons.size() - 1;
           btn.textColor(TITLE_COLOR);
+          hasDefault = true;
         }
 
         x += btn.width();
       }
+
+      if (!hasDefault) {
+        for (int i = 0; i < actions.size(); i++) {
+          if (!actions.get(i).equals(Item.AC_DROP) && !actions.get(i).equals(Item.AC_THROW)) {
+            selectedAction = i;
+            actionButtons.get(i).textColor(TITLE_COLOR);
+            break;
+          }
+        }
+      }
+
       layoutButtons(line, width - x, y);
     }
 

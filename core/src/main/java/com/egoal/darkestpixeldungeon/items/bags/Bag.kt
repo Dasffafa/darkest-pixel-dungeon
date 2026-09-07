@@ -60,7 +60,7 @@ open class Bag : Item(), MutableIterable<Item> {
 
         if (action == AC_OPEN) {
 
-            GameScene.show(WndBag(this, null, WndBag.Mode.ALL, null))
+            GameScene.show { WndBag(this, null, WndBag.Mode.ALL, null) }
 
         }
     }

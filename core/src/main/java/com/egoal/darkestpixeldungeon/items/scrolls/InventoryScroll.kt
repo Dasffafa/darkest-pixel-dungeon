@@ -46,20 +46,22 @@ abstract class InventoryScroll : Scroll() {
     }
 
     private fun confirmCancelation() {
-        GameScene.show(object : WndOptions(name(), M.L(InventoryScroll::class.java, "warning"),
-                M.L(InventoryScroll::class.java, "yes"), M.L(InventoryScroll::class.java, "no")) {
-            override fun onSelect(index: Int) {
-                when (index) {
-                    0 -> {
-                        curUser.spendAndNext(TIME_TO_READ)
-                        identifiedByUse = false
+        GameScene.show {
+            object : WndOptions(name(), M.L(InventoryScroll::class.java, "warning"),
+                    M.L(InventoryScroll::class.java, "yes"), M.L(InventoryScroll::class.java, "no")) {
+                override fun onSelect(index: Int) {
+                    when (index) {
+                        0 -> {
+                            curUser.spendAndNext(TIME_TO_READ)
+                            identifiedByUse = false
+                        }
+                        1 -> GameScene.selectItem(itemSelector, mode, inventoryTitle)
                     }
-                    1 -> GameScene.selectItem(itemSelector, mode, inventoryTitle)
                 }
-            }
 
-            override fun onBackPressed() {}
-        })
+                override fun onBackPressed() {}
+            }
+        }
     }
 
     abstract fun onItemSelected(item: Item)

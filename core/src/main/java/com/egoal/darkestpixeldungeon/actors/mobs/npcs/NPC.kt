@@ -65,7 +65,7 @@ abstract class NPC : Mob() {
     abstract fun interact(): Boolean
     
     protected fun tell(text: String) {
-        GameScene.show(WndQuest(this, text))
+        GameScene.show { WndQuest(this, text) }
     }
 
     abstract class Unbreakable : NPC() {

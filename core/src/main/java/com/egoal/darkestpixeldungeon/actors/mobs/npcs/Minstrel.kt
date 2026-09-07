@@ -3,18 +3,12 @@ package com.egoal.darkestpixeldungeon.actors.mobs.npcs
 import com.egoal.darkestpixeldungeon.Assets
 import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.Statistics
-import com.egoal.darkestpixeldungeon.actors.Char
-import com.egoal.darkestpixeldungeon.actors.Damage
-import com.egoal.darkestpixeldungeon.actors.buffs.Buff
 import com.egoal.darkestpixeldungeon.messages.M
 import com.egoal.darkestpixeldungeon.messages.Messages
 import com.egoal.darkestpixeldungeon.scenes.GameScene
 import com.egoal.darkestpixeldungeon.sprites.MobSprite
-import com.egoal.darkestpixeldungeon.utils.GLog
 import com.egoal.darkestpixeldungeon.windows.WndDialogue
 import com.egoal.darkestpixeldungeon.windows.WndOptions
-import com.egoal.darkestpixeldungeon.windows.WndQuest
-import com.watabou.noosa.MovieClip
 import com.watabou.noosa.TextureFilm
 
 /**
@@ -56,13 +50,15 @@ class Minstrel : NPC.Unbreakable() {
         when (index) {
             0 -> {
                 val poetries = arrayOf("away")
-                GameScene.show(object : WndOptions(MinstrelSprite(), name,
-                        Messages.get(Minstrel::class.java, "select_poetry"),
-                        *poetries) {
-                    override fun onSelect(index: Int) {
-                        tell(Messages.get(Minstrel::class.java, "poetry_" + poetries[index]))
+                GameScene.show {
+                    object : WndOptions(MinstrelSprite(), name,
+                            Messages.get(Minstrel::class.java, "select_poetry"),
+                            *poetries) {
+                        override fun onSelect(index: Int) {
+                            tell(Messages.get(Minstrel::class.java, "poetry_" + poetries[index]))
+                        }
                     }
-                })
+                }
             }
             1 -> tell(Messages.get(Minstrel::class.java, "introduction"))
             2 -> say(Messages.get(Minstrel::class.java, "farewell"))

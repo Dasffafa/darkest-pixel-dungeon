@@ -88,7 +88,7 @@ abstract class HeroAction(var dst: Int = 0) {
                     val terrain = Dungeon.level.map[dst]
                     if (terrain == Terrain.DOOR || terrain == Terrain.OPEN_DOOR || heap.size() > 1) {
                         hero.curAction = null
-                        GameScene.show(WndPickUpItem(heap, hero))
+                        GameScene.show { WndPickUpItem(heap, hero) }
                         return false
                     }
 
@@ -236,25 +236,27 @@ abstract class HeroAction(var dst: Int = 0) {
                 if (Dungeon.depth == 0 && !confirmed) {
                     // leave village
                     hero.interrupt()
-                    GameScene.show(object : WndOptions(
-                            M.L(HeroAction::class.java, "descend_title"),
-                            M.L(HeroAction::class.java, "descend_message"),
-                            M.L(HeroAction::class.java, "descend_yes"),
-                            M.L(HeroAction::class.java, "descend_no")) {
-                        override fun onSelect(index: Int) {
-                            if (index == 0) {
-                                confirmed = true
-                                hero.resume()
-                            } else {
+                    GameScene.show {
+                        object : WndOptions(
+                                M.L(HeroAction::class.java, "descend_title"),
+                                M.L(HeroAction::class.java, "descend_message"),
+                                M.L(HeroAction::class.java, "descend_yes"),
+                                M.L(HeroAction::class.java, "descend_no")) {
+                            override fun onSelect(index: Int) {
+                                if (index == 0) {
+                                    confirmed = true
+                                    hero.resume()
+                                } else {
+                                    hero.ready()
+                                }
+                            }
+
+                            override fun onBackPressed() {
+                                super.onBackPressed()
                                 hero.ready()
                             }
                         }
-
-                        override fun onBackPressed() {
-                            super.onBackPressed()
-                            hero.ready()
-                        }
-                    })
+                    }
                 } else {
                     hero.curAction = null
                     hero.buff(TimekeepersHourglass.TimeFreeze::class.java)?.detach()
@@ -274,7 +276,7 @@ abstract class HeroAction(var dst: Int = 0) {
             if (hero.pos == dst && hero.pos == Dungeon.level.entrance) {
                 if (Dungeon.depth == 0) {
                     if (hero.belongings.getItem(Amulet::class.java) == null) {
-                        GameScene.show(WndMessage(Messages.get(hero, "leave_village")))
+                        GameScene.show { WndMessage(Messages.get(hero, "leave_village")) }
                         hero.ready()
                     } else {
                         // end game
@@ -283,7 +285,7 @@ abstract class HeroAction(var dst: Int = 0) {
                         Game.switchScene(SurfaceScene::class.java)
                     }
                 } else if (Dungeon.depth == 1 && hero.belongings.getItem(Amulet::class.java) == null) {
-                    GameScene.show(WndMessage(Messages.get(hero, "leave")))
+                    GameScene.show { WndMessage(Messages.get(hero, "leave")) }
                     hero.ready()
                 } else {
                     hero.curAction = null

@@ -35,7 +35,7 @@ class WndGainNewPerk(title: String, perks: List<Perk>) : WndSelectPerk(title, pe
         Dungeon.hero.spawnedPerks.clear()
         Dungeon.hero.spawnedPerks.addAll(alterperks.map { it.newInstance() as Perk })
 
-        GameScene.show(WndGainNewPerk(M.L(WndGainNewPerk::class.java, "title"), Dungeon.hero.spawnedPerks))
+        GameScene.show { WndGainNewPerk(M.L(WndGainNewPerk::class.java, "title"), Dungeon.hero.spawnedPerks) }
     }
 
     class RandomAnotherPerk : Perk() {
@@ -52,7 +52,7 @@ class WndGainNewPerk(title: String, perks: List<Perk>) : WndSelectPerk(title, pe
                 hero.spawnedPerks.add(RandomAnotherPerk())
             }
 
-            GameScene.show(WndGainNewPerk(M.L(WndGainNewPerk::class.java, "title"), hero.spawnedPerks))
+            GameScene.show { WndGainNewPerk(M.L(WndGainNewPerk::class.java, "title"), hero.spawnedPerks) }
         }
     }
 }

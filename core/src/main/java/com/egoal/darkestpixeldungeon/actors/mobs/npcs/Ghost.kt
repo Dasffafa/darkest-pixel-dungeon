@@ -109,10 +109,10 @@ class Ghost : NPC.Unbreakable() {
                     }
                 } else {
                     when (Quest.type) {
-                        1 -> GameScene.show(WndQuest(this, Messages.get(this, "rat_2")))
-                        2 -> GameScene.show(WndQuest(this, Messages.get(this, "gnoll_2")))
-                        3 -> GameScene.show(WndQuest(this, Messages.get(this, "crab_2")))
-                        else -> GameScene.show(WndQuest(this, Messages.get(this, "rat_2")))
+                        1 -> GameScene.show { WndQuest(this, Messages.get(this, "rat_2")) }
+                        2 -> GameScene.show { WndQuest(this, Messages.get(this, "gnoll_2")) }
+                        3 -> GameScene.show { WndQuest(this, Messages.get(this, "crab_2")) }
+                        else -> GameScene.show { WndQuest(this, Messages.get(this, "rat_2")) }
                     }
 
                     var newPos = -1
@@ -159,7 +159,7 @@ class Ghost : NPC.Unbreakable() {
 
             if (questBoss.pos != -1) {
                 GameScene.add(questBoss)
-                GameScene.show(WndQuest(this, txt_quest))
+                GameScene.show { WndQuest(this, txt_quest) }
                 Quest.given = true
                 Journal.add(name)
             }

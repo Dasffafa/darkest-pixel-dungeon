@@ -72,7 +72,7 @@ class Combo : Special() {
     }
 
     override fun use(hero: Hero) {
-        GameScene.show(WndActionList(ItemSprite(image, null), name, actions))
+        GameScene.show { WndActionList(ItemSprite(image, null), name, actions) }
     }
 
     override fun status(): String? = if (adrenaline > 0) "$adrenaline" else null

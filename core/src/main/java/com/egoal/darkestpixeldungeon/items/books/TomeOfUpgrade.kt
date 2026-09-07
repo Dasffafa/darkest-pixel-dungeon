@@ -29,14 +29,16 @@ class TomeOfUpgrade : Book() {
             return
         }
 
-        GameScene.show(object : WndSelectPerk(M.L(TomeOfUpgrade::class.java, "select_perk"), perks) {
-            override fun onPerkSelected(perk: Perk) {
-                PerkGain.Show(hero, perk)
-                hero.heroPerk.add(perk)
-                hero.perkGained += 1
+        GameScene.show {
+            object : WndSelectPerk(M.L(TomeOfUpgrade::class.java, "select_perk"), perks) {
+                override fun onPerkSelected(perk: Perk) {
+                    PerkGain.Show(hero, perk)
+                    hero.heroPerk.add(perk)
+                    hero.perkGained += 1
 
-                detach(hero.belongings.backpack)
+                    detach(hero.belongings.backpack)
+                }
             }
-        })
+        }
     }
 }

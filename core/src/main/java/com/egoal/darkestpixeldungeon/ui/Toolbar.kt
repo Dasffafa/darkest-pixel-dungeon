@@ -116,7 +116,7 @@ class Toolbar : Component() {
             }
 
             override fun onLongClick(): Boolean {
-                GameScene.show(WndCatalogs())
+                GameScene.show { WndCatalogs() }
                 return true
             }
 
@@ -267,7 +267,7 @@ class Toolbar : Component() {
     }
 
     fun inventory() {
-        GameScene.show(WndBag(hero.belongings.backpack, null, WndBag.Mode.ALL, null))
+        GameScene.show { WndBag(hero.belongings.backpack, null, WndBag.Mode.ALL, null) }
     }
 
     private open class Tool(x: Int, y: Int, width: Int, height: Int) : Button() {

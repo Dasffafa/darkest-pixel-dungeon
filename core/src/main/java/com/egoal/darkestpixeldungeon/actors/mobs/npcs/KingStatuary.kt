@@ -2,9 +2,6 @@ package com.egoal.darkestpixeldungeon.actors.mobs.npcs
 
 import com.egoal.darkestpixeldungeon.Assets
 import com.egoal.darkestpixeldungeon.Dungeon
-import com.egoal.darkestpixeldungeon.actors.Char
-import com.egoal.darkestpixeldungeon.actors.Damage
-import com.egoal.darkestpixeldungeon.actors.buffs.Buff
 import com.egoal.darkestpixeldungeon.items.helmets.CrownOfDwarf
 import com.egoal.darkestpixeldungeon.items.unclassified.GreatBlueprint
 import com.egoal.darkestpixeldungeon.messages.M
@@ -31,12 +28,14 @@ class KingStatuary : NPC.Unbreakable() {
     override fun interact(): Boolean {
         if (hasCrown) return false
 
-        GameScene.show(object : WndOptions(Sprite(), name, description(),
-                M.L(KingStatuary::class.java, "wear"), M.L(KingStatuary::class.java, "unworthy")) {
-            override fun onSelect(index: Int) {
-                if (index == 0) onWear()
+        GameScene.show {
+            object : WndOptions(Sprite(), name, description(),
+                    M.L(KingStatuary::class.java, "wear"), M.L(KingStatuary::class.java, "unworthy")) {
+                override fun onSelect(index: Int) {
+                    if (index == 0) onWear()
+                }
             }
-        })
+        }
 
         return false
     }

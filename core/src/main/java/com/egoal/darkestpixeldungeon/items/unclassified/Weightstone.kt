@@ -44,7 +44,7 @@ class Weightstone : Item() {
 
     private val itemSelector = WndBag.Listener { item ->
         if (item != null) {
-            GameScene.show(WndBalance(item as Weapon))
+            GameScene.show { WndBalance(item as Weapon) }
         }
     }
 

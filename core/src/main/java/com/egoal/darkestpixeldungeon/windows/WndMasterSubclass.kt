@@ -42,7 +42,7 @@ class WndMasterSubclass(heroClass: HeroClass) : Window() {
         val btnCancel = object : RedButton(M.L(this, "cancel")) {
             override fun onClick() {
                 hide()
-                GameScene.show(WndMessage(M.L(WndMasterSubclass::class.java, "tip")))
+                GameScene.show { WndMessage(M.L(WndMasterSubclass::class.java, "tip")) }
             }
         }
         btnCancel.setRect(0f, y, WIDTH, BTN_HEIGHT)
@@ -68,7 +68,7 @@ class WndMasterSubclass(heroClass: HeroClass) : Window() {
 
     override fun onBackPressed() {
         super.onBackPressed()
-        GameScene.show(WndMessage(M.L(WndMasterSubclass::class.java, "tip")))
+        GameScene.show { WndMessage(M.L(WndMasterSubclass::class.java, "tip")) }
     }
 
     companion object {
@@ -77,7 +77,7 @@ class WndMasterSubclass(heroClass: HeroClass) : Window() {
         private const val GAP = 2f
 
         fun Show(hero: Hero) {
-            GameScene.show(WndMasterSubclass(hero.heroClass))
+            GameScene.show { WndMasterSubclass(hero.heroClass) }
         }
     }
 }

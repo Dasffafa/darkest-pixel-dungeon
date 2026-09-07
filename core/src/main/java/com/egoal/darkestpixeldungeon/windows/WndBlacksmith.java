@@ -112,7 +112,7 @@ public class WndBlacksmith extends Window {
         if (btnItem1.item != null && btnItem2.item != null) {
           String result = Blacksmith.Companion.verify(btnItem1.item, btnItem2.item);
           if (result != null) {
-            GameScene.show(new WndMessage(result));
+            GameScene.show(() -> new WndMessage(result));
             btnReforge.enable(false);
           } else {
             btnReforge.enable(true);

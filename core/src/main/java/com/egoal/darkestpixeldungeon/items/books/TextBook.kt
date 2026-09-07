@@ -5,8 +5,6 @@ import com.egoal.darkestpixeldungeon.messages.Messages
 import com.egoal.darkestpixeldungeon.scenes.GameScene
 import com.egoal.darkestpixeldungeon.windows.WndTextBook
 
-import java.util.ArrayList
-
 /**
  * Created by 93942 on 10/14/2018.
  */
@@ -24,7 +22,7 @@ open class TextBook : Book() {
 
     override fun doRead(hero: Hero) {
         identify()
-        GameScene.show(WndTextBook(this))
+        GameScene.show { WndTextBook(this) }
     }
 
     override fun price(): Int = quantity() * pageSize() * 5

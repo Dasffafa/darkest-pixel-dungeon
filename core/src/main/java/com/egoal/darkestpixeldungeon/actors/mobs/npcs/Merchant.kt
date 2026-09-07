@@ -72,7 +72,7 @@ open class Merchant : NPC() {
     protected open fun execute(action: String) {
         if (action == AC_BUY) {
             if (items.isEmpty()) tell(M.L(this, "nothing_more"))
-            else GameScene.show(WndShop())
+            else GameScene.show { WndShop() }
         } else if (action == AC_SWAP) {
             swapPosition(Dungeon.hero)
             Dungeon.hero.spendAndNext(1f / Dungeon.hero.speed());

@@ -1183,7 +1183,7 @@ class Hero : Char() {
         if (ankh == null) ReallyDie(src)
         else {
             Dungeon.deleteGame(false, true)
-            GameScene.show(WndResurrect(ankh, src))
+            GameScene.show { WndResurrect(ankh, src) }
         }
     }
 

@@ -560,14 +560,14 @@ public class GameScene extends PixelScene {
       case TAG_LOOT: loot.trigger(); break;
       case TAG_RESUME: resume.trigger(); break;
       case CYCLE_TARGET: attack.cycleTarget(); break;
-      case HERO_INFO: show(new WndHero()); break;
+      case HERO_INFO: show(() -> new WndHero()); break;
       case TORCH: pane.toggleTorch(); break;
       case PERK:
         if (Dungeon.INSTANCE.getHero().getReservedPerks() > 0) {
           WndGainNewPerk.Show(Dungeon.INSTANCE.getHero());
         }
         break;
-      case JOURNAL: show(new WndJournal()); break;
+      case JOURNAL: show(() -> new WndJournal()); break;
       case ZOOM_IN: cellSelector.zoomBy(1); break;
       case ZOOM_OUT: cellSelector.zoomBy(-1); break;
     }
@@ -608,6 +608,16 @@ public class GameScene extends PixelScene {
         heldMoveKey = -1;
         Dungeon.INSTANCE.getHero().stopContinuousMoving();
       }
+      return;
+    }
+    // Poll the live key state before committing another step. The key-up event
+    // is dispatched once per frame and can arrive one frame late, so an
+    // edge-triggered release lets one more step slip through after the player
+    // has already let go. Checking the physical state here makes the release
+    // synchronous with the movement decision and prevents that phantom step.
+    if (heldMoveKey != -1 && !Gdx.input.isKeyPressed(heldMoveKey)) {
+      heldMoveKey = -1;
+      Dungeon.INSTANCE.getHero().stopContinuousMoving();
       return;
     }
     if (heldPanX != 0 || heldPanY != 0) {
@@ -787,7 +797,7 @@ public class GameScene extends PixelScene {
       return;
     }
     if (!cancel()) {
-      add(new WndGame());
+      show(() -> new WndGame());
     }
   }
 
@@ -1202,7 +1212,7 @@ public class GameScene extends PixelScene {
 
     if (cell < 0 || cell > Dungeon.INSTANCE.getLevel().length() || (!Dungeon.INSTANCE.getLevel()
             .getVisited()[cell] && !Dungeon.INSTANCE.getLevel().getMapped()[cell])) {
-      GameScene.show(new WndMessage(Messages.get(GameScene.class,
+      GameScene.show(() -> new WndMessage(Messages.get(GameScene.class,
               "dont_know")));
       return;
     }
@@ -1242,11 +1252,11 @@ public class GameScene extends PixelScene {
     }
 
     if (objects.isEmpty()) {
-      GameScene.show(new WndInfoCell(cell));
+      GameScene.show(() -> new WndInfoCell(cell));
     } else if (objects.size() == 1) {
       examineObject(objects.get(0));
     } else {
-      GameScene.show(new WndOptions(Messages.get(GameScene.class,
+      GameScene.show(() -> new WndOptions(Messages.get(GameScene.class,
               "choose_examine"),
               Messages.get(GameScene.class, "multiple_examine"), names
               .toArray(new String[names.size()])) {
@@ -1261,18 +1271,18 @@ public class GameScene extends PixelScene {
 
   public static void examineObject(Object o) {
     if (o == Dungeon.INSTANCE.getHero()) {
-      GameScene.show(new WndHero());
+      GameScene.show(() -> new WndHero());
     } else if (o instanceof Mob) {
-      GameScene.show(new WndInfoMob((Mob) o));
+      GameScene.show(() -> new WndInfoMob((Mob) o));
     } else if (o instanceof Heap) {
       Heap heap = (Heap) o;
-      GameScene.show(new WndInfoItem(heap));
+      GameScene.show(() -> new WndInfoItem(heap));
     } else if (o instanceof Plant) {
-      GameScene.show(new WndInfoPlant((Plant) o));
+      GameScene.show(() -> new WndInfoPlant((Plant) o));
     } else if (o instanceof Trap) {
-      GameScene.show(new WndInfoTrap((Trap) o));
+      GameScene.show(() -> new WndInfoTrap((Trap) o));
     } else {
-      GameScene.show(new WndMessage(Messages.get(GameScene.class,
+      GameScene.show(() -> new WndMessage(Messages.get(GameScene.class,
               "dont_know")));
     }
   }

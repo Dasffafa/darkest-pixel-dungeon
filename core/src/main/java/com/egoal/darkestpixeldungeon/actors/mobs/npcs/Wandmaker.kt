@@ -73,7 +73,7 @@ class Wandmaker : NPC.Unbreakable() {
             })
 
             if (item != null) {
-                GameScene.show(WndWandmaker(this, item))
+                GameScene.show { WndWandmaker(this, item) }
             } else {
                 var msg = ""
                 when (Quest.type) {
@@ -81,7 +81,7 @@ class Wandmaker : NPC.Unbreakable() {
                     2 -> msg = M.L(this, "reminder_ember", Dungeon.hero.givenName())
                     3 -> msg = M.L(this, "reminder_berry", Dungeon.hero.givenName())
                 }
-                GameScene.show(WndQuest(this, msg))
+                GameScene.show { WndQuest(this, msg) }
             }
 
         } else {
@@ -104,12 +104,14 @@ class Wandmaker : NPC.Unbreakable() {
             }
             msg2 += M.L(this, "intro_2")
 
-            GameScene.show(object : WndQuest(this, msg1) {
-                override fun hide() {
-                    super.hide()
-                    GameScene.show(WndQuest(this@Wandmaker, msg2))
+            GameScene.show {
+                object : WndQuest(this, msg1) {
+                    override fun hide() {
+                        super.hide()
+                        GameScene.show { WndQuest(this@Wandmaker, msg2) }
+                    }
                 }
-            })
+            }
 
             Journal.add(name)
             Quest.given = true

@@ -41,7 +41,7 @@ import com.watabou.utils.Random
 
 object AlchemyPot {
     fun Operate(hero: Hero, pos: Int) {
-        GameScene.show(WndAlchemy())
+        GameScene.show { WndAlchemy() }
     }
 
     const val MAX_INPUTS = 3

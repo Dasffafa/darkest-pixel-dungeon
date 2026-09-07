@@ -157,7 +157,7 @@ class WndHero : WndTabbed() {
                 val btn = object : RedButton(M.L(this, "challenges")) {
                     public override fun onClick() {
                         val s = hero.challenges.joinToString("\n") { "_${it.title()}_\n${it.desc()}\n" }
-                        GameScene.show(WndMessage(s))
+                        GameScene.show { WndMessage(s) }
                     }
                 }
                 btn.setRect(classNameText.x + classNameText.width() + GAP5, classNameText.y, 60f, classNameText.height())
@@ -259,7 +259,7 @@ class WndHero : WndTabbed() {
             }
 
             public override fun onClick() {
-                GameScene.show(WndInfoBuff(buff))
+                GameScene.show { WndInfoBuff(buff) }
             }
         }
     }

@@ -134,15 +134,23 @@ public class QuickSlotButton extends Button implements WndBag.Listener {
   }
 
   private void useItem() {
-    // Targeting items have already been consumed when their action starts.
-    // Re-clicking the same slot while waiting for a destination must not
-    // execute the item a second time.
-    if (targeting && targetingSlot == slotNum) return;
+//    // Targeting items have already been consumed when their action starts.
+//    // Re-clicking the same slot while waiting for a destination must not
+//    // execute the item a second time.
+//    if (targeting && targetingSlot == slotNum) return;
     Item item = select(slotNum);
     // A slot can be cleared (for example, when its item is removed) while the
     // button or an in-progress targeting state is still present. Treat that as
     // an empty slot instead of dereferencing a stale null item.
     if (item == null) {
+      if (targeting) cancel();
+      return;
+    }
+    // Keyboard shortcuts reach this method without going through the disabled
+    // inner slot, so a used-up placeholder (quantity 0) can get here. Never
+    // execute a zero-quantity item: Item.cast would NPE when detach() returns
+    // null after the throw.
+    if (item.quantity() == 0) {
       if (targeting) cancel();
       return;
     }

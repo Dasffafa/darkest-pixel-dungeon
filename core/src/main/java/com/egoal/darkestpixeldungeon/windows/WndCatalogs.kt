@@ -56,7 +56,7 @@ class WndCatalogs : WndTabbed() {
         btnJournal = object : RedButton(Messages.get(WndJournal::class.java, "title"), 9) {
             override fun onClick() {
                 hide()
-                GameScene.show(WndJournal())
+                GameScene.show { WndJournal() }
             }
         }
         btnJournal.setRect(0f, 0f, WIDTH / 2f - 1, btnJournal.reqHeight())
@@ -206,7 +206,7 @@ class WndCatalogs : WndTabbed() {
 
         fun onClick(x: Float, y: Float): Boolean {
             if (inside(x, y)) {
-                if (identified) GameScene.show(WndInfoItem(item))
+                if (identified) GameScene.show { WndInfoItem(item) }
                 return true
             } else {
                 return false

@@ -135,19 +135,23 @@ open class WndOptions : Window {
         private const val BUTTON_HEIGHT = 20
 
         fun Show(title: String, message: String, vararg options: String, onSelected: (Int) -> Unit) {
-            GameScene.show(object : WndOptions(title, message, *options) {
-                override fun onSelect(index: Int) {
-                    onSelected(index)
+            GameScene.show {
+                object : WndOptions(title, message, *options) {
+                    override fun onSelect(index: Int) {
+                        onSelected(index)
+                    }
                 }
-            })
+            }
         }
 
         fun Show(icon: Image, title: String, message: String, vararg options: String, onSelected: (Int) -> Unit) {
-            GameScene.show(object : WndOptions(icon, title, message, *options) {
-                override fun onSelect(index: Int) {
-                    onSelected(index)
+            GameScene.show {
+                object : WndOptions(icon, title, message, *options) {
+                    override fun onSelect(index: Int) {
+                        onSelected(index)
+                    }
                 }
-            })
+            }
         }
 
         fun Confirm(title: String, message: String, onConfirmed: () -> Unit) {

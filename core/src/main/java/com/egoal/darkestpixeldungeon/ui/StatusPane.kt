@@ -91,7 +91,7 @@ class StatusPane : Component() {
                 if (!sprite.isVisible) {
                     Camera.main.focusOn(sprite)
                 }
-                GameScene.show(WndHero())
+                GameScene.show { WndHero() }
             }
         })
 
@@ -357,7 +357,7 @@ class StatusPane : Component() {
         }
 
         public override fun onClick() {
-            GameScene.show(WndJournal())
+            GameScene.show { WndJournal() }
         }
 
         init {
@@ -390,7 +390,7 @@ class StatusPane : Component() {
         }
 
         public override fun onClick() {
-            GameScene.show(WndGame())
+            GameScene.show { WndGame() }
         }
 
         init {
@@ -424,8 +424,10 @@ class StatusPane : Component() {
         }
 
         public override fun onClick() {
-            GameScene.show(WndTitledMessage(Icons.INFO.get(), L(StatusPane::class.java, "clock"),
-                    L(StatusPane::class.java, "clock_desc", Clock.timestr)))
+            GameScene.show {
+                WndTitledMessage(Icons.INFO.get(), L(StatusPane::class.java, "clock"),
+                        L(StatusPane::class.java, "clock_desc", Clock.timestr))
+            }
         }
 
         override fun update() {

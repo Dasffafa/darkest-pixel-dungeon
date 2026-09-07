@@ -29,13 +29,15 @@ class TomeOfRetrain : Book() {
             return
         }
 
-        GameScene.show(object : WndSelectPerk(M.L(TomeOfRetrain::class.java, "select_perk"), perks) {
-            override fun onPerkSelected(perk: Perk) {
-                hero.heroPerk.downgrade(perk)
-                hero.reservedPerks += 1
+        GameScene.show {
+            object : WndSelectPerk(M.L(TomeOfRetrain::class.java, "select_perk"), perks) {
+                override fun onPerkSelected(perk: Perk) {
+                    hero.heroPerk.downgrade(perk)
+                    hero.reservedPerks += 1
 
-                detach(hero.belongings.backpack)
+                    detach(hero.belongings.backpack)
+                }
             }
-        })
+        }
     }
 }

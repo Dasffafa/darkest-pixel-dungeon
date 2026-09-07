@@ -51,7 +51,7 @@ open class PerkSlot(protected val perk: Perk) : Button() {
     }
 
     public override fun onClick() {
-        GameScene.show(WndMessage(perk.description()))
+        GameScene.show { WndMessage(perk.description()) }
     }
 
     companion object {

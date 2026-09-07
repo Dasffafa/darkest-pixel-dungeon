@@ -17,5 +17,5 @@ private data class CharAction(val label: String, val run: () -> Unit)
 
 private fun charActions(target: Char, cell: Int): List<CharAction> = listOf(
     CharAction("Attack") { GameScene.handleCell(cell) },
-    CharAction("Examine") { if (target is Mob) GameScene.show(WndInfoMob(target)) }
+    CharAction("Examine") { if (target is Mob) GameScene.show { WndInfoMob(target) } }
 )

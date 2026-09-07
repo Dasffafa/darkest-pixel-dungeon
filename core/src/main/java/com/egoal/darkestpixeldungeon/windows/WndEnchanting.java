@@ -121,7 +121,7 @@ public class WndEnchanting extends Window {
         // take from the backpack
         // the equipped item showed be take off, in case lack of room space
         if (item instanceof EquipableItem && item.isEquipped(Dungeon.INSTANCE.getHero())) {
-          GameScene.show(new WndMessage(Messages.get(WndEnchanting.class,
+          GameScene.show(() -> new WndMessage(Messages.get(WndEnchanting.class,
                   "first_unequip")));
           return;
         }
@@ -134,7 +134,7 @@ public class WndEnchanting extends Window {
           if (result == null)
             btnDone_.enable(true);
           else {
-            GameScene.show(new WndMessage(result));
+            GameScene.show(() -> new WndMessage(result));
             btnDone_.enable(false);
           }
         }

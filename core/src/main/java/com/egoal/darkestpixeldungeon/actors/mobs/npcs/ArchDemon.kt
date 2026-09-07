@@ -4,7 +4,6 @@ import com.egoal.darkestpixeldungeon.Assets
 import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.Journal
 import com.egoal.darkestpixeldungeon.actors.Char
-import com.egoal.darkestpixeldungeon.actors.Damage
 import com.egoal.darkestpixeldungeon.actors.hero.Hero
 import com.egoal.darkestpixeldungeon.actors.hero.perks.Perk
 import com.egoal.darkestpixeldungeon.effects.PerkGain
@@ -18,7 +17,6 @@ import com.egoal.darkestpixeldungeon.windows.WndSelectPerk
 import com.watabou.noosa.TextureFilm
 import com.watabou.utils.Bundle
 import com.watabou.utils.Random
-import kotlin.math.max
 import kotlin.math.min
 
 class ArchDemon : NPC.Unbreakable() {
@@ -38,20 +36,24 @@ class ArchDemon : NPC.Unbreakable() {
         WndDialogue.Show(this, M.L(this, "greetings"), M.L(this, "skillmodify"), M.L(this, "skillup")) { index ->
             if (index == 0) {
                 if (Dungeon.hero.heroPerk.perks.isEmpty()) tell(M.L(ArchDemon::class.java, "unqualified"))
-                else GameScene.show(object : WndSelectPerk(M.L(ArchDemon::class.java, "select_perk"),
-                        Dungeon.hero.heroPerk.perks) {
-                    override fun onPerkSelected(perk: Perk) {
-                        removePerk(Dungeon.hero, perk)
+                else GameScene.show {
+                    object : WndSelectPerk(M.L(ArchDemon::class.java, "select_perk"),
+                            Dungeon.hero.heroPerk.perks) {
+                        override fun onPerkSelected(perk: Perk) {
+                            removePerk(Dungeon.hero, perk)
+                        }
                     }
-                })
+                }
             } else if (index == 1) {
                 val upgradable = Dungeon.hero.heroPerk.perks.filter { it.upgradable() }
                 if (upgradable.isEmpty()) tell(M.L(ArchDemon::class.java, "unqualified"))
-                else GameScene.show(object : WndSelectPerk(M.L(ArchDemon::class.java, "select_perk"), upgradable) {
-                    override fun onPerkSelected(perk: Perk) {
-                        upgradePerk(Dungeon.hero, perk)
+                else GameScene.show {
+                    object : WndSelectPerk(M.L(ArchDemon::class.java, "select_perk"), upgradable) {
+                        override fun onPerkSelected(perk: Perk) {
+                            upgradePerk(Dungeon.hero, perk)
+                        }
                     }
-                })
+                }
             }
         }
 

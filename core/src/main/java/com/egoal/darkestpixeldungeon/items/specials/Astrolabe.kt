@@ -56,7 +56,7 @@ class Astrolabe : Special() {
 
     override fun use(hero: Hero) {
         if (!::positiveInvokers.isInitialized) resetInvokers()
-        GameScene.show(WndInvoke())
+        GameScene.show { WndInvoke() }
     }
 
     override fun tick() {
@@ -249,7 +249,7 @@ class Astrolabe : Special() {
             if (help.isNotEmpty()) {
                 val btnHelp = object : RedButton("?") {
                     override fun onClick() {
-                        GameScene.show(WndOptions(name, help))
+                        GameScene.show { WndOptions(name, help) }
                     }
                 }
                 btnHelp.textColor(color)

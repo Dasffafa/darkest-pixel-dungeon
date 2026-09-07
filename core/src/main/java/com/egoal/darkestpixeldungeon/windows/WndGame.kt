@@ -38,7 +38,7 @@ class WndGame : Window() {
         addButton(object : RedButton(M.L(WndGame::class.java, "settings")) {
             override fun onClick() {
                 hide()
-                GameScene.show(WndSettings(false))
+                GameScene.show { WndSettings(false) }
             }
         })
 

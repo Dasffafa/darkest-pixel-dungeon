@@ -59,21 +59,23 @@ class Blacksmith : NPC.Unbreakable() {
         if (!Quest.given) {
             val msg = if (Quest.alternative) M.L(this, "blood_1") else M.L(this, "gold_1")
 
-            GameScene.show(object : WndQuest(this, msg) {
-                override fun onBackPressed() {
-                    super.onBackPressed()
+            GameScene.show {
+                object : WndQuest(this, msg) {
+                    override fun onBackPressed() {
+                        super.onBackPressed()
 
-                    Quest.given = true
-                    Quest.completed = false
+                        Quest.given = true
+                        Quest.completed = false
 
-                    val pick = Pickaxe()
-                    if (pick.doPickUp(Dungeon.hero)) {
-                        GLog.i(M.L(Dungeon.hero, "you_now_have", pick.name()))
-                    } else {
-                        Dungeon.level.drop(pick, Dungeon.hero.pos).sprite.drop()
+                        val pick = Pickaxe()
+                        if (pick.doPickUp(Dungeon.hero)) {
+                            GLog.i(M.L(Dungeon.hero, "you_now_have", pick.name()))
+                        } else {
+                            Dungeon.level.drop(pick, Dungeon.hero.pos).sprite.drop()
+                        }
                     }
                 }
-            })
+            }
 
             Journal.add(M.L(this, "name"))
         } else if (!Quest.completed) {
@@ -116,7 +118,7 @@ class Blacksmith : NPC.Unbreakable() {
 
             }
         } else if (!Quest.reforged) {
-            GameScene.show(WndBlacksmith(this, Dungeon.hero))
+            GameScene.show { WndBlacksmith(this, Dungeon.hero) }
         } else {
             tell(M.L(this, "get_lost"))
         }

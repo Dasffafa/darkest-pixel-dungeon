@@ -69,9 +69,9 @@ public class CellSelector extends TouchArea {
   private void onContextClick(int cell) {
     Char character = Actor.Companion.findChar(cell);
     if (character != null && character != com.egoal.darkestpixeldungeon.Dungeon.INSTANCE.getHero()) {
-      GameScene.show(new WndCharActions(character, cell));
+      GameScene.show(() -> new WndCharActions(character, cell));
     } else {
-      GameScene.show(new WndCellActions(cell));
+      GameScene.show(() -> new WndCellActions(cell));
     }
   }
 
@@ -198,7 +198,7 @@ public class CellSelector extends TouchArea {
     int cell = ((DungeonTilemap) target).screenToTile((int) t.current.x, (int) t.current.y);
     Char character = Actor.Companion.findChar(cell);
     if (character != null && character != com.egoal.darkestpixeldungeon.Dungeon.INSTANCE.getHero()) {
-      GameScene.show(new WndCharActions(character, cell));
+      GameScene.show(() -> new WndCharActions(character, cell));
       return true;
     }
     return false;

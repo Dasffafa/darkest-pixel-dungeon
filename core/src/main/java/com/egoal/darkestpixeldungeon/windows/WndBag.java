@@ -329,8 +329,8 @@ public class WndBag extends WndTabbed {
     @Override
     public void onClick(Tab tab) {
         hide();
-        if (filter != null) GameScene.show(new WndBag(((BagTab) tab).bag, listener, title, filter));
-        else GameScene.show(new WndBag(((BagTab) tab).bag, listener, mode, title));
+        if (filter != null) GameScene.show(() -> new WndBag(((BagTab) tab).bag, listener, title, filter));
+        else GameScene.show(() -> new WndBag(((BagTab) tab).bag, listener, mode, title));
     }
 
     @Override
@@ -523,7 +523,7 @@ public class WndBag extends WndTabbed {
 
             } else {
 
-                GameScene.show(new WndItem(WndBag.this, item));
+                GameScene.show(() -> new WndItem(WndBag.this, item));
 
             }
         }
