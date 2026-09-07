@@ -12,6 +12,9 @@
  */
 package com.egoal.darkestpixeldungeon.android;
 
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.view.View;
 import com.egoal.darkestpixeldungeon.DarkestPixelDungeon;
@@ -43,5 +46,16 @@ public class AndroidPlatformSupport extends PlatformSupport {
     @Override
     public void reportException(Throwable throwable) {
         FirebaseCrashlytics.getInstance().recordException(throwable);
+    }
+
+    @Override
+    public void copyToClipboard(String text) {
+        launcher.runOnUiThread(() -> {
+            ClipboardManager cm =
+                    (ClipboardManager) launcher.getSystemService(Context.CLIPBOARD_SERVICE);
+            if (cm != null) {
+                cm.setPrimaryClip(ClipData.newPlainText("Error Report", text));
+            }
+        });
     }
 }

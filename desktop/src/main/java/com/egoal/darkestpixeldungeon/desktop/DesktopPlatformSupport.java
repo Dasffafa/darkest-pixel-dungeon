@@ -15,6 +15,8 @@ package com.egoal.darkestpixeldungeon.desktop;
 import com.badlogic.gdx.Gdx;
 import com.watabou.utils.PlatformSupport;
 
+import java.awt.Toolkit;
+import java.awt.datatransfer.StringSelection;
 import java.util.Locale;
 import javax.swing.JOptionPane;
 import javax.swing.JTextField;
@@ -51,5 +53,11 @@ public class DesktopPlatformSupport extends PlatformSupport {
     @Override
     public void reportException(Throwable throwable) {
         Gdx.app.error("dpd", "Unhandled exception", throwable);
+    }
+
+    @Override
+    public void copyToClipboard(String text) {
+        Toolkit.getDefaultToolkit().getSystemClipboard()
+                .setContents(new StringSelection(text), null);
     }
 }

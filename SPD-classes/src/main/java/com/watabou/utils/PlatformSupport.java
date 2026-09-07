@@ -58,6 +58,8 @@ public class PlatformSupport {
         }, title, defaultText, "");
     }
 
+    public void copyToClipboard(String text) { }
+
     public interface TextCallback {
         void onSelect(boolean positive, String text);
     }
