@@ -19,6 +19,7 @@ import com.egoal.darkestpixeldungeon.mechanics.Ballistica
 import com.egoal.darkestpixeldungeon.messages.M
 import com.egoal.darkestpixeldungeon.scenes.CellSelector
 import com.egoal.darkestpixeldungeon.scenes.GameScene
+import com.egoal.darkestpixeldungeon.ui.QuickSlotButton
 import com.egoal.darkestpixeldungeon.utils.GLog
 import com.watabou.noosa.audio.Sample
 import com.watabou.utils.Bundlable
@@ -83,6 +84,7 @@ abstract class SelectInvoker(positive: Boolean, maxlevel: Int = 1) : Invoker(pos
     override fun invoke(hero: Hero, astrolabe: Astrolabe) {
         this.hero = hero
         this.astrolabe = astrolabe
+        QuickSlotButton.beginTargeting(astrolabe)
         GameScene.selectCell(this)
     }
 

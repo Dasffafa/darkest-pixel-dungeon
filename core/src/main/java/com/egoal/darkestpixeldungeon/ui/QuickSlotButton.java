@@ -134,10 +134,11 @@ public class QuickSlotButton extends Button implements WndBag.Listener {
   }
 
   private void useItem() {
-//    // Targeting items have already been consumed when their action starts.
-//    // Re-clicking the same slot while waiting for a destination must not
-//    // execute the item a second time.
-//    if (targeting && targetingSlot == slotNum) return;
+    // NOTE: there is deliberately no "same slot while targeting" early return
+    // here. Clicking the active slot again is how the player fires at the
+    // currently selected/auto-aimed target, so an early return would break that.
+    // The duplicate-execution case is instead handled below by rejecting
+    // zero-quantity items (a targeting item is consumed when its action starts).
     Item item = select(slotNum);
     // A slot can be cleared (for example, when its item is removed) while the
     // button or an in-progress targeting state is still present. Treat that as
@@ -161,8 +162,7 @@ public class QuickSlotButton extends Button implements WndBag.Listener {
         useItem();
         return;
       }
-      int cell = lastTarget == null ? targetCell : autoAim(lastTarget, item);
-      GameScene.handleCell(cell != -1 ? cell : targetCell);
+      fireAtTarget(item);
     } else {
       if (item.getUsesTargeting()) useTargeting(item);
       item.execute(Dungeon.INSTANCE.getHero());
@@ -233,7 +233,14 @@ public class QuickSlotButton extends Button implements WndBag.Listener {
   }
 
   public static void beginTargeting(Item item) {
-    beginTargeting(item, -1);
+    // Bind targeting to the item's quickslot when it has one, so tapping that
+    // slot confirms the target. Items without a slot keep external targeting.
+    int slotNum = Dungeon.INSTANCE.getQuickslot().getSlot(item);
+    if (slotNum >= 0 && slotNum < instance.length && instance[slotNum] != null) {
+      instance[slotNum].useTargeting(item);
+    } else {
+      beginTargeting(item, slotNum);
+    }
   }
 
   private static void beginTargeting(Item item, int slotNum) {
@@ -306,9 +313,16 @@ public class QuickSlotButton extends Button implements WndBag.Listener {
   }
 
   public static boolean confirmExternalTarget() {
-    if (!targeting || targetingSlot >= 0 || targetCell < 0) return false;
-    GameScene.handleCell(targetCell);
+    // Confirm works for any active targeting, whether or not it is bound to a
+    // quickslot, so keyboard confirm stays available alongside slot taps.
+    if (!targeting || targetCell < 0) return false;
+    fireAtTarget(targetingItem);
     return true;
+  }
+
+  private static void fireAtTarget(Item item) {
+    int cell = lastTarget == null ? targetCell : autoAim(lastTarget, item);
+    GameScene.handleCell(cell != -1 ? cell : targetCell);
   }
 
   public static int autoAim(Char target) {
