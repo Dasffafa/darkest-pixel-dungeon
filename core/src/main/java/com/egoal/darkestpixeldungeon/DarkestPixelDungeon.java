@@ -33,6 +33,9 @@ import com.watabou.utils.PlatformSupport;
 import java.util.Map;
 
 public class DarkestPixelDungeon extends Game {
+  private static final long STALL_THRESHOLD = 10000L;
+  private static final long SUSPEND_THRESHOLD = 3000L;
+
   private volatile long renderHeartbeat;
   private volatile boolean watchdogReported;
   private volatile long actorProcessingSince;
@@ -62,35 +65,56 @@ public class DarkestPixelDungeon extends Game {
 
     renderHeartbeat = System.currentTimeMillis();
     Thread watchdog = new Thread(() -> {
+      long lastWake = System.currentTimeMillis();
       while (true) {
         try { Thread.sleep(1000L); } catch (InterruptedException ignored) { return; }
-        long stalled = System.currentTimeMillis() - renderHeartbeat;
-        if (!watchdogReported && stalled >= 10000L) {
-          watchdogReported = true;
-          StringBuilder detail = new StringBuilder("Render thread stalled for more than 10 seconds.\n");
-          for (Map.Entry<Thread, StackTraceElement[]> entry : Thread.getAllStackTraces().entrySet()) {
-            detail.append("\n--- ").append(entry.getKey().getName()).append(" ---\n");
-            for (StackTraceElement element : entry.getValue()) detail.append("at ").append(element).append('\n');
+        long now = System.currentTimeMillis();
+
+        // the process itself was frozen (app cached, machine asleep); not a game stall
+        if (now - lastWake - 1000L > SUSPEND_THRESHOLD) {
+          lastWake = now;
+          renderHeartbeat = now;
+          actorProcessingSince = 0L;
+          continue;
+        }
+        lastWake = now;
+
+        // rendering stops on purpose while the app is in the background
+        if (isPaused()) {
+          renderHeartbeat = now;
+          actorProcessingSince = 0L;
+          continue;
+        }
+
+        long stalled = now - renderHeartbeat;
+        if (stalled >= STALL_THRESHOLD) {
+          if (!watchdogReported) {
+            watchdogReported = true;
+            StringBuilder detail = new StringBuilder("Render thread stalled for more than 10 seconds.\n");
+            for (Map.Entry<Thread, StackTraceElement[]> entry : Thread.getAllStackTraces().entrySet()) {
+              detail.append("\n--- ").append(entry.getKey().getName()).append(" ---\n");
+              for (StackTraceElement element : entry.getValue()) detail.append("at ").append(element).append('\n');
+            }
+            RuntimeException timeout = new RuntimeException(detail.toString());
+            StallReport.INSTANCE.record(timeout);
+            TopExceptionHandler.Companion.WriteErrorFile(timeout);
+            platform.reportException(timeout);
           }
-          RuntimeException timeout = new RuntimeException(detail.toString());
-          TopExceptionHandler.Companion.WriteErrorFile(timeout);
-          platform.reportException(timeout);
-          return;
-        } else if (stalled < 10000L) {
+        } else {
           watchdogReported = false;
         }
 
         Thread actor = GameScene.currentActorThread();
         if (actor != null && actor.isAlive() && com.egoal.darkestpixeldungeon.actors.Actor.Companion.processing()) {
-          if (actorProcessingSince == 0L) actorProcessingSince = System.currentTimeMillis();
-          if (!actorTimeoutReported && System.currentTimeMillis() - actorProcessingSince >= 10000L) {
+          if (actorProcessingSince == 0L) actorProcessingSince = now;
+          if (!actorTimeoutReported && now - actorProcessingSince >= STALL_THRESHOLD) {
             actorTimeoutReported = true;
             RuntimeException timeout = new RuntimeException(
-                    "Actor thread blocked for more than 10 seconds. depth=" + Dungeon.INSTANCE.getDepth());
+                    "Actor thread blocked for more than 10 seconds.");
             timeout.setStackTrace(actor.getStackTrace());
+            StallReport.INSTANCE.record(timeout);
             TopExceptionHandler.Companion.WriteErrorFile(timeout);
             platform.reportException(timeout);
-            return;
           }
         } else {
           actorProcessingSince = 0L;

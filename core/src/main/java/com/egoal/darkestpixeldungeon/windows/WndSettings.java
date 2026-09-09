@@ -20,7 +20,9 @@
  */
 package com.egoal.darkestpixeldungeon.windows;
 
+import com.egoal.darkestpixeldungeon.CrashReporting;
 import com.egoal.darkestpixeldungeon.DarkestPixelDungeon;
+import com.egoal.darkestpixeldungeon.StallReport;
 import com.egoal.darkestpixeldungeon.messages.M;
 import com.egoal.darkestpixeldungeon.ui.OptionSlider;
 import com.egoal.darkestpixeldungeon.ui.RedButton;
@@ -49,6 +51,7 @@ public class WndSettings extends WndTabbed {
   private ScreenTab screen;
   private UITab ui;
   private AudioTab audio;
+  private CrashTab crash;
 
   private static int last_index = 0;
 
@@ -94,6 +97,24 @@ public class WndSettings extends WndTabbed {
         if (value) last_index = 2;
       }
     });
+
+    if (CrashReporting.INSTANCE.getAvailable()) {
+      crash = new CrashTab();
+      add(crash);
+
+      add(new LabeledTab(Messages.get(this, "crash_report")) {
+        @Override
+        protected void select(boolean value) {
+          super.select(value);
+          crash.visible = crash.active = value;
+          if (value) last_index = 3;
+        }
+      });
+    }
+
+    if (crash != null && StallReport.INSTANCE.getHasPending()) {
+      last_index = 3;
+    }
 
     resize(WIDTH, HEIGHT);
 
@@ -209,6 +230,35 @@ public class WndSettings extends WndTabbed {
       chkDebug.checked(DarkestPixelDungeon.debug());
       chkDebug.enable(enableDebug);
       add(chkDebug);
+    }
+  }
+
+  private class CrashTab extends Group {
+
+    public CrashTab() {
+      super();
+
+      CheckBox chkCrashReport = new CheckBox(Messages.get(this, "send")) {
+        @Override
+        public void onClick() {
+          super.onClick();
+          CrashReporting.INSTANCE.setConsent(checked());
+        }
+      };
+      chkCrashReport.setRect(0, GAP_SML, WIDTH, BTN_HEIGHT);
+      chkCrashReport.checked(CrashReporting.INSTANCE.isConsented());
+      add(chkCrashReport);
+
+      if (CrashReporting.INSTANCE.isConsented() && StallReport.INSTANCE.getHasPending()) {
+        RedButton btnStallReport = new RedButton(Messages.get(this, "report_stall")) {
+          @Override
+          public void onClick() {
+            parent.parent.parent.add(new WndStallReport());
+          }
+        };
+        btnStallReport.setRect(0, chkCrashReport.bottom() + GAP_SML, WIDTH, BTN_HEIGHT);
+        add(btnStallReport);
+      }
     }
   }
 
