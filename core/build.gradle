@@ -1,3 +1,7 @@
+plugins {
+    id 'io.sentry.jvm.gradle' version '6.21.0'
+}
+
 apply plugin: 'java-library'
 apply plugin: 'org.jetbrains.kotlin.jvm'
 apply plugin: 'org.jetbrains.kotlin.plugin.serialization'
@@ -15,11 +19,41 @@ tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
     kotlinOptions.jvmTarget = '1.8'
 }
 
+sentry {
+    includeSourceContext = false
+    org = "thebouquet"
+    projectName = "darkest-pixel-dungeon"
+}
+
+def sentryDsn = (project.findProperty('sentryDsn') ?: System.getenv('SENTRY_DSN') ?: '').toString()
+
+def generateSentryConfig = tasks.register('generateSentryConfig') {
+    def outputDir = layout.buildDirectory.dir('generated/dpd-sentry/kotlin')
+    def dsn = sentryDsn
+    inputs.property('dsn', dsn)
+    outputs.dir(outputDir)
+    doLast {
+        def configFile = new File(outputDir.get().asFile, 'com/egoal/darkestpixeldungeon/SentryConfig.kt')
+        configFile.parentFile.mkdirs()
+        configFile.text = """package com.egoal.darkestpixeldungeon
+
+internal object SentryConfig {
+    const val DSN: String = "${dsn}"
+}
+"""
+    }
+}
+
 sourceSets {
     main {
         java.exclude 'com/egoal/darkestpixeldungeon/android/**'
         resources.srcDir 'src/main/assets'
+        kotlin.srcDir(generateSentryConfig)
     }
+}
+
+tasks.named('compileKotlin') {
+    dependsOn generateSentryConfig
 }
 
 processResources {

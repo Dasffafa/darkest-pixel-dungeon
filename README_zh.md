@@ -112,8 +112,8 @@ desktop/build/packr/dist/
 ### 前置条件
 
 - 安装 Android Studio 与 Android SDK（JDK 由 Android Studio 自带或已配置）。
-- 项目集成了 Google Firebase 用于崩溃追踪。google-services 与 Firebase 插件是无条件启用的，因此 `android/google-services.json` 必须存在，否则任何构建都会失败。该文件已被 `.gitignore` 忽略（见 `.gitignore`），需自行从 Firebase 控制台下载并放入 `android/` 目录。
 - 原生 LibGDX `.so` 库会在构建时自动拷贝，无需手动处理。
+
 
 ### 运行 debug APK（default-apk）
 

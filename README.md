@@ -109,7 +109,6 @@ If the download keeps failing due to network issues, download the JDK manually f
 ### Prerequisites
 
 - Android Studio with the Android SDK installed (JDK is bundled or already configured).
-- This project is integrated with Google Firebase for crash tracking. The google-services and Firebase plugins are applied unconditionally, so `android/google-services.json` must exist or any build will fail. The file is git-ignored (see `.gitignore`) and must be downloaded from the Firebase console and placed in `android/` yourself.
 - Native LibGDX `.so` libraries are copied automatically during the build, no manual step is needed.
 
 ### Run the debug APK (default-apk)

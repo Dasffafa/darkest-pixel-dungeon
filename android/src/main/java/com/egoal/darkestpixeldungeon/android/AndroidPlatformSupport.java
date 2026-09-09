@@ -18,7 +18,6 @@ import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.view.View;
 import com.egoal.darkestpixeldungeon.DarkestPixelDungeon;
-import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.watabou.utils.PlatformSupport;
 
 public class AndroidPlatformSupport extends PlatformSupport {
@@ -45,7 +44,6 @@ public class AndroidPlatformSupport extends PlatformSupport {
 
     @Override
     public void reportException(Throwable throwable) {
-        FirebaseCrashlytics.getInstance().recordException(throwable);
     }
 
     @Override
