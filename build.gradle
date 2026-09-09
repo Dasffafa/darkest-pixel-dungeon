@@ -2,18 +2,8 @@ buildscript {
     ext.kotlin_version = '1.9.24'
     ext.gdx_version = '1.11.0'
     repositories {
-        maven {
-            url "https://maven.aliyun.com/repository/google"
-            allowInsecureProtocol = true
-        }
-        maven {
-            url "https://maven.aliyun.com/repository/central"
-            allowInsecureProtocol = true
-        }
-        maven {
-            url "http://maven.aliyun.com/nexus/content/groups/public"
-            allowInsecureProtocol = true
-        }
+        google()
+        mavenCentral()
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:8.7.2'
@@ -29,17 +19,7 @@ ext {
 
 allprojects {
     repositories {
-        maven {
-            url "https://maven.aliyun.com/repository/google"
-            allowInsecureProtocol = true
-        }
-        maven {
-            url "https://maven.aliyun.com/repository/central"
-            allowInsecureProtocol = true
-        }
-        maven {
-            url "http://maven.aliyun.com/nexus/content/groups/public"
-            allowInsecureProtocol = true
-        }
+        google()
+        mavenCentral()
     }
 }
