@@ -103,6 +103,8 @@ public class DarkestPixelDungeon extends Game {
 
     Thread.setDefaultUncaughtExceptionHandler(new TopExceptionHandler());
 
+    CrashReporting.INSTANCE.initIfConsented();
+
     updateImmersiveMode();
 
     boolean landscape = width > height;
@@ -421,6 +423,7 @@ public class DarkestPixelDungeon extends Game {
    */
 
   public static void reportException(Throwable tr) {
+    CrashReporting.INSTANCE.capture(tr);
     TopExceptionHandler.Companion.WriteErrorFile(tr);
     Game.platform.reportException(tr);
   }
