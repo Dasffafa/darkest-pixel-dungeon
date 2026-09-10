@@ -61,6 +61,7 @@ public class Assets {
     public static final String ARCH_DEMON = ACTORS + "arch_demon.png";
     public static final String PASSERBY = ACTORS + "passerby.png";
     public static final String MONUMENT = ACTORS + "monument.png";
+    public static final String BOUQUET = ACTORS + "bouquet.png";
 
     // shop keeper
     public static final String KEEPER = ACTORS + "shopkeeper.png";
@@ -196,6 +197,7 @@ public class Assets {
             ".ogg";
     public static final String TRACK_FINAL_LOOP = SOUNDS + "track_final_loop.ogg";
     public static final String TRACK_HAPPY_END = SOUNDS + "track_surface.ogg";
+    public static final String TRACK_SNOW_IS_FALLING = SOUNDS + "track_snow_is_falling.ogg";
 
     // keep in mind that the sfx should be preloaded
     // ui

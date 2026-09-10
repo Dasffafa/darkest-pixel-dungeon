@@ -35,7 +35,7 @@ class Monument : NPC.Unbreakable() {
 
                         activated = true
                         (sprite as Sprite).activate()
-                        GLog.n(M.L(Monument::class.java, "activated"))
+                        GLog.n(M.L(Monument::class.java, "activated", challenges.joinToString(", ") { it.title() }))
                     }
 
                     hide()
