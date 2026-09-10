@@ -21,7 +21,6 @@
 package com.egoal.darkestpixeldungeon.items.potions
 
 import com.egoal.darkestpixeldungeon.Assets
-import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.actors.Actor
 import com.egoal.darkestpixeldungeon.actors.buffs.*
 import com.egoal.darkestpixeldungeon.actors.hero.Hero
@@ -113,7 +112,7 @@ class PotionOfHealing : Potion() {
         super.shatter(cell)
 
         PathFinder.NEIGHBOURS9.map { Actor.findChar(cell + it) }.filterNotNull().forEach {
-            it.recoverHP(recoverValue(Dungeon.hero))
+            Buff.affect(it, Mending::class.java).set(it.HT * 2 / 3)
         }
     }
 

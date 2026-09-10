@@ -65,6 +65,8 @@ class Dieting : Perk() {
 
 // note: this perk can be negative level, i havnt abstract this, but it works for now.
 class Discount : Perk(2) {
+    override val isNegative: Boolean get() = level < 0
+
     override fun image(): Int = if (level > 0) PerkImageSheet.DISCOUNT else PerkImageSheet.DISCOUNT_NEG
 
     fun buyPrice(item: Item): Int = (item.sellPrice() * ratio()).toInt()

@@ -24,6 +24,7 @@ import com.egoal.darkestpixeldungeon.actors.hero.Hero
 import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.actors.Char
 import com.egoal.darkestpixeldungeon.actors.Damage
+import com.egoal.darkestpixeldungeon.actors.mobs.DarkSpirit
 import com.egoal.darkestpixeldungeon.actors.mobs.Thief
 import com.egoal.darkestpixeldungeon.items.Item
 import com.egoal.darkestpixeldungeon.items.food.FrozenCarpaccio
@@ -79,6 +80,10 @@ class Frost : FlavourBuff(), Char.IIncomingDamageProc {
                     (target.item as Potion).shatter(target.pos)
                     target.item = null
                 }
+
+            } else if (target is DarkSpirit) {
+
+                target.shatterPotions()
 
             }
 

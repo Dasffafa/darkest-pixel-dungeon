@@ -691,6 +691,9 @@ object Dungeon {
     fun win(cause: Class<*>) {
         hero.belongings.identify()
 
+        // the run is over, whatever spirit the save was holding goes back to the pool
+        com.egoal.darkestpixeldungeon.actors.mobs.DarkSpirit.Release(GamesInProgress.curSlot)
+
         if (IsChallenged()) Badges.validateChampion()
 
         Rankings.Submit(true, cause)

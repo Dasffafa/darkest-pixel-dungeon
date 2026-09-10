@@ -203,6 +203,7 @@ class SlotSelectScene : PixelScene() {
                     M.L(SlotSelectScene::class.java, "delete_title"),
                     M.L(SlotSelectScene::class.java, "delete_message")) {
                 GamesInProgress.delete(slot, true, true)
+                com.egoal.darkestpixeldungeon.actors.mobs.DarkSpirit.Release(slot)
                 set(slot)
             }
             Game.scene().addToFront(wnd)

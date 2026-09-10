@@ -85,13 +85,12 @@ object Bones {
     private fun pickItem(hero: Hero): Item {
         var item: Item? = null
         if (Random.Int(2) == 0) {
-            item = when (Random.Int(7)) {
-                0 -> hero.belongings.weapon
-                1 -> hero.belongings.armor
-                2 -> hero.belongings.helmet
-                3 -> hero.belongings.misc1
-                4 -> hero.belongings.misc2
-                5 -> hero.belongings.misc3
+            // weapons and armor are left to the dark spirit, they never become bones
+            item = when (Random.Int(5)) {
+                0 -> hero.belongings.helmet
+                1 -> hero.belongings.misc1
+                2 -> hero.belongings.misc2
+                3 -> hero.belongings.misc3
                 else -> Dungeon.quickslot.randomNonePlaceholder()
             }
 
