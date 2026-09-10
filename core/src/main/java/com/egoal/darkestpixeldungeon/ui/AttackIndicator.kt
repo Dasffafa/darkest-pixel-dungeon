@@ -103,7 +103,10 @@ class AttackIndicator : Tag(0xFF4C4C) {
             sprite = null
         }
 
-        sprite = lastTarget!!.spriteClass.newInstance()
+        // Use sprite() instead of spriteClass.newInstance(): some mobs (e.g. DarkSpirit)
+        // override sprite() with an inner sprite class and never initialize the lateinit
+        // spriteClass, which would otherwise throw UninitializedPropertyAccessException.
+        sprite = lastTarget!!.sprite()
         active = true
 
         add(sprite!!.let {
