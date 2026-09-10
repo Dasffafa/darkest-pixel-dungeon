@@ -31,6 +31,10 @@ class Astrolabe : Special() {
     private var cooldown = 0
     var blockNextNegative = false
 
+    // Captured when the astrolabe is used, so the invocation path never reads the
+    // shared Item.curUser global (which another item's action can overwrite).
+    private lateinit var invokingHero: Hero
+
     private var cachedInvoker_1: Int = -1
     private var cachedInvoker_2: Int = -1
     private var upgraded = 0
@@ -56,6 +60,7 @@ class Astrolabe : Special() {
 
     override fun use(hero: Hero) {
         if (!::positiveInvokers.isInitialized) resetInvokers()
+        invokingHero = hero
         GameScene.show { WndInvoke() }
     }
 
@@ -90,7 +95,7 @@ class Astrolabe : Special() {
 
         if (!invokePositive && blockNextNegative) {
             blockNextNegative = false
-            curUser.sprite.showStatus(0x420000, Messages.get(extremely_lucky::class.java, "block"))
+            invokingHero.sprite.showStatus(0x420000, Messages.get(extremely_lucky::class.java, "block"))
 
             cooldown = 20
             return
@@ -107,17 +112,17 @@ class Astrolabe : Special() {
             }
 
             val ivk = positiveInvokers[idx]
-            curUser.sprite.showStatus(ivk.color(), ivk.status())
-            CellEmitter.get(curUser.pos).start(ShaftParticle.FACTORY, .2f, 3)
+            invokingHero.sprite.showStatus(ivk.color(), ivk.status())
+            CellEmitter.get(invokingHero.pos).start(ShaftParticle.FACTORY, .2f, 3)
 
             cooldown = ivk.InvokeCD
         } else {
             val ivk = negativeInvokers[randomNegativeIndex()]
-            curUser.sprite.showStatus(ivk.color(), ivk.status())
-            CellEmitter.get(curUser.pos).start(ShaftParticle.FACTORY, .2f, 3)
+            invokingHero.sprite.showStatus(ivk.color(), ivk.status())
+            CellEmitter.get(invokingHero.pos).start(ShaftParticle.FACTORY, .2f, 3)
 
-            if (Random.Int(4) == 0) curUser.sayShort(HeroLines.DAMN)
-            ivk.invoke(curUser, this)
+            if (Random.Int(4) == 0) invokingHero.sayShort(HeroLines.DAMN)
+            ivk.invoke(invokingHero, this)
 
             cooldown = ivk.InvokeCD
         }
@@ -128,11 +133,11 @@ class Astrolabe : Special() {
     //fixme: bad parameter, index should be 1 or 2, bad logical
     private operator fun invoke(index: Int) {
         if (index == 1) {
-            positiveInvokers[cachedInvoker_1].invoke(curUser, this)
+            positiveInvokers[cachedInvoker_1].invoke(invokingHero, this)
             cachedInvoker_1 = cachedInvoker_2
             cachedInvoker_2 = -1
         } else if (index == 2) {
-            positiveInvokers[cachedInvoker_2].invoke(curUser, this)
+            positiveInvokers[cachedInvoker_2].invoke(invokingHero, this)
             cachedInvoker_2 = -1
         }
 

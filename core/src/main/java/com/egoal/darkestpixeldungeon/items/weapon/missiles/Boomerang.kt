@@ -134,7 +134,7 @@ open class Boomerang : MissileWeapon(1), GreatBlueprint.Enchantable {
 
     private fun circleBack(from: Int, owner: Hero) {
         (owner.sprite.parent.recycle(MissileSprite::class.java) as MissileSprite).reset(from,
-                owner.pos, Item.curItem, null)
+                owner.pos, this, null)
 
         if (throwEquiped) {
             owner.belongings.weapon = this

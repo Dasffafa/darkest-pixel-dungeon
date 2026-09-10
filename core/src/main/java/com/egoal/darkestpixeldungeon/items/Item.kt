@@ -106,6 +106,8 @@ open class Item : Bundlable {
 
     open fun doThrow(hero: Hero) {
         if (!QuickSlotButton.isTargeting()) QuickSlotButton.beginTargeting(this)
+        throwingItem = this
+        throwingUser = hero
         GameScene.selectCell(thrower)
     }
 
@@ -433,10 +435,19 @@ open class Item : Bundlable {
 
         lateinit var curUser: Hero
         lateinit var curItem: Item
+
+        // Bound to the item that actually started the current throw targeting, so
+        // the listener never reads the mutable global curItem/curUser. Another
+        // item's execute() can overwrite those while this selection is pending.
+        private var throwingItem: Item? = null
+        private var throwingUser: Hero? = null
+
         protected var thrower: CellSelector.Listener = object : CellSelector.Listener {
             override fun onSelect(target: Int?) {
                 if (target != null) {
-                    curItem.cast(curUser, target)
+                    val item = throwingItem ?: return
+                    val user = throwingUser ?: return
+                    item.cast(user, target)
                 }
             }
 
