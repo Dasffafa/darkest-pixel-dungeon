@@ -43,6 +43,7 @@ import com.watabou.utils.GameMath
 import com.watabou.utils.PathFinder
 import com.watabou.utils.Random
 import java.util.*
+import java.util.concurrent.CopyOnWriteArraySet
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.round
@@ -86,7 +87,7 @@ abstract class Char : Actor() {
 
     val immunities = hashSetOf<Class<*>>()
 
-    private val buffs = HashSet<Buff>()
+    private val buffs = CopyOnWriteArraySet<Buff>()
 
     var camp: Camp = Camp.NEUTRAL
 
@@ -384,6 +385,7 @@ abstract class Char : Actor() {
     @Synchronized
     fun isCharmedBy(ch: Char): Boolean = buffs.filterIsInstance<Charm>().any { it.objectid == ch.id() }
 
+    @Synchronized
     open fun add(buff: Buff) {
         buffs.add(buff)
         Actor.add(buff)
@@ -398,12 +400,14 @@ abstract class Char : Actor() {
             }
     }
 
+    @Synchronized
     open fun remove(buff: Buff) {
         buffs.remove(buff)
         Actor.remove(buff)
 
     }
 
+    @Synchronized
     fun remove(buffClass: Class<out Buff>) {
         for (buff in buffs(buffClass)) remove(buff)
     }
