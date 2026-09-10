@@ -21,12 +21,13 @@
 package com.egoal.darkestpixeldungeon.scenes;
 
 
+import com.egoal.darkestpixeldungeon.Assets;
 import com.egoal.darkestpixeldungeon.DarkestPixelDungeon;
-import com.egoal.darkestpixeldungeon.ui.Archs;
-import com.egoal.darkestpixeldungeon.ui.RenderedTextMultiline;
 import com.egoal.darkestpixeldungeon.effects.Flare;
+import com.egoal.darkestpixeldungeon.ui.Archs;
 import com.egoal.darkestpixeldungeon.ui.ExitButton;
 import com.egoal.darkestpixeldungeon.ui.Icons;
+import com.egoal.darkestpixeldungeon.ui.RenderedTextMultiline;
 import com.egoal.darkestpixeldungeon.ui.Window;
 import com.watabou.input.Touchscreen.Touch;
 import com.watabou.noosa.Camera;
@@ -39,9 +40,16 @@ public class AboutScene extends PixelScene {
 
   private static final String TTL_DPD = "Darkest Pixel Dungeon";
 
-  private static final String TXT_DPD = "Design, Code, & Graphics: Egoal";
+  private static final String TTL_EGOAL = "Egoal";
+
+  private static final String TTL_BOUQUET = "雪色bouquet";
+
+  private static final String TXT_DPD = "Design, Code, & Graphics: Egoal, " +
+          "雪色bouquet (@Dasffafa)";
 
   private static final String LNK_DPD = "github.com/egoal";
+
+  private static final String LNK_DASFFAFA = "github.com/Dasffafa";
 
   private static final String TTL_SHPX = "Shattered Pixel Dungeon";
 
@@ -61,9 +69,24 @@ public class AboutScene extends PixelScene {
             .landscape() ? 36 : 84);
     final float wataOffset = DarkestPixelDungeon.landscape() ? colWidth : 0;
 
-    // add dpd sign
+    // add dpd sign, and the bouquet beside it
     Image lix = Icons.LIX.get();
-    lix.x = (colWidth - lix.width()) / 2;
+    Image bouquet = new Image(Assets.BOUQUET);
+
+    RenderedText lixTitle = renderText(TTL_EGOAL, 8);
+    lixTitle.hardlight(Window.DPD_COLOR);    // set the font color
+
+    RenderedText bouquetTitle = renderText(TTL_BOUQUET, 8);
+    bouquetTitle.hardlight(Window.BOUQUET_COLOR);
+
+    final float entryGap = 16;
+    final float lixEntryWidth = Math.max(lix.width(), lixTitle.width());
+    final float bouquetEntryWidth = Math.max(bouquet.width(),
+            bouquetTitle.width());
+    final float entriesWidth = lixEntryWidth + entryGap + bouquetEntryWidth;
+    final float entriesX = (colWidth - entriesWidth) / 2;
+
+    lix.x = entriesX + (lixEntryWidth - lix.width()) / 2;
     lix.y = colTop;
     align(lix);
     add(lix);
@@ -71,11 +94,31 @@ public class AboutScene extends PixelScene {
     new Flare(7, 64.f).color(Window.DPD_COLOR, true).show(lix, 0)
             .angularSpeed = +30;
 
+    final float bouquetX = entriesX + lixEntryWidth + entryGap;
+    bouquet.x = bouquetX + (bouquetEntryWidth - bouquet.width()) / 2;
+    bouquet.y = colTop;
+    align(bouquet);
+    add(bouquet);
+
+    new Flare(7, 64.f).color(Window.BOUQUET_COLOR, true).show(bouquet, 0)
+            .angularSpeed = +30;
+
+    lixTitle.x = entriesX + (lixEntryWidth - lixTitle.width()) / 2;
+    lixTitle.y = lix.y + lix.height + 5;
+    align(lixTitle);
+    add(lixTitle);
+
+    bouquetTitle.x = bouquetX + (bouquetEntryWidth - bouquetTitle.width()) / 2;
+    bouquetTitle.y = bouquet.y + bouquet.height + 5;
+    align(bouquetTitle);
+    add(bouquetTitle);
+
+    // the game name
     RenderedText dpdTitle = renderText(TTL_DPD, 8);
-    dpdTitle.hardlight(Window.DPD_COLOR);    // set the font color
+    dpdTitle.hardlight(Window.DPD_COLOR);
     add(dpdTitle);
     dpdTitle.x = (colWidth - dpdTitle.width()) / 2;
-    dpdTitle.y = lix.y + lix.height + 5;
+    dpdTitle.y = lixTitle.y + lixTitle.height() + 8;
     align(dpdTitle);
 
     RenderedTextMultiline dpdText = renderMultiline(TXT_DPD, 8);
@@ -103,14 +146,30 @@ public class AboutScene extends PixelScene {
     };
     add(dpdhotArea);
 
+    RenderedTextMultiline daslink = renderMultiline(LNK_DASFFAFA, 8);
+    daslink.maxWidth(dpdText.maxWidth());
+    daslink.hardlight(Window.DPD_COLOR);
+    add(daslink);
+    daslink.setPos((colWidth - daslink.width()) / 2, dpdlink.bottom() + 6);
+    align(daslink);
+
+    TouchArea dashotArea = new TouchArea(daslink.left(), daslink.top(),
+            daslink.width(), daslink.height()) {
+      @Override
+      public void onClick(Touch touch) {
+        Game.platform.openURI("https://" + LNK_DASFFAFA);
+      }
+    };
+    add(dashotArea);
+
     // shattered pixel dungeon
     Image shpx = Icons.SHPX.get();
     if (DarkestPixelDungeon.landscape()) {
       shpx.y = colTop;
-      shpx.x = lix.x + colWidth;
+      shpx.x = colWidth + (colWidth - shpx.width()) / 2;
     } else {
       shpx.x = (colWidth - shpx.width()) / 2;
-      shpx.y = dpdhotArea.y + dpdhotArea.height() + 20;
+      shpx.y = dashotArea.y + dashotArea.height() + 20;
     }
     align(shpx);
     add(shpx);

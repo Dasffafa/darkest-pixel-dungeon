@@ -35,6 +35,7 @@ import com.watabou.utils.Signal;
 
 public class Window extends Group implements Signal.Listener<Key> {
 
+  public static final int BOUQUET_COLOR = 0xdddddd;
   protected int width;
   protected int height;
 
