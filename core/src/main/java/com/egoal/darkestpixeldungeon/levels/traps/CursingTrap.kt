@@ -36,6 +36,7 @@ import com.egoal.darkestpixeldungeon.items.artifacts.Artifact
 import com.egoal.darkestpixeldungeon.items.rings.Ring
 import com.egoal.darkestpixeldungeon.items.weapon.Inscription
 import com.egoal.darkestpixeldungeon.items.weapon.missiles.Boomerang
+import com.egoal.darkestpixeldungeon.items.weapon.missiles.MissileWeapon
 import com.egoal.darkestpixeldungeon.messages.Messages
 import com.egoal.darkestpixeldungeon.sprites.TrapSprite
 import com.egoal.darkestpixeldungeon.utils.GLog
@@ -61,7 +62,8 @@ class CursingTrap : Trap() {
         val heap = Dungeon.level.heaps.get(pos)
         if (heap != null) {
             for (item in heap.items) {
-                if (item.isUpgradable)
+                // 并非所有可穿戴物品都是upgradable
+                if (item is EquipableItem && item !is MissileWeapon && !item.cursed)
                     curse(item)
             }
         }
