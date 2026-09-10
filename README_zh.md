@@ -75,13 +75,13 @@ dpd.debug=true
 生成包含运行依赖的可执行 fat JAR：
 
 ```
-desktop/build/libs/darkest-pixel-dungeon-<version>-desktop.jar
+desktop/build/libs/darkest-pixel-dungeon-<version>.jar
 ```
 
 可以通过以下命令启动：
 
 ```bash
-java -jar desktop/build/libs/darkest-pixel-dungeon-<version>-desktop.jar
+java -jar desktop/build/libs/darkest-pixel-dungeon-<version>.jar
 ```
 
 ### 构建 Windows 独立发行包

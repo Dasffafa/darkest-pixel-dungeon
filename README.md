@@ -72,13 +72,13 @@ Heroes created while this option is on will have debug items enabled.
 Produces a self-contained executable fat JAR with all runtime dependencies:
 
 ```
-desktop/build/libs/darkest-pixel-dungeon-<version>-desktop.jar
+desktop/build/libs/darkest-pixel-dungeon-<version>.jar
 ```
 
 Run it with:
 
 ```bash
-java -jar desktop/build/libs/darkest-pixel-dungeon-<version>-desktop.jar
+java -jar desktop/build/libs/darkest-pixel-dungeon-<version>.jar
 ```
 
 ### Build a Windows standalone distribution
