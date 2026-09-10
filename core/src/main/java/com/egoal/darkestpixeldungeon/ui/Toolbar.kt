@@ -234,6 +234,11 @@ class Toolbar : Component() {
         }
     }
 
+    override fun destroy() {
+        if (instance === this) instance = null
+        super.destroy()
+    }
+
     fun pickup(item: Item?) {
         pickedUp!!.reset(item,
                 btnInventory.centerX(),
