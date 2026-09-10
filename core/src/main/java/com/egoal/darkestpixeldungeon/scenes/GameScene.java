@@ -972,6 +972,8 @@ public class GameScene extends PixelScene {
   }
 
   public static BubbleText sentenceFor(Visual target) {
+    if (scene == null) return null;
+
     // its members must be BubbleText
     for (Gizmo m : scene.sentences.members) {
       if (m != null && ((BubbleText) m).target == target)
