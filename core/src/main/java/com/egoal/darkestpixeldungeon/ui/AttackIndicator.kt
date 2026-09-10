@@ -71,12 +71,9 @@ class AttackIndicator : Tag(0xFF4C4C) {
 
     private fun checkEnemies() {
         candidates.clear()
-        candidates.addAll((0 until Dungeon.hero.visibleEnemies())
-                .map {
-                    Dungeon.hero.visibleEnemy(it)
-                }.filter {
-                    Dungeon.hero.canAttack(it)
-                })
+        candidates.addAll(Dungeon.hero.visibleEnemyList().filter {
+            Dungeon.hero.canAttack(it)
+        })
 
         if (!candidates.contains(lastTarget)) {
             if (candidates.isEmpty()) {
@@ -170,13 +167,19 @@ class AttackIndicator : Tag(0xFF4C4C) {
         private lateinit var instance: AttackIndicator
         private var lastTarget: Mob? = null
         fun target(target: Char?) {
-            lastTarget = target as Mob?
-            instance.updateImage()
-            HealthIndicator.instance.target(target)
+            Game.runOnRenderThread {
+                if (!::instance.isInitialized) return@runOnRenderThread
+                lastTarget = target as Mob?
+                instance.updateImage()
+                HealthIndicator.instance.target(target)
+            }
         }
 
         fun updateState() {
-            instance.checkEnemies()
+            Game.runOnRenderThread {
+                if (!::instance.isInitialized || Dungeon.hero == null) return@runOnRenderThread
+                instance.checkEnemies()
+            }
         }
     }
 }

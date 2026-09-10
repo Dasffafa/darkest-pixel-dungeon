@@ -286,8 +286,7 @@ public class QuickSlotButton extends Button implements WndBag.Listener {
 
   private static List<Char> availableTargets(Item item) {
     ArrayList<Char> targets = new ArrayList<>();
-    for (int i = 0; i < Dungeon.INSTANCE.getHero().visibleEnemies(); i++) {
-      Char target = Dungeon.INSTANCE.getHero().visibleEnemy(i);
+    for (Char target : Dungeon.INSTANCE.getHero().visibleEnemyList()) {
       if (target.isAlive() && Dungeon.INSTANCE.getVisible()[target.getPos()] &&
               autoAim(target, item) != -1) targets.add(target);
     }

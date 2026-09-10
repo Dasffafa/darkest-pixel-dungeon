@@ -36,6 +36,11 @@ public class PathFinder {
 
 	private static int[] dir;
 
+	// Guards access to the map geometry and to the per-call BFS scratch
+	// used by isReachable, so callers on other threads (e.g. the render
+	// thread) don't observe a half-built distance map.
+	private static final Object LOCK = new Object();
+
 	//performance-light shortcuts for some common pathfinder cases
 	//they are in array-access order for increased memory performance
 	public static int[] NEIGHBOURS4;
@@ -47,18 +52,20 @@ public class PathFinder {
 	public static int[] CIRCLE;
 	
 	public static void setMapSize( int width, int height ) {
-		
+
 		int size = width * height;
-			
-		PathFinder.size = size;
-		distance = new int[size];
-		goals = new boolean[size];
-		queue = new int[size];
 
-		maxVal = new int[size];
-		Arrays.fill(maxVal, Integer.MAX_VALUE);
+		synchronized (LOCK) {
+			PathFinder.size = size;
+			distance = new int[size];
+			goals = new boolean[size];
+			queue = new int[size];
 
-		dir = new int[]{-1, +1, -width, +width, -width-1, -width+1, +width-1, +width+1};
+			maxVal = new int[size];
+			Arrays.fill(maxVal, Integer.MAX_VALUE);
+
+			dir = new int[]{-1, +1, -width, +width, -width-1, -width+1, +width-1, +width+1};
+		}
 
 		NEIGHBOURS4 = new int[]{-width, -1, +1, +width};
 		NEIGHBOURS8 = new int[]{-width-1, -width, -width+1, -1, +1, +width-1, +width, +width+1};
@@ -227,7 +234,64 @@ public class PathFinder {
 			}
 		}
 	}
-	
+
+	/**
+	 * Thread-safe reachability test: builds a distance map into a private
+	 * scratch buffer (so it never disturbs the shared {@link #distance}
+	 * cache) and returns whether {@code from} is within {@code limit} steps
+	 * of {@code to} through {@code passable} cells.
+	 */
+	public static boolean isReachable( int from, int to, boolean[] passable, int limit ) {
+
+		if (from == to) {
+			return true;
+		}
+
+		synchronized (LOCK) {
+
+			int mapSize = size;
+			int[] directions = dir;
+			if (mapSize <= 0 || directions == null
+					|| from < 0 || from >= mapSize
+					|| to < 0 || to >= mapSize) {
+				return false;
+			}
+
+			int[] scratch = new int[mapSize];
+			int[] q = new int[mapSize];
+			Arrays.fill(scratch, Integer.MAX_VALUE);
+
+			int head = 0;
+			int tail = 0;
+
+			q[tail++] = to;
+			scratch[to] = 0;
+
+			while (head < tail) {
+
+				int step = q[head++];
+				if (step == from) {
+					return true;
+				}
+
+				int nextDistance = scratch[step] + 1;
+				if (nextDistance > limit) {
+					continue;
+				}
+
+				for (int d : directions) {
+					int n = step + d;
+					if (n >= 0 && n < mapSize && passable[n] && scratch[n] > nextDistance) {
+						q[tail++] = n;
+						scratch[n] = nextDistance;
+					}
+				}
+			}
+		}
+
+		return false;
+	}
+
 	private static boolean buildDistanceMap( int from, boolean[] to, boolean[] passable ) {
 		
 		if (to[from]) {

@@ -111,7 +111,11 @@ class Hero : Char() {
     var lastAction: HeroAction? = null
     internal var enemy: Char? = null
 
-    private val visibleEnemies = mutableListOf<Mob>()
+    // Visible-enemy cache. Written ONLY from the actor thread (see
+    // checkVisibleMobs) by atomically publishing a fully-built list, so
+    // readers on the actor or render thread never see a half-filled list.
+    @Volatile
+    private var visibleEnemies: MutableList<Mob> = mutableListOf()
     val mindVisionEnemies = mutableListOf<Mob>()
 
     // follower follow hero on level switch, just cache
@@ -574,8 +578,7 @@ class Hero : Char() {
             if (Dungeon.level.distance(pos, target.pos) <= wepRange) {
                 val passable = BArray.not(Level.solid, null)
                 for (mob in Dungeon.level.mobs) passable[mob.pos] = false
-                PathFinder.buildDistanceMap(target.pos, passable, wepRange)
-                canHit = PathFinder.distance[pos] <= wepRange
+                canHit = PathFinder.isReachable(pos, target.pos, passable, wepRange)
             }
         }
 
@@ -825,6 +828,13 @@ class Hero : Char() {
 
     fun enemy(): Char? = enemy
 
+    /**
+     * Rebuilds the visible-enemy cache.
+     *
+     * ACTOR THREAD ONLY: called from [act]. Publishes the finished list with a
+     * single reference assignment so other threads always read a consistent
+     * snapshot.
+     */
     private fun checkVisibleMobs() {
         val visible = mutableListOf<Mob>()
         var newFound = false
@@ -852,12 +862,40 @@ class Hero : Char() {
             resting = false
         }
 
-        visibleEnemies.clear()
-        visibleEnemies.addAll(visible)
+        // Publish the fully-built list atomically; the old list is left
+        // untouched so concurrent readers always see a consistent snapshot.
+        visibleEnemies = visible
     }
 
+    /**
+     * Number of currently visible enemies.
+     *
+     * Thread-safe: may be called from the actor thread or the render thread.
+     */
     fun visibleEnemies(): Int = visibleEnemies.size
-    fun visibleEnemy(index: Int) = visibleEnemies[index % visibleEnemies.size]
+
+    /**
+     * Visible enemy at [index] (indices wrap around), or null when there is
+     * none.
+     *
+     * Thread-safe, but intended for a single lookup: the underlying list is
+     * read once, so callers that read several entries (especially from the
+     * render thread) should use [visibleEnemyList] instead to avoid observing
+     * a list that changes between calls.
+     */
+    fun visibleEnemy(index: Int): Mob? {
+        val list = visibleEnemies
+        return if (list.isEmpty()) null else list[index % list.size]
+    }
+
+    /**
+     * Immutable point-in-time copy of the visible enemies.
+     *
+     * Thread-safe and the preferred accessor from the render thread / UI code,
+     * where iterating the live list would otherwise risk mixing entries from
+     * different updates.
+     */
+    fun visibleEnemyList(): List<Mob> = visibleEnemies.toList()
 
     override fun act(): Boolean {
         super.act()

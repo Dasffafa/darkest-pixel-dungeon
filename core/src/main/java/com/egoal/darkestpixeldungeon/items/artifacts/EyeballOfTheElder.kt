@@ -95,7 +95,7 @@ class EyeballOfTheElder : Artifact() {
 
         val hero = Dungeon.hero
 
-        val enemies = (0 until hero.visibleEnemies()).map { hero.visibleEnemy(it) }.filter {
+        val enemies = hero.visibleEnemyList().filter {
             it.isAlive && Dungeon.level.distance(it.pos, hero.pos) < zapRange
         }
 
@@ -125,8 +125,7 @@ class EyeballOfTheElder : Artifact() {
     private fun gazeAll(): Boolean {
         if (Dungeon.hero.visibleEnemies() == 0) return false
 
-        for (i in 0 until Dungeon.hero.visibleEnemies()) {
-            val e = Dungeon.hero.visibleEnemy(i)
+        for (e in Dungeon.hero.visibleEnemyList()) {
             if (e.isAlive) {
                 Buff.prolong(e, Vulnerable::class.java, 5.1f + level()).apply {
                     ratio = if (cursed) 1.5f else 1.3f
@@ -143,8 +142,7 @@ class EyeballOfTheElder : Artifact() {
     private fun disarmAll(): Boolean {
         if (Dungeon.hero.visibleEnemies() == 0) return false
 
-        for (i in 0 until Dungeon.hero.visibleEnemies()) {
-            val e = Dungeon.hero.visibleEnemy(i)
+        for (e in Dungeon.hero.visibleEnemyList()) {
             if (e.isAlive) {
                 Buff.prolong(e, Disarm::class.java, 1.1f + level())
                 e.sprite.emitter().burst(Speck.factory(Speck.LIGHT), 12)
@@ -161,7 +159,7 @@ class EyeballOfTheElder : Artifact() {
         if (Dungeon.hero.visibleEnemies() == 0) return false
 
         // dont slay bosses.
-        val avails = (0 until Dungeon.hero.visibleEnemies()).map { Dungeon.hero.visibleEnemy(it) }.filter {
+        val avails = Dungeon.hero.visibleEnemyList().filter {
             it.isAlive && !it.properties().contains(Char.Property.BOSS)
         }
         if (avails.isEmpty()) return false
@@ -284,8 +282,7 @@ class EyeballOfTheElder : Artifact() {
                 if (cooldown > 0) --cooldown
                 else {
                     Item.curUser = Dungeon.hero
-                    for (i in 0 until Dungeon.hero.visibleEnemies()) {
-                        val enemy = Dungeon.hero.visibleEnemy(i)
+                    for (enemy in Dungeon.hero.visibleEnemyList()) {
                         if (enemy.isAlive && Dungeon.level.distance(enemy.pos, Dungeon.hero.pos) <= zapRange()) {
                             zapDeath(enemy.pos)
                             break
@@ -383,8 +380,7 @@ class EyeballOfTheElder : Artifact() {
                     updateQuickslot()
                 }
 
-                for (i in 0 until Dungeon.hero.visibleEnemies()) {
-                    val e = Dungeon.hero.visibleEnemy(i)
+                for (e in Dungeon.hero.visibleEnemyList()) {
                     if (e.isAlive) {
                         Buff.prolong(e, Vulnerable::class.java, 1.1f).apply {
                             ratio = if (cursed) 1.4f else 1.25f
