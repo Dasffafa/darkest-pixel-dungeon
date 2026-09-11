@@ -21,6 +21,7 @@
 package com.egoal.darkestpixeldungeon.actors.hero
 
 import com.egoal.darkestpixeldungeon.Assets
+import com.egoal.darkestpixeldungeon.DarkestPixelDungeon
 import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.actors.Char
 import com.egoal.darkestpixeldungeon.actors.buffs.Disarm
@@ -86,7 +87,10 @@ abstract class HeroAction(var dst: Int = 0) {
                     val item = heap.peek()!!
 
                     val terrain = Dungeon.level.map[dst]
-                    if (terrain == Terrain.DOOR || terrain == Terrain.OPEN_DOOR || heap.size() > 1) {
+                    val onDoor = terrain == Terrain.DOOR || terrain == Terrain.OPEN_DOOR
+                    val stacked = heap.size() > 1
+                    if ((stacked && !DarkestPixelDungeon.autoPickupStacked()) ||
+                            (onDoor && !DarkestPixelDungeon.autoPickupOnDoor())) {
                         hero.curAction = null
                         GameScene.show { WndPickUpItem(heap, hero) }
                         return false

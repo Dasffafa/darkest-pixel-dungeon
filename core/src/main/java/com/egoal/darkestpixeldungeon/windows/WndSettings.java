@@ -52,6 +52,7 @@ public class WndSettings extends WndTabbed {
   private UITab ui;
   private AudioTab audio;
   private CrashTab crash;
+  private GameTab game;
 
   private static int last_index = 0;
 
@@ -62,6 +63,9 @@ public class WndSettings extends WndTabbed {
   public WndSettings(boolean settableLanguage) {
     super();
 
+    game = new GameTab();
+    add(game);
+
     screen = new ScreenTab();
     add(screen);
 
@@ -71,12 +75,21 @@ public class WndSettings extends WndTabbed {
     audio = new AudioTab();
     add(audio);
 
+    add(new LabeledTab(Messages.get(this, "game")) {
+      @Override
+      protected void select(boolean value) {
+        super.select(value);
+        game.visible = game.active = value;
+        if (value) last_index = 0;
+      }
+    });
+
     add(new LabeledTab(Messages.get(this, "ui")) {
       @Override
       protected void select(boolean value) {
         super.select(value);
         ui.visible = ui.active = value;
-        if (value) last_index = 0;
+        if (value) last_index = 1;
       }
     });
 
@@ -85,7 +98,7 @@ public class WndSettings extends WndTabbed {
       protected void select(boolean value) {
         super.select(value);
         screen.visible = screen.active = value;
-        if (value) last_index = 1;
+        if (value) last_index = 2;
       }
     });
 
@@ -94,7 +107,7 @@ public class WndSettings extends WndTabbed {
       protected void select(boolean value) {
         super.select(value);
         audio.visible = audio.active = value;
-        if (value) last_index = 2;
+        if (value) last_index = 3;
       }
     });
 
@@ -107,13 +120,13 @@ public class WndSettings extends WndTabbed {
         protected void select(boolean value) {
           super.select(value);
           crash.visible = crash.active = value;
-          if (value) last_index = 3;
+          if (value) last_index = 4;
         }
       });
     }
 
     if (crash != null && StallReport.INSTANCE.getHasPending()) {
-      last_index = 3;
+      last_index = 4;
     }
 
     resize(WIDTH, HEIGHT);
@@ -122,6 +135,44 @@ public class WndSettings extends WndTabbed {
 
     select(last_index);
 
+  }
+
+  private class GameTab extends Group {
+
+    public GameTab() {
+      super();
+
+      RenderedText autoPickupDesc = PixelScene.renderText(Messages.get(this,
+              "auto_pickup"), 9);
+      autoPickupDesc.x = (WIDTH - autoPickupDesc.width()) / 2;
+      PixelScene.align(autoPickupDesc);
+      add(autoPickupDesc);
+
+      CheckBox chkStacked = new CheckBox(Messages.get(this,
+              "auto_pickup_stacked")) {
+        @Override
+        public void onClick() {
+          super.onClick();
+          DarkestPixelDungeon.autoPickupStacked(checked());
+        }
+      };
+      chkStacked.setRect(0, autoPickupDesc.y + autoPickupDesc.baseLine() +
+              GAP_SML, WIDTH, BTN_HEIGHT);
+      chkStacked.checked(DarkestPixelDungeon.autoPickupStacked());
+      add(chkStacked);
+
+      CheckBox chkOnDoor = new CheckBox(Messages.get(this,
+              "auto_pickup_door")) {
+        @Override
+        public void onClick() {
+          super.onClick();
+          DarkestPixelDungeon.autoPickupOnDoor(checked());
+        }
+      };
+      chkOnDoor.setRect(0, chkStacked.bottom() + GAP_SML, WIDTH, BTN_HEIGHT);
+      chkOnDoor.checked(DarkestPixelDungeon.autoPickupOnDoor());
+      add(chkOnDoor);
+    }
   }
 
   private class ScreenTab extends Group {

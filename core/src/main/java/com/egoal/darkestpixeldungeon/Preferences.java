@@ -52,6 +52,8 @@ enum Preferences {
   public static final String KEY_CHANGE_LIST_CHECKED = "change_list_checked";
   public static final String KEY_HERO_NAME = "hero_name";
   public static final String KEY_MORE_SLOTS = "more_slots";
+  public static final String KEY_AUTO_PICKUP_STACKED = "auto_pickup_stacked";
+  public static final String KEY_AUTO_PICKUP_DOOR = "auto_pickup_door";
 
   private com.badlogic.gdx.Preferences prefs;
 

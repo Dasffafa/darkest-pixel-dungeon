@@ -396,6 +396,22 @@ public class DarkestPixelDungeon extends Game {
     return Preferences.INSTANCE.getBoolean(Preferences.KEY_MORE_SLOTS, false);
   }
 
+  public static void autoPickupStacked(boolean value) {
+    Preferences.INSTANCE.put(Preferences.KEY_AUTO_PICKUP_STACKED, value);
+  }
+
+  public static boolean autoPickupStacked() {
+    return Preferences.INSTANCE.getBoolean(Preferences.KEY_AUTO_PICKUP_STACKED, true);
+  }
+
+  public static void autoPickupOnDoor(boolean value) {
+    Preferences.INSTANCE.put(Preferences.KEY_AUTO_PICKUP_DOOR, value);
+  }
+
+  public static boolean autoPickupOnDoor() {
+    return Preferences.INSTANCE.getBoolean(Preferences.KEY_AUTO_PICKUP_DOOR, true);
+  }
+
   public static void flipToolbar(boolean value) {
     Preferences.INSTANCE.put(Preferences.KEY_FLIPTOOLBAR, value);
   }
