@@ -134,13 +134,22 @@ class Heap : Bundlable {
     fun pickUp(): Item {
 
         val item = items.removeFirst()
+        val heapEmpty = empty()
+        val theSprite = if (::sprite.isInitialized) sprite else null
+
+        // Game state must stay consistent on the calling thread; only GL work is
+        // deferred to the render thread. Otherwise the render thread can observe
+        // an empty heap that is still in the level's heap map.
+        if (heapEmpty) {
+            Dungeon.level.heaps.remove(pos)
+            items.clear()
+        }
+
         Game.runOnRenderThread {
-            if (empty()) {
-                Dungeon.level.heaps.remove(pos)
-                items.clear()
-                sprite?.kill()
+            if (heapEmpty) {
+                theSprite?.kill()
             } else {
-                sprite?.view(image(), glowing())
+                theSprite?.view(image(), glowing())
             }
         }
 
@@ -150,14 +159,22 @@ class Heap : Bundlable {
     /** Removes and returns a specific item from this heap. */
     fun pickUp(item: Item): Item? {
         if (!items.remove(item)) return null
+        val heapEmpty = empty()
+        val theSprite = if (::sprite.isInitialized) sprite else null
+
+        if (heapEmpty) {
+            Dungeon.level.heaps.remove(pos)
+            items.clear()
+        }
+
         Game.runOnRenderThread {
-            if (empty()) {
-                Dungeon.level.heaps.remove(pos)
-                sprite?.kill()
+            if (heapEmpty) {
+                theSprite?.kill()
             } else {
-                sprite?.view(image(), glowing())
+                theSprite?.view(image(), glowing())
             }
         }
+
         return item
     }
 
