@@ -57,6 +57,20 @@ class PairSwords(var left: Sword = Sword(), var right: Sword = Sword()) : MeleeW
 
     override fun isInscribed(type: Class<out Inscription>): Boolean = left.isInscribed(type) || right.isInscribed(type)
 
+    override fun hasCurseInscription(): Boolean = left.hasCurseInscription() || right.hasCurseInscription()
+
+    // clear one sword's curse per use: the left one first, otherwise the right one
+    override fun clearCurseInscription(): Boolean {
+        val sword = when {
+            left.hasCurseInscription() -> left
+            right.hasCurseInscription() -> right
+            else -> return false
+        }
+        sword.inscribe(null)
+        sword.cursed = false
+        return true
+    }
+
     override fun enchant(type: Class<out Enchantment>, duration: Float): Weapon {
         swordToEnchant().enchant(type, duration)
         return this
