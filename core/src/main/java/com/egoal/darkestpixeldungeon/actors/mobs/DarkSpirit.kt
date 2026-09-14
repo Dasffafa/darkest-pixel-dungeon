@@ -23,6 +23,8 @@ import com.egoal.darkestpixeldungeon.items.weapon.Inscription
 import com.egoal.darkestpixeldungeon.items.weapon.Weapon
 import com.egoal.darkestpixeldungeon.items.weapon.melee.MeleeWeapon
 import com.egoal.darkestpixeldungeon.messages.M
+import com.egoal.darkestpixeldungeon.network.BundleGuard
+import com.egoal.darkestpixeldungeon.network.SpiritServer
 import com.egoal.darkestpixeldungeon.sprites.CharSprite
 import com.egoal.darkestpixeldungeon.sprites.HeroSprite
 import com.egoal.darkestpixeldungeon.sprites.MobSprite
@@ -31,7 +33,10 @@ import com.watabou.noosa.audio.Sample
 import com.watabou.utils.Bundle
 import com.watabou.utils.FileUtils
 import com.watabou.utils.Random
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import java.io.IOException
+import java.util.zip.GZIPOutputStream
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
@@ -260,8 +265,11 @@ class DarkSpirit : Mob() {
         private const val USERNAME = "username"
         private const val LEVEL = "level"
         private const val STRENGTH = "strength"
+        private const val REGENERATION = "regeneration"
+        private const val CRIT_CHANCE = "critchance"
         private const val ARMOR = "armor"
         private const val WEAPON = "weapon"
+        private const val EPITAPH = "epitaph"
 
         private const val POTIONS = "potions"
         private const val POTION_CD = "potioncd"
@@ -476,7 +484,10 @@ class DarkSpirit : Mob() {
                     userName = bundle.getString(USERNAME),
                     level = bundle.getInt(LEVEL),
                     armor = bundle.get(ARMOR) as Armor?,
-                    weapon = bundle.get(WEAPON) as Weapon?)
+                    weapon = bundle.get(WEAPON) as Weapon?,
+                    regeneration = if (bundle.contains(REGENERATION)) bundle.getFloat(REGENERATION) else 0f,
+                    critChance = if (bundle.contains(CRIT_CHANCE)) bundle.getFloat(CRIT_CHANCE) else 0f,
+                    epitaph = if (bundle.contains(EPITAPH)) bundle.getString(EPITAPH) else "")
         }
 
         private fun saveRecord(bundle: Bundle, record: SpiritRecord) {
@@ -485,15 +496,48 @@ class DarkSpirit : Mob() {
             bundle.put(PERK, record.perk)
             bundle.put(USERNAME, record.userName)
             bundle.put(LEVEL, record.level)
+            bundle.put(REGENERATION, record.regeneration)
+            bundle.put(CRIT_CHANCE, record.critChance)
             bundle.put(ARMOR, record.armor)
             bundle.put(WEAPON, record.weapon)
+            bundle.put(EPITAPH, record.epitaph)
             record.heroClass.storeInBundle(bundle)
+        }
+
+        /** Serializes one record to the gzipped JSON wire format expected by the server. */
+        fun EncodeRecord(record: SpiritRecord): ByteArray {
+            val recordBundle = Bundle()
+            saveRecord(recordBundle, record)
+
+            val bundle = Bundle()
+            bundle.put("count", 1)
+            bundle.put("record0", recordBundle)
+
+            val out = ByteArrayOutputStream()
+            GZIPOutputStream(out).use { it.write(bundle.toString().toByteArray(Charsets.UTF_8)) }
+            return out.toByteArray()
+        }
+
+        /** Merges a downloaded gzipped JSON batch into the local pool. */
+        fun ImportRecords(data: ByteArray) {
+            if (!BundleGuard.isSafe(data)) return
+
+            val bundle = Bundle.read(ByteArrayInputStream(data))
+            val count = bundle.getInt("count")
+
+            val records = loadPool()
+            for (i in 0 until count) {
+                val key = "record$i"
+                if (!bundle.contains(key)) continue
+                loadRecord(bundle.getBundle(key))?.let { records.add(it) }
+            }
+            savePool(records)
         }
     }
 }
 
 /** One dead hero waiting in the pool. [heldBy] is the save slot currently holding it, or [DarkSpirit.NO_SLOT]. */
-internal class SpiritRecord(
+class SpiritRecord(
         var depth: Int,
         var heldBy: Int,
         var heroClass: HeroClass,
@@ -501,4 +545,7 @@ internal class SpiritRecord(
         var userName: String,
         var level: Int,
         var armor: Armor?,
-        var weapon: Weapon?)
+        var weapon: Weapon?,
+        var regeneration: Float = 0f,
+        var critChance: Float = 0f,
+        var epitaph: String = "")
