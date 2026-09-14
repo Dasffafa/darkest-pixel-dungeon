@@ -7,9 +7,11 @@ import com.egoal.darkestpixeldungeon.effects.BannerSprites
 import com.egoal.darkestpixeldungeon.effects.Speck
 import com.egoal.darkestpixeldungeon.items.Generator
 import com.egoal.darkestpixeldungeon.messages.M
+import com.egoal.darkestpixeldungeon.network.SpiritServer
 import com.egoal.darkestpixeldungeon.ui.*
 import com.egoal.darkestpixeldungeon.windows.InputDialog
 import com.egoal.darkestpixeldungeon.windows.WndOptions
+import com.egoal.darkestpixeldungeon.windows.WndSpiritSyncConsent
 import com.watabou.noosa.*
 import com.watabou.noosa.audio.Sample
 import com.watabou.noosa.particles.BitmaskEmitter
@@ -144,6 +146,23 @@ class StartScene : PixelScene() {
             if (Game.scene() === this@StartScene)
                 DarkestPixelDungeon.switchNoFade(StartScene::class.java)
         }
+
+        if (SpiritServer.shouldPrompt) add(WndSpiritSyncConsent())
+        SpiritServer.onStartup()
+        showEpitaphNotice()
+    }
+
+    private fun showEpitaphNotice() {
+        val notice = DarkestPixelDungeon.epitaphNotice()
+        if (notice.isEmpty()) return
+
+        DarkestPixelDungeon.epitaphNotice("")
+        add(object : WndOptions(
+                M.L(StartScene::class.java, "notice_title"),
+                notice,
+                M.L(StartScene::class.java, "notice_ok")) {
+            override fun onSelect(index: Int) {}
+        })
     }
 
     override fun update() {

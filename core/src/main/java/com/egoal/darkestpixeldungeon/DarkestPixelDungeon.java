@@ -470,6 +470,47 @@ public class DarkestPixelDungeon extends Game {
 
   public static String lastHeroName(){ return Preferences.INSTANCE.getString(Preferences.KEY_HERO_NAME, "无名"); }
 
+  public static String deviceId() {
+    String id = Preferences.INSTANCE.getString(Preferences.KEY_DEVICE_ID, null);
+    if (id == null || id.isEmpty()) {
+      id = java.util.UUID.randomUUID().toString();
+      Preferences.INSTANCE.put(Preferences.KEY_DEVICE_ID, id);
+    }
+    return id;
+  }
+
+  public static void uploadSpirits(boolean value) {
+    Preferences.INSTANCE.put(Preferences.KEY_SPIRIT_UPLOAD, value);
+  }
+
+  public static boolean uploadSpirits() {
+    return Preferences.INSTANCE.getBoolean(Preferences.KEY_SPIRIT_UPLOAD, false);
+  }
+
+  public static void downloadSpirits(boolean value) {
+    Preferences.INSTANCE.put(Preferences.KEY_SPIRIT_DOWNLOAD, value);
+  }
+
+  public static boolean downloadSpirits() {
+    return Preferences.INSTANCE.getBoolean(Preferences.KEY_SPIRIT_DOWNLOAD, false);
+  }
+
+  public static void spiritSyncDecided(boolean value) {
+    Preferences.INSTANCE.put(Preferences.KEY_SPIRIT_DECIDED, value);
+  }
+
+  public static boolean spiritSyncDecided() {
+    return Preferences.INSTANCE.getBoolean(Preferences.KEY_SPIRIT_DECIDED, false);
+  }
+
+  public static void epitaphNotice(String value) {
+    Preferences.INSTANCE.put(Preferences.KEY_EPITAPH_NOTICE, value);
+  }
+
+  public static String epitaphNotice() {
+    return Preferences.INSTANCE.getString(Preferences.KEY_EPITAPH_NOTICE, "");
+  }
+
   /*
    * <--- Preferences
    */
