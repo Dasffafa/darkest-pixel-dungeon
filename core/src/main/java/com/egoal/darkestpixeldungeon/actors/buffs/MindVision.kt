@@ -20,6 +20,7 @@
  */
 package com.egoal.darkestpixeldungeon.actors.buffs
 
+import com.watabou.noosa.Game
 import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.messages.M
 import com.egoal.darkestpixeldungeon.messages.Messages
@@ -40,7 +41,7 @@ class MindVision : FlavourBuff() {
     override fun detach() {
         super.detach()
         Dungeon.observe()
-        GameScene.updateFog()
+        Game.runOnRenderThread { GameScene.updateFog() }
     }
 
     override fun desc(): String = M.L(this, "desc", dispTurns())

@@ -136,8 +136,10 @@ open class SewerLevel : RegularLevel() {
             companion object {
                 private val factory = object : Emitter.Factory() {
                     override fun emit(emitter: Emitter, index: Int, x: Float, y: Float) {
-                        val p = emitter.recycle(WaterParticle::class.java) as WaterParticle
-                        p.reset(x, y)
+                        Game.runOnRenderThread {
+                            val p = emitter.recycle(WaterParticle::class.java) as WaterParticle
+                            p.reset(x, y)
+                        }
                     }
                 }
             }

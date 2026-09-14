@@ -77,7 +77,7 @@ object Chasm {
             }
         }
 
-        Camera.main.shake(4f, 0.2f)
+        Game.runOnRenderThread { Camera.main.shake(4f, 0.2f) }
     }
 
     fun MobFall(mob: Mob) {

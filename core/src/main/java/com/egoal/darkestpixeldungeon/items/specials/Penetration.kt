@@ -1,5 +1,6 @@
 package com.egoal.darkestpixeldungeon.items.specials
 
+import com.watabou.noosa.Game
 import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.actors.Actor
 import com.egoal.darkestpixeldungeon.actors.Char
@@ -125,7 +126,7 @@ class Penetration : Special() {
 
                     hero.spendAndNext(TIME_STAB)
 
-                    Camera.main.shake(2f, 0.5f)
+                    Game.runOnRenderThread { Camera.main.shake(2f, 0.5f) }
                 }), -1f)
             }
 
@@ -136,7 +137,7 @@ class Penetration : Special() {
             hero.move(dst)
             Dungeon.level.press(dst, hero)
             Dungeon.observe()
-            GameScene.updateFog()
+            Game.runOnRenderThread { GameScene.updateFog() }
         }
     }
 

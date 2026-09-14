@@ -20,6 +20,7 @@
  */
 package com.egoal.darkestpixeldungeon.levels.traps
 
+import com.watabou.noosa.Game
 import com.egoal.darkestpixeldungeon.actors.hero.Hero
 import com.egoal.darkestpixeldungeon.effects.CellEmitter
 import com.egoal.darkestpixeldungeon.Assets
@@ -55,7 +56,7 @@ class DisarmingTrap : Trap() {
                 Dungeon.level.drop(item, cell).seen = true
                 for (i in PathFinder.NEIGHBOURS9)
                     Dungeon.level.visited[cell + i] = true
-                GameScene.updateFog()
+                Game.runOnRenderThread { GameScene.updateFog() }
 
                 Sample.INSTANCE.play(Assets.SND_TELEPORT)
                 CellEmitter.get(pos).burst(Speck.factory(Speck.LIGHT), 4)
@@ -83,7 +84,7 @@ class DisarmingTrap : Trap() {
                     Dungeon.level.drop(weapon, cell).seen = true
                     for (i in PathFinder.NEIGHBOURS9)
                         Dungeon.level.visited[cell + i] = true
-                    GameScene.updateFog()
+                    Game.runOnRenderThread { GameScene.updateFog() }
 
                     GLog.w(Messages.get(this, "disarm"))
 

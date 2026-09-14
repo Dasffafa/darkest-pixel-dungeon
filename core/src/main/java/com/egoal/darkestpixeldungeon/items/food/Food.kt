@@ -3,6 +3,7 @@ package com.egoal.darkestpixeldungeon.items.food
 import com.egoal.darkestpixeldungeon.Assets
 import com.egoal.darkestpixeldungeon.Badges
 import com.egoal.darkestpixeldungeon.Statistics
+import com.egoal.darkestpixeldungeon.actors.buffs.Buff
 import com.egoal.darkestpixeldungeon.actors.buffs.Hunger
 import com.egoal.darkestpixeldungeon.actors.hero.Hero
 import com.egoal.darkestpixeldungeon.actors.hero.HeroLines
@@ -65,7 +66,10 @@ open class Food(val enery: Float = Hunger.HUNGRY,
     }
 
     protected open fun onEat(hero: Hero) {
-        hero.buff(Hunger::class.java)!!.satisfy(enery)
+        // Never assume the Hunger buff is still attached. It is detached along
+        // with every other buff when the hero is removed from the actor list
+        // (e.g. on death), so restore it if needed instead of crashing.
+        Buff.affect(hero, Hunger::class.java).satisfy(enery)
         hero.heroPerk.get(GoodAppetite::class.java)?.onFoodEaten(hero, this)
         hero.recoverSanity(Random.Float(2f, 6f))
     }

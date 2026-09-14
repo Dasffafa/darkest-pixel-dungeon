@@ -20,6 +20,7 @@
  */
 package com.egoal.darkestpixeldungeon.items
 
+import com.watabou.noosa.Game
 import com.egoal.darkestpixeldungeon.Assets
 import com.egoal.darkestpixeldungeon.Badges
 import com.egoal.darkestpixeldungeon.DarkestPixelDungeon
@@ -328,7 +329,9 @@ open class Item : Bundlable {
     open fun status(): String? = if (quantity != 1) "$quantity" else null
 
     fun updateQuickslot() {
-        QuickSlotButton.refresh()
+        // May be called from the actor thread; defer the UI refresh to the
+        // render thread (see GameScene.updateItemDisplays).
+        GameScene.updateItemDisplays = true
     }
 
     override fun storeInBundle(bundle: Bundle) {
@@ -389,10 +392,12 @@ open class Item : Bundlable {
 
         val finalDelay = delay
 
-        (user.sprite.parent.recycle(MissileSprite::class.java) as MissileSprite).reset(user.pos, cell, this, Callback {
-            this@Item.detach(user.belongings.backpack)?.onThrow(cell)
-            user.spendAndNext(finalDelay)
-        })
+        Game.runOnRenderThread {
+            (user.sprite.parent.recycle(MissileSprite::class.java) as MissileSprite).reset(user.pos, cell, this, Callback {
+                this@Item.detach(user.belongings.backpack)?.onThrow(cell)
+                user.spendAndNext(finalDelay)
+            })
+        }
     }
 
     companion object {

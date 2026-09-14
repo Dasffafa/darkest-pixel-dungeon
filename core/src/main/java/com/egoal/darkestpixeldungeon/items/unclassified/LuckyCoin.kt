@@ -1,5 +1,6 @@
 package com.egoal.darkestpixeldungeon.items.unclassified
 
+import com.watabou.noosa.Game
 import com.egoal.darkestpixeldungeon.DungeonTilemap
 import com.egoal.darkestpixeldungeon.actors.Actor
 import com.egoal.darkestpixeldungeon.actors.buffs.Buff
@@ -36,8 +37,10 @@ class LuckyCoin : Item() {
         if (action == AC_USE) {
             detach(hero.belongings.backpack)
             Buff.prolong(hero, Lucky::class.java, 150f)
-            GameScene.effect(Flare(7, 32f).color(0xffc203, true).show(
-                    hero.sprite.parent, DungeonTilemap.tileCenterToWorld(hero.pos), 2f))
+            Game.runOnRenderThread {
+                GameScene.effect(Flare(7, 32f).color(0xffc203, true).show(
+                        hero.sprite.parent, DungeonTilemap.tileCenterToWorld(hero.pos), 2f))
+            }
             hero.spendAndNext(Actor.TICK)
         }
     }

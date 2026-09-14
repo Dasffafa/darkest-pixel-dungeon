@@ -1,5 +1,6 @@
 package com.egoal.darkestpixeldungeon.actors.hero.perks
 
+import com.watabou.noosa.Game
 import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.DungeonTilemap
 import com.egoal.darkestpixeldungeon.Statistics
@@ -40,8 +41,10 @@ class BrewEnhancedPotion : Perk() {
                 p.reinforce()
                 nextProb = 0.333f
 
-                GameScene.effect(Flare(7, 32f).color(0xffccdd, true).show(
-                        Dungeon.hero.sprite.parent, DungeonTilemap.tileCenterToWorld(Dungeon.hero.pos), 2f))
+                Game.runOnRenderThread {
+                    GameScene.effect(Flare(7, 32f).color(0xffccdd, true).show(
+                            Dungeon.hero.sprite.parent, DungeonTilemap.tileCenterToWorld(Dungeon.hero.pos), 2f))
+                }
             }
         }
         nextProb += 0.333f
@@ -110,8 +113,10 @@ class ExtraRuneRegularly : TimingPerk(GainRune::class.java) {
     class GainRune : TimingPerk.Timing(Statistics.ClockTime.TimePerDay() / 2f) {
         override fun trigger() {
             val rune = Generator.RUNE.generate() as Rune
-            GameScene.effect(Flare(7, 32f).color(rune.glowing()?.color ?: 0x66ff66, true).show(
-                    Dungeon.hero.sprite.parent, DungeonTilemap.tileCenterToWorld(Dungeon.hero.pos), 2f))
+            Game.runOnRenderThread {
+                GameScene.effect(Flare(7, 32f).color(rune.glowing()?.color ?: 0x66ff66, true).show(
+                        Dungeon.hero.sprite.parent, DungeonTilemap.tileCenterToWorld(Dungeon.hero.pos), 2f))
+            }
 
             val dewVial = Dungeon.hero.belongings.getItem(DewVial::class.java)
             if (dewVial == null || dewVial.rune != null) {

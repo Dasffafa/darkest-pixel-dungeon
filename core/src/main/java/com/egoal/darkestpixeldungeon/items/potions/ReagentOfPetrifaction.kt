@@ -1,5 +1,6 @@
 package com.egoal.darkestpixeldungeon.items.potions
 
+import com.watabou.noosa.Game
 import com.egoal.darkestpixeldungeon.Assets
 import com.egoal.darkestpixeldungeon.actors.buffs.Buff
 import com.egoal.darkestpixeldungeon.actors.buffs.Stasis
@@ -18,7 +19,7 @@ class ReagentOfPetrifaction : Reagent(true) {
     override fun drink(hero: Hero) {
         super.drink(hero)
 
-        GameScene.flash(0xffffff)
+        Game.runOnRenderThread { GameScene.flash(0xffffff) }
         Sample.INSTANCE.play(Assets.SND_TELEPORT)
 
         GLog.w(M.L(this, "onstasis"))

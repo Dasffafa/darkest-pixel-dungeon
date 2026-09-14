@@ -1,5 +1,6 @@
 package com.egoal.darkestpixeldungeon.items.weapon.missiles
 
+import com.watabou.noosa.Game
 import com.egoal.darkestpixeldungeon.Assets
 import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.actors.Actor
@@ -133,8 +134,10 @@ open class Boomerang : MissileWeapon(1), GreatBlueprint.Enchantable {
     private var throwEquiped = false // this would never be true, now
 
     private fun circleBack(from: Int, owner: Hero) {
-        (owner.sprite.parent.recycle(MissileSprite::class.java) as MissileSprite).reset(from,
-                owner.pos, this, null)
+        Game.runOnRenderThread {
+            (owner.sprite.parent.recycle(MissileSprite::class.java) as MissileSprite).reset(from,
+                    owner.pos, this, null)
+        }
 
         if (throwEquiped) {
             owner.belongings.weapon = this
@@ -169,11 +172,13 @@ open class Boomerang : MissileWeapon(1), GreatBlueprint.Enchantable {
         QuickSlotButton.target(enemy)
 
         val delay = Item.TIME_TO_THROW * speedFactor(user)
-        (user.sprite.parent.recycle(MissileSprite::class.java) as MissileSprite)
-                .reset(user.pos, cell, this, Callback {
-                    (this@Boomerang.detach(user.belongings.backpack) as Boomerang).onThrow(cell)
-                    user.spend(delay) // spend but not next, next when the boomerang back to hand
-                })
+        Game.runOnRenderThread {
+            (user.sprite.parent.recycle(MissileSprite::class.java) as MissileSprite)
+                    .reset(user.pos, cell, this, Callback {
+                        (this@Boomerang.detach(user.belongings.backpack) as Boomerang).onThrow(cell)
+                        user.spend(delay) // spend but not next, next when the boomerang back to hand
+                    })
+        }
     }
 
     override fun onThrow(cell: Int) {

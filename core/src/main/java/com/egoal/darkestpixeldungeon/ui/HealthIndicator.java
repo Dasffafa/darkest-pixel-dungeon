@@ -25,9 +25,11 @@ import com.egoal.darkestpixeldungeon.sprites.CharSprite;
 
 public class HealthIndicator extends HealthBar {
 
-  public static HealthIndicator instance;
+  public static volatile HealthIndicator instance;
 
-  private Char target;
+  // Written from the actor thread (buff/mob logic) and read on the render
+  // thread in update(); a plain field could stay stale.
+  private volatile Char target;
 
   public HealthIndicator() {
     super();

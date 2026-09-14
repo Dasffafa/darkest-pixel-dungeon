@@ -73,6 +73,7 @@ import com.watabou.noosa.audio.Sample
 import com.watabou.utils.*
 import com.watabou.utils.Random
 import java.util.*
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
@@ -96,7 +97,10 @@ abstract class Level : Bundlable {
     //when a boss level has become locked.
     var locked = false
 
-    var mobs = HashSet<Mob>()
+    // The actor thread spawns/kills mobs while the render thread iterates them
+    // (field-of-view, sprite visibility). A concurrent set gives weakly
+    // consistent, never-throwing iteration without any lock ordering.
+    var mobs: MutableSet<Mob> = ConcurrentHashMap.newKeySet()
     var heaps = SparseArray<Heap>()
     var blobs = HashMap<Class<out Blob>, Blob>()
     var plants = SparseArray<Plant>()
@@ -250,7 +254,7 @@ abstract class Level : Bundlable {
         PathFinder.setMapSize(width(), height())
         Luminary.SetMapSize(width, height)
 
-        mobs = HashSet()
+        mobs = ConcurrentHashMap.newKeySet()
         heaps = SparseArray()
         blobs = HashMap()
         plants = SparseArray()

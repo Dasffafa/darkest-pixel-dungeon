@@ -1,5 +1,6 @@
 package com.egoal.darkestpixeldungeon.actors.mobs
 
+import com.watabou.noosa.Game
 import com.egoal.darkestpixeldungeon.*
 import com.egoal.darkestpixeldungeon.actors.Actor
 import com.egoal.darkestpixeldungeon.actors.Char
@@ -112,7 +113,7 @@ class Tengu : Mob() {
                 Buff.prolong(Dungeon.hero, Blindness::class.java, 2f)
 
                 Dungeon.observe()
-                GameScene.flash(0x444444)
+                Game.runOnRenderThread { GameScene.flash(0x444444) }
                 Sample.INSTANCE.play(Assets.SND_BLAST)
 
                 yell(M.L(this, "interesting"))

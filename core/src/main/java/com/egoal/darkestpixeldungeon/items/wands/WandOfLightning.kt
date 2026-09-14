@@ -20,6 +20,7 @@
  */
 package com.egoal.darkestpixeldungeon.items.wands
 
+import com.watabou.noosa.Game
 import com.egoal.darkestpixeldungeon.actors.Char
 import com.egoal.darkestpixeldungeon.actors.Damage
 import com.egoal.darkestpixeldungeon.effects.CellEmitter
@@ -74,7 +75,7 @@ class WandOfLightning : DamageWand(isMissile = false) {
             processWandDamage(dmg)
 
             // note the damage is accurate 
-            if (ch === Dungeon.hero) Camera.main.shake(2f, 0.3f)
+            if (ch === Dungeon.hero) Game.runOnRenderThread { Camera.main.shake(2f, 0.3f) }
             ch.sprite.centerEmitter().burst(SparkParticle.FACTORY, 3)
             ch.sprite.flash()
         }

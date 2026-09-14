@@ -20,6 +20,7 @@
  */
 package com.egoal.darkestpixeldungeon.levels.traps
 
+import com.watabou.noosa.Game
 import com.egoal.darkestpixeldungeon.actors.Char
 import com.egoal.darkestpixeldungeon.actors.buffs.Blindness
 import com.egoal.darkestpixeldungeon.actors.buffs.Buff
@@ -60,7 +61,7 @@ class FlashingTrap : Trap() {
         }
 
         if (Dungeon.visible[pos]) {
-            GameScene.flash(0xFFFFFF)
+            Game.runOnRenderThread { GameScene.flash(0xFFFFFF) }
             CellEmitter.get(pos).burst(Speck.factory(Speck.LIGHT), 4)
         }
     }

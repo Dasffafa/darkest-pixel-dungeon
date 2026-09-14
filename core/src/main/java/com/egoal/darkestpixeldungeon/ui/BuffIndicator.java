@@ -118,12 +118,17 @@ public class BuffIndicator extends Component {
 
   public static final int SIZE = 7;
 
-  private static BuffIndicator heroInstance;
+  private static volatile BuffIndicator heroInstance;
 
   private SmartTexture texture;
   private TextureFilm film;
 
   private SparseArray<BuffIcon> icons = new SparseArray<BuffIcon>();
+
+  // Set from the actor thread, consumed on the render thread. Laying out from
+  // the actor thread races the render thread's own layout (the icons map is
+  // rebuilt/swapped there), so refreshHero() must only raise this flag.
+  private volatile boolean needsRefresh = false;
 
   private Char ch;
 
@@ -149,6 +154,15 @@ public class BuffIndicator extends Component {
   protected void createChildren() {
     texture = TextureCache.get(Assets.BUFFS_SMALL);
     film = new TextureFilm(texture, SIZE, SIZE);
+  }
+
+  @Override
+  public synchronized void update() {
+    super.update();
+    if (needsRefresh) {
+      needsRefresh = false;
+      layout();
+    }
   }
 
   @Override
@@ -216,7 +230,7 @@ public class BuffIndicator extends Component {
 
   public static void refreshHero() {
     if (heroInstance != null) {
-      heroInstance.layout();
+      heroInstance.needsRefresh = true;
     }
   }
 }

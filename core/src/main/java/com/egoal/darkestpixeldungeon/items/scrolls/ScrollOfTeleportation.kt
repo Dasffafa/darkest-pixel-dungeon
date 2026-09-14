@@ -20,6 +20,7 @@
  */
 package com.egoal.darkestpixeldungeon.items.scrolls
 
+import com.watabou.noosa.Game
 import com.egoal.darkestpixeldungeon.actors.Actor
 import com.egoal.darkestpixeldungeon.actors.buffs.Invisibility
 import com.egoal.darkestpixeldungeon.actors.hero.Hero
@@ -86,7 +87,7 @@ class ScrollOfTeleportation : Scroll() {
                 appear(hero, pos)
                 Dungeon.level.press(pos, hero)
                 Dungeon.observe()
-                GameScene.updateFog()
+                Game.runOnRenderThread { GameScene.updateFog() }
 
                 GLog.i(M.L(ScrollOfTeleportation::class.java, "tele"))
 
@@ -107,7 +108,7 @@ class ScrollOfTeleportation : Scroll() {
                     appear(Item.curUser, cell)
                     Dungeon.level.press(cell, Item.curUser)
                     Dungeon.observe()
-                    GameScene.updateFog()
+                    Game.runOnRenderThread { GameScene.updateFog() }
 
                     GLog.i(M.L(ScrollOfTeleportation::class.java, "tele"))
 

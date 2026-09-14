@@ -440,6 +440,14 @@ public class GameScene extends PixelScene {
 
   public void destroy() {
 
+    // Stop the actor thread mid-action before tearing the scene down, so no
+    // level/actor state is mutated while we serialize or discard it.
+    if (!waitForActorThread(4500, true)) {
+      Throwable stack = new Throwable();
+      if (actorThread != null) stack.setStackTrace(actorThread.getStackTrace());
+      throw new RuntimeException("timeout waiting for actor thread! ", stack);
+    }
+
     freezeEmitters = false;
 
     scene = null;
@@ -449,6 +457,34 @@ public class GameScene extends PixelScene {
     ScrollEvent.removeScrollListener(scrollListener);
 
     super.destroy();
+  }
+
+  /** Permanently stops the persistent actor thread (called on app teardown). */
+  public static void endActorThread() {
+    if (actorThread != null && actorThread.isAlive()) {
+      Actor.Companion.setKeepActorThreadAlive(false);
+      actorThread.interrupt();
+    }
+  }
+
+  /**
+   * Blocks until the actor thread has parked (or is gone). Passing {@code true}
+   * interrupts it first so it drops whatever turn it was in, which is required
+   * before saving or before discarding the level.
+   */
+  public boolean waitForActorThread(int msToWait, boolean interrupt) {
+    if (actorThread == null || !actorThread.isAlive()) {
+      return true;
+    }
+    synchronized (actorThread) {
+      if (interrupt) actorThread.interrupt();
+      try {
+        actorThread.wait(msToWait);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+      return !Actor.Companion.processing();
+    }
   }
 
   private boolean handleKey(Keys.Key key) {
@@ -664,6 +700,9 @@ public class GameScene extends PixelScene {
   @Override
   public synchronized void pause() {
     try {
+      // Never serialize a half-finished turn: park the actor thread first.
+      waitForActorThread(4500, true);
+
       Dungeon.INSTANCE.saveAll(false);
 
       Badges.INSTANCE.saveGlobal();
@@ -672,7 +711,15 @@ public class GameScene extends PixelScene {
     }
   }
 
-  private Thread t;
+  private static Thread actorThread;
+  // Set by game logic (possibly the actor thread) whenever an item's display
+  // changes; consumed on the render thread. QuickSlotButton.refresh() rewrites
+  // UI slots, so it must not run concurrently with the render thread.
+  public static volatile boolean updateItemDisplays = false;
+  // The actor thread is persistent and parks itself when there is nothing to
+  // do. We cap how often we poke it at 60Hz so resting on high-refresh displays
+  // does not run faster than intended.
+  private float notifyDelay = 1 / 60f;
   /** Set before an asynchronous window handoff so input cannot slip through. */
   private final AtomicBoolean windowPending = new AtomicBoolean(false);
   private int heldMoveKey = -1;
@@ -687,21 +734,39 @@ public class GameScene extends PixelScene {
 
     super.update();
 
+    if (updateItemDisplays) {
+      updateItemDisplays = false;
+      QuickSlotButton.refresh();
+    }
+
     updateHeldInput();
 
     if (!freezeEmitters) water.offset(0, -5 * Game.elapsed);
 
-    if (!Actor.Companion.processing() && (t == null || !t.isAlive()) && Dungeon.INSTANCE.getHero()
-            .isAlive()) {
-      t = new Thread() {
-        @Override
-        public void run() {
-          Actor.Companion.process();
+    if (notifyDelay > 0) notifyDelay -= Game.elapsed;
+
+    if (!Actor.Companion.processing() && Dungeon.INSTANCE.getHero().isAlive()) {
+      if (actorThread == null || !actorThread.isAlive()) {
+        actorThread = new Thread() {
+          @Override
+          public void run() {
+            Actor.Companion.process();
+          }
+        };
+        //if cpu time is limited, game should prefer drawing the current frame
+        if (Runtime.getRuntime().availableProcessors() == 1) {
+          actorThread.setPriority(Thread.NORM_PRIORITY - 1);
         }
-      };
-      //if cpu time is limited, game should prefer drawing the current frame
-      t.setPriority(Thread.NORM_PRIORITY - 1);
-      t.start();
+        actorThread.setName("DPD Actor Thread");
+        Thread.currentThread().setName("DPD Render Thread");
+        Actor.Companion.setKeepActorThreadAlive(true);
+        actorThread.start();
+      } else if (notifyDelay <= 0f) {
+        notifyDelay += 1 / 60f;
+        synchronized (actorThread) {
+          actorThread.notify();
+        }
+      }
     }
 
     if (Dungeon.INSTANCE.getHero().getReady() && Dungeon.INSTANCE.getHero().getParalysed() == 0) {
@@ -732,7 +797,7 @@ public class GameScene extends PixelScene {
   }
 
   public Thread actorThread() {
-    return t;
+    return actorThread;
   }
 
   public static Thread currentActorThread() {
@@ -812,7 +877,7 @@ public class GameScene extends PixelScene {
     customTiles.add(visual.create());
   }
 
-  private void addHeapSprite(Heap heap) {
+  private synchronized void addHeapSprite(Heap heap) {
     ItemSprite sprite = (ItemSprite) heaps.recycle(ItemSprite.class);
     heap.sprite = sprite;
     sprite.revive();
@@ -820,7 +885,7 @@ public class GameScene extends PixelScene {
     heaps.add(sprite);
   }
 
-  private void addDiscardedSprite(Heap heap) {
+  private synchronized void addDiscardedSprite(Heap heap) {
     heap.setSprite((DiscardedItemSprite) heaps.recycle(DiscardedItemSprite
             .class));
     heap.getSprite().revive();
@@ -828,24 +893,28 @@ public class GameScene extends PixelScene {
     heaps.add(heap.getSprite());
   }
 
-  private void addPlantSprite(Plant plant) {
+  // These are reached from the actor thread (mobs spawning, plants growing,
+  // traps/blob effects) and mutate the render scene graph. Synchronizing them
+  // on the GameScene instance serializes them with the render thread's
+  // synchronized update(), matching modern Shattered Pixel Dungeon.
+  private synchronized void addPlantSprite(Plant plant) {
     (plant.sprite = (PlantSprite) plants.recycle(PlantSprite.class)).reset
             (plant);
   }
 
-  private void addTrapSprite(Trap trap) {
+  private synchronized void addTrapSprite(Trap trap) {
     trap.sprite = (TrapSprite)traps.recycle(TrapSprite.class);
     trap.sprite.reset(trap);
     trap.getSprite().visible = trap.getVisible();
   }
 
-  private void addBlobSprite(final Blob gas) {
+  private synchronized void addBlobSprite(final Blob gas) {
     if (gas.getEmitter() == null) {
       gases.add(new BlobEmitter(gas));
     }
   }
 
-  private void addMobSprite(Mob mob) {
+  private synchronized void addMobSprite(Mob mob) {
     CharSprite sprite = mob.sprite();
     sprite.visible = Dungeon.INSTANCE.getVisible()[mob.getPos()];
     mobs.add(sprite);
@@ -903,30 +972,26 @@ public class GameScene extends PixelScene {
 
   public static void add(Heap heap) {
     if (scene != null) {
-      com.watabou.noosa.Game.runOnRenderThreadAndWait(() -> {
-        if (scene != null) scene.addHeapSprite(heap);
-      });
+      scene.addHeapSprite(heap);
     }
   }
 
   public static void discard(Heap heap) {
     if (scene != null) {
-      com.watabou.noosa.Game.runOnRenderThreadAndWait(() -> {
-        if (scene != null) scene.addDiscardedSprite(heap);
-      });
+      scene.addDiscardedSprite(heap);
     }
   }
 
   public static void add(Mob mob) {
     Dungeon.INSTANCE.getLevel().getMobs().add(mob);
     Actor.Companion.add(mob);
-    scene.addMobSprite(mob);
+    if (scene != null) scene.addMobSprite(mob);
   }
 
   public static void add(Mob mob, float delay) {
     Dungeon.INSTANCE.getLevel().getMobs().add(mob);
     Actor.Companion.addDelayed(mob, delay);
-    scene.addMobSprite(mob);
+    if (scene != null) scene.addMobSprite(mob);
   }
 
   public static void add(EmoIcon icon) {
@@ -962,20 +1027,25 @@ public class GameScene extends PixelScene {
   }
 
   public static FloatingText status() {
-    return scene != null ? (FloatingText) scene.statuses.recycle(FloatingText
-            .class) : null;
+    GameScene s = scene;
+    return s != null && s.statuses != null
+            ? (FloatingText) s.statuses.recycle(FloatingText.class) : null;
   }
 
   public static BubbleText sentence() {
-    return scene != null ? (BubbleText) scene.sentences.recycle(BubbleText
-            .class) : null;
+    GameScene s = scene;
+    return s != null && s.sentences != null
+            ? (BubbleText) s.sentences.recycle(BubbleText.class) : null;
   }
 
   public static BubbleText sentenceFor(Visual target) {
-    if (scene == null) return null;
+    // Capture the scene once: the render thread may clear it between a naive
+    // null check and the field access.
+    GameScene s = scene;
+    if (s == null || s.sentences == null) return null;
 
     // its members must be BubbleText
-    for (Gizmo m : scene.sentences.members) {
+    for (Gizmo m : s.sentences.members) {
       if (m != null && ((BubbleText) m).target == target)
         return (BubbleText) m;
     }
@@ -985,11 +1055,18 @@ public class GameScene extends PixelScene {
   }
 
   public static void pickUp(Item item) {
-    scene.toolbar.pickup(item);
+    // Pickups resolve on the actor thread (HeroAction.PickUp); the toolbar
+    // animation is UI, so run it on the render thread (and re-check scene,
+    // which may have been torn down meanwhile).
+    Game.runOnRenderThread(() -> {
+      if (scene != null) scene.toolbar.pickup(item);
+    });
   }
 
   public static void pickUpJournal(Item item) {
-    scene.pane.pickup(item);
+    Game.runOnRenderThread(() -> {
+      if (scene != null) scene.pane.pickup(item);
+    });
   }
 
   public static void resetMap() {

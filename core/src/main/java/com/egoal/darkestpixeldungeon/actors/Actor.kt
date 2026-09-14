@@ -21,9 +21,9 @@
 package com.egoal.darkestpixeldungeon.actors
 
 import com.watabou.utils.SparseArray
-import com.egoal.darkestpixeldungeon.DarkestPixelDungeon
 import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.Statistics
+import com.watabou.noosa.Game
 import com.watabou.utils.Bundlable
 import com.watabou.utils.Bundle
 import java.util.*
@@ -103,13 +103,21 @@ abstract class Actor : Bundlable {
         @Volatile
         private var current: Actor? = null
 
+        // When false, the persistent actor thread exits its loop (app teardown).
         @Volatile
-        private var processing: Boolean = false
+        var keepActorThreadAlive: Boolean = true
+
+        // True only while the actor thread is actually running a turn. The
+        // thread parks in wait() between turns, so `current != null` is no
+        // longer a useful "is it stuck" signal for the watchdog.
+        @Volatile
+        private var threadActive: Boolean = false
 
         private val ids = SparseArray<Actor>()
 
         private var now = 0f
 
+        @Synchronized
         fun clear() {
             now = 0f
 
@@ -119,6 +127,7 @@ abstract class Actor : Bundlable {
             ids.clear()
         }
 
+        @Synchronized
         fun fixTime() {
             if (!Dungeon.isHeroNull && all.contains(Dungeon.hero)) Statistics.Duration += now
 
@@ -167,30 +176,29 @@ abstract class Actor : Bundlable {
         }
 
         fun process() {
-            if (current != null) {
-                return
-            }
-
             var doNext: Boolean
+            var interrupted = false
 
+            threadActive = true
             do {
-                now = java.lang.Float.MAX_VALUE
                 current = null
+                if (!interrupted && !Game.switchingScene()) {
+                    var earliest = java.lang.Float.MAX_VALUE
+                    for (actor in all) {
 
+                        //some actors will always go before others if time is equal.
+                        if (actor.time < earliest ||
+                                actor.time == earliest && (current == null || actor.actPriority < current!!.actPriority)) {
+                            earliest = actor.time
+                            current = actor
+                        }
 
-                for (actor in all) {
-
-                    //some actors will always go before others if time is equal.
-                    if (actor.time < now || actor.time == now && (current == null || actor.actPriority < current!!.actPriority)) {
-                        now = actor.time
-                        current = actor
                     }
-
                 }
 
                 if (current != null) {
-
-                    val acting = current
+                    now = current!!.time
+                    val acting = current!!
 
                     if (acting is Char) {
                         // If it's character's turn to act, but its sprite
@@ -202,22 +210,56 @@ abstract class Actor : Bundlable {
                                 }
                             }
                         } catch (e: InterruptedException) {
-                            DarkestPixelDungeon.reportException(e)
+                            interrupted = true
                         }
 
                     }
 
-                    doNext = acting!!.act()
-                    if (doNext && !Dungeon.hero.isAlive) {
+                    interrupted = interrupted || Thread.interrupted()
+
+                    if (interrupted) {
                         doNext = false
                         current = null
+                    } else {
+                        doNext = acting.act()
+                        if (doNext && (Dungeon.isHeroNull || !Dungeon.hero.isAlive)) {
+                            doNext = false
+                            current = null
+                        }
                     }
                 } else {
                     doNext = false
                 }
 
-            } while (doNext)
+                if (!doNext) {
+                    // Nothing left to do: report that a turn finished, then park
+                    // on our own monitor until the render thread wakes us for the
+                    // next turn. Interrupts are expected (save/teardown), so they
+                    // only make us skip this turn rather than abort the thread.
+                    synchronized(Thread.currentThread()) {
+                        interrupted = interrupted || Thread.interrupted()
+                        if (interrupted) {
+                            current = null
+                            interrupted = false
+                        }
+
+                        threadActive = false
+                        (Thread.currentThread() as java.lang.Object).notify()
+                        try {
+                            (Thread.currentThread() as java.lang.Object).wait()
+                        } catch (e: InterruptedException) {
+                            interrupted = true
+                        }
+                        threadActive = true
+                    }
+                }
+
+            } while (keepActorThreadAlive)
+
+            threadActive = false
         }
+
+        fun isThreadActive(): Boolean = threadActive
 
         fun add(actor: Actor) {
             add(actor, now)
@@ -227,6 +269,7 @@ abstract class Actor : Bundlable {
             add(actor, now + delay)
         }
 
+        @Synchronized
         private fun add(actor: Actor, time: Float) {
             if (all.contains(actor)) {
                 return
@@ -250,6 +293,7 @@ abstract class Actor : Bundlable {
             }
         }
 
+        @Synchronized
         fun remove(actor: Actor?) {
 
             if (actor != null) {
@@ -263,12 +307,18 @@ abstract class Actor : Bundlable {
             }
         }
 
+        @Synchronized
         fun findChar(pos: Int): Char? = chars.find { it.pos == pos }
 
+        @Synchronized
         fun findById(id: Int): Actor? = ids.get(id)
 
-        fun all(): HashSet<Actor> = all
+        // Return defensive copies: render-thread callers iterate these while the
+        // actor thread is free to add/remove actors. Never hand out the live set.
+        @Synchronized
+        fun all(): HashSet<Actor> = HashSet(all)
 
-        fun chars(): HashSet<Char> = chars
+        @Synchronized
+        fun chars(): HashSet<Char> = HashSet(chars)
     }
 }

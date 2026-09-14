@@ -105,7 +105,11 @@ public class DarkestPixelDungeon extends Game {
         }
 
         Thread actor = GameScene.currentActorThread();
-        if (actor != null && actor.isAlive() && com.egoal.darkestpixeldungeon.actors.Actor.Companion.processing()) {
+        // The actor thread is persistent and parks in wait() between turns, so
+        // `processing()` is often true while it is idle. Only a thread that is
+        // actively running a turn counts as "possibly stuck".
+        if (actor != null && actor.isAlive()
+                && com.egoal.darkestpixeldungeon.actors.Actor.Companion.isThreadActive()) {
           if (actorProcessingSince == 0L) actorProcessingSince = now;
           if (!actorTimeoutReported && now - actorProcessingSince >= STALL_THRESHOLD) {
             actorTimeoutReported = true;
@@ -275,6 +279,14 @@ public class DarkestPixelDungeon extends Game {
       requestedReset = true;
       immersiveModeChanged = false;
     }
+  }
+
+  @Override
+  public void dispose() {
+    super.dispose();
+    // GameScene.destroy() waits for the actor thread to park; only once the
+    // whole app is going away do we actually let it exit its loop.
+    GameScene.endActorThread();
   }
 
   public static void updateImmersiveMode() {

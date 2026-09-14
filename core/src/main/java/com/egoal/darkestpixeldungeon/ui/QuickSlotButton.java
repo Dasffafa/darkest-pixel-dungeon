@@ -52,7 +52,7 @@ public class QuickSlotButton extends Button implements WndBag.Listener {
   private static int targetingSlot = -1;
   private static int targetCell = -1;
   private static Item targetingItem = null;
-  public static Char lastTarget = null;
+  public static volatile Char lastTarget = null;
 
   public QuickSlotButton(int slotNum) {
     super();
@@ -118,7 +118,10 @@ public class QuickSlotButton extends Button implements WndBag.Listener {
     // Keyboard shortcuts can arrive faster than the actor turn completes.
     // Match the toolbar's disabled state and never execute an item while the
     // hero is busy, otherwise a rapid press can reuse a detached stack item.
-    if (Dungeon.INSTANCE.isHeroNull() || !Dungeon.INSTANCE.getHero().getReady()) {
+    // Also reject a dead hero: Hero.die leaves `ready` set, so the slot state
+    // alone is not enough to tell that the run is over.
+    if (Dungeon.INSTANCE.isHeroNull() || !Dungeon.INSTANCE.getHero().isAlive()
+            || !Dungeon.INSTANCE.getHero().getReady()) {
       return;
     }
     if (slotNum >= 0 && slotNum < instance.length && instance[slotNum] != null) {
@@ -134,6 +137,16 @@ public class QuickSlotButton extends Button implements WndBag.Listener {
   }
 
   private void useItem() {
+    // A tap can be queued before the actor thread kills the hero (which detaches
+    // every buff, Hunger included). Hero.die never clears `ready`, and the
+    // toolbar only disables slots based on `ready`, so the slot can still look
+    // usable after death. Re-check life and readiness at execution time, exactly
+    // as use(int) does for the keyboard path, so a stale item is never executed.
+    if (Dungeon.INSTANCE.isHeroNull() || !Dungeon.INSTANCE.getHero().isAlive()
+            || !Dungeon.INSTANCE.getHero().getReady()) {
+      if (targeting) cancel();
+      return;
+    }
     // NOTE: there is deliberately no "same slot while targeting" early return
     // here. Clicking the active slot again is how the player fires at the
     // currently selected/auto-aimed target, so an early return would break that.

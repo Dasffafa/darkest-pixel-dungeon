@@ -20,6 +20,7 @@
  */
 package com.egoal.darkestpixeldungeon.items.artifacts
 
+import com.watabou.noosa.Game
 import com.egoal.darkestpixeldungeon.Assets
 import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.actors.Char
@@ -112,7 +113,7 @@ class SandalsOfNature : Artifact() {
 //                Buff.affect(hero, Earthroot.Armor::class.java).level(charge)
                 Buff.affect(hero, Rooted::class.java).level(charge)
                 CellEmitter.bottom(hero.pos).start(EarthParticle.FACTORY, 0.05f, 8)
-                Camera.main.shake(1f, 0.4f)
+                Game.runOnRenderThread { Camera.main.shake(1f, 0.4f) }
                 charge = 0
                 updateQuickslot()
             }

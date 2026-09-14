@@ -20,6 +20,7 @@
  */
 package com.egoal.darkestpixeldungeon.items.armor
 
+import com.watabou.noosa.Game
 import com.egoal.darkestpixeldungeon.effects.CellEmitter
 import com.egoal.darkestpixeldungeon.scenes.CellSelector
 import com.egoal.darkestpixeldungeon.Dungeon
@@ -72,7 +73,7 @@ class WarriorArmor : ClassArmor() {
                         curUser.move(dest)
                         Dungeon.level.press(dest, curUser)
                         Dungeon.observe()
-                        GameScene.updateFog()
+                        Game.runOnRenderThread { GameScene.updateFog() }
 
                         for (i in PathFinder.NEIGHBOURS8.indices) {
                             val mob = Actor.findChar(curUser.pos + PathFinder
@@ -83,7 +84,7 @@ class WarriorArmor : ClassArmor() {
                         }
 
                         CellEmitter.center(dest).burst(Speck.factory(Speck.DUST), 10)
-                        Camera.main.shake(2f, 0.5f)
+                        Game.runOnRenderThread { Camera.main.shake(2f, 0.5f) }
 
                         curUser.spendAndNext(LEAP_TIME.toFloat())
                     })

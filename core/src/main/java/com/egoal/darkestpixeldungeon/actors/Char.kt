@@ -20,6 +20,7 @@
  */
 package com.egoal.darkestpixeldungeon.actors
 
+import com.watabou.noosa.Game
 import com.egoal.darkestpixeldungeon.Assets
 import com.egoal.darkestpixeldungeon.Badges
 import com.egoal.darkestpixeldungeon.Dungeon
@@ -252,7 +253,7 @@ abstract class Char : Actor() {
             val ten = buff(Tenacity::class.java)
             if (ten != null) {
                 HP = 1
-                GameScene.flash(0xFF0000)
+                Game.runOnRenderThread { GameScene.flash(0xFF0000) }
                 ten.detach()
             } else
                 HP = 0 //note: this is a important setting
@@ -573,7 +574,7 @@ abstract class Char : Actor() {
             // camera shake
             if (defenderIsHero) { //  || dmg.isFeatured(Damage.Feature.CRITICAL)
                 val shake = dmg.value * 4f / defender.HT
-                if (shake > 1f) Camera.main.shake(GameMath.clampf(shake, 1f, 5f), 0.3f)
+                if (shake > 1f) Game.runOnRenderThread { Camera.main.shake(GameMath.clampf(shake, 1f, 5f), 0.3f) }
             }
 
             // take

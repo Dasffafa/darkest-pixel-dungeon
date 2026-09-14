@@ -20,6 +20,7 @@
  */
 package com.egoal.darkestpixeldungeon.items.scrolls
 
+import com.watabou.noosa.Game
 import com.egoal.darkestpixeldungeon.Assets
 import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.actors.buffs.Invisibility
@@ -66,7 +67,7 @@ class ScrollOfMagicMapping : Scroll() {
                 }
             }
         }
-        GameScene.updateFog()
+        Game.runOnRenderThread { GameScene.updateFog() }
 
         GLog.i(Messages.get(this, "layout"))
         if (noticed) {

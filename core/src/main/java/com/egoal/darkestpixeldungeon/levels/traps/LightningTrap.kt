@@ -20,6 +20,7 @@
  */
 package com.egoal.darkestpixeldungeon.levels.traps
 
+import com.watabou.noosa.Game
 import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.actors.Actor
 import com.egoal.darkestpixeldungeon.actors.Damage
@@ -49,7 +50,7 @@ class LightningTrap : Trap() {
                     .setAdditionalDamage(Damage.Element.Light, max(1, Random.Int(it.HP / 3, it.HP * 2 / 3))))
 
             if (it === Dungeon.hero) {
-                Camera.main.shake(2f, 0.3f)
+                Game.runOnRenderThread { Camera.main.shake(2f, 0.3f) }
                 if (!it.isAlive) {
                     Dungeon.fail(javaClass)
                     GLog.n(M.L(this, "ondeath"))

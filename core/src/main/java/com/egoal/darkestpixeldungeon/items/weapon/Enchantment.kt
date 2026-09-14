@@ -8,7 +8,7 @@ import com.egoal.darkestpixeldungeon.items.weapon.enchantments.*
 import com.egoal.darkestpixeldungeon.messages.M
 import com.egoal.darkestpixeldungeon.plants.Plant
 import com.egoal.darkestpixeldungeon.sprites.ItemSprite
-import com.egoal.darkestpixeldungeon.ui.QuickSlotButton
+import com.egoal.darkestpixeldungeon.scenes.GameScene
 import com.egoal.darkestpixeldungeon.utils.GLog
 import com.watabou.utils.Bundlable
 import com.watabou.utils.Bundle
@@ -30,7 +30,7 @@ abstract class Enchantment : Bundlable {
             weapon.enchantment = null
             GLog.w(M.L(Enchantment::class.java, "no_effect", name()))
 
-            QuickSlotButton.refresh()
+            GameScene.updateItemDisplays = true
         }
     }
 

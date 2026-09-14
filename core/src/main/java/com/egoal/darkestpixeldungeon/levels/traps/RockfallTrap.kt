@@ -20,6 +20,7 @@
  */
 package com.egoal.darkestpixeldungeon.levels.traps
 
+import com.watabou.noosa.Game
 import com.egoal.darkestpixeldungeon.Assets
 import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.actors.Actor
@@ -65,7 +66,7 @@ class RockfallTrap : Trap() {
                 if (Dungeon.visible[pos + i]) {
                     CellEmitter.get(pos + i - Dungeon.level.width()).start(Speck.factory(Speck.ROCK), 0.07f, 10)
                     if (!seen) {
-                        Camera.main.shake(3f, 0.7f)
+                        Game.runOnRenderThread { Camera.main.shake(3f, 0.7f) }
                         Sample.INSTANCE.play(Assets.SND_ROCKS)
                         seen = true
                     }

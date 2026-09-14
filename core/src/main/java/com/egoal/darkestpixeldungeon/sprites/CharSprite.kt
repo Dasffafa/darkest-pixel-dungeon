@@ -151,23 +151,30 @@ open class CharSprite : MovieClip(), Tweener.Listener, MovieClip.Listener {
     }
 
     fun showStatus(color: Int, text: String, vararg args: Any) {
-        if (!visible) return
+        val message = if (args.isNotEmpty()) Messages.format(text, *args) else text
 
-        if (args.isNotEmpty()) showStatus(color, Messages.format(text, *args))
+        // Floating text recycles/creates render objects and reads camera state,
+        // so it must run on the render thread. This can be reached from the
+        // actor thread (buffs, damage status).
+        Game.runOnRenderThread {
+            if (!visible) return@runOnRenderThread
 
-        if (hasChar) {
-            val tile = DungeonTilemap.tileCenterToWorld(ch.pos)
-            FloatingText.show(tile.x, tile.y - width * 0.5f, ch.pos, text, color)
-        } else FloatingText.show(x + width * 0.5f, y, text, color)
+            if (hasChar) {
+                val tile = DungeonTilemap.tileCenterToWorld(ch.pos)
+                FloatingText.show(tile.x, tile.y - width * 0.5f, ch.pos, message, color)
+            } else FloatingText.show(x + width * 0.5f, y, message, color)
+        }
     }
 
     fun showSentence(color: Int, text: String, vararg args: Any) {
-        if (!visible) return
+        val message = if (args.isNotEmpty()) Messages.format(text, *args) else text
 
-        if (args.isNotEmpty()) showSentence(color, Messages.format(text, *args))
-
-        //todo: auto-warp
-        BubbleText.Show(this, width / 2f, -height / 4f, text, color)
+        // BubbleText measures text and touches the scene, so defer it as well.
+        Game.runOnRenderThread {
+            if (!visible) return@runOnRenderThread
+            //todo: auto-warp
+            BubbleText.Show(this, width / 2f, -height / 4f, message, color)
+        }
     }
 
     fun idle() {

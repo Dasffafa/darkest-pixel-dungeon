@@ -1,5 +1,6 @@
 package com.egoal.darkestpixeldungeon.items.specials
 
+import com.watabou.noosa.Game
 import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.actors.Actor
 import com.egoal.darkestpixeldungeon.actors.Char
@@ -63,7 +64,7 @@ class Berserk : Special() {
             Invisibility.dispel()
             hero.spendAndNext(hero.attackDelay())
 
-            Camera.main.shake(2f, .3f)
+            Game.runOnRenderThread { Camera.main.shake(2f, .3f) }
         }
     }
 }

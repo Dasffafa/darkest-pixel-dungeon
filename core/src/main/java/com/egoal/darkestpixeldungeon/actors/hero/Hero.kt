@@ -1,5 +1,6 @@
 package com.egoal.darkestpixeldungeon.actors.hero
 
+import com.watabou.noosa.Game
 import com.watabou.utils.Log
 import com.egoal.darkestpixeldungeon.*
 import com.egoal.darkestpixeldungeon.actors.Actor
@@ -104,9 +105,15 @@ class Hero : Char() {
     var pohDrunk = 0
 
     // behaviour
+    // Cross-thread control flags: written by the actor thread, read by the
+    // render thread to gate input. Volatile so the render thread observes the
+    // turn handoff without relying on a lock acquire it may not perform.
+    @Volatile
     var ready = false
+    @Volatile
     var resting = false
     private var damageInterrupt = true
+    @Volatile
     var curAction: HeroAction? = null
     var lastAction: HeroAction? = null
     internal var enemy: Char? = null
@@ -788,6 +795,11 @@ class Hero : Char() {
 
     var continuousMoving = false
 
+    // Set when a movement step commits; consumed on the next actor turn so the
+    // auto-search runs on the actor thread (with a fresh FOV) instead of the
+    // render thread.
+    private var pendingStepSearch = false
+
     fun stopContinuousMoving() {
         continuousMoving = false
         if (ready && sprite.looping()) sprite.idle()
@@ -900,6 +912,22 @@ class Hero : Char() {
     override fun act(): Boolean {
         super.act()
 
+        // Field-of-view/fog refresh belongs on the actor thread. It used to run
+        // from onMotionComplete (render thread), racing with actor mutations of
+        // the level. The actor thread is gated on the movement tween (see
+        // Actor.process), so this runs at the same point in the turn cycle.
+        if (!ready) {
+            if (!resting || buff(MindVision::class.java) != null || buff(Awareness::class.java) != null)
+                Dungeon.observe()
+            else
+                Dungeon.level.updateFieldOfView(this, Level.fieldOfView)
+        }
+
+        if (pendingStepSearch) {
+            pendingStepSearch = false
+            search(false)
+        }
+
         if (paralysed > 0) {
             curAction = null
             spendAndNext(Actor.TICK)
@@ -929,7 +957,7 @@ class Hero : Char() {
         if (target == pos) return false
 
         if (rooted) {
-            Camera.main.shake(1f, 1f)
+            Game.runOnRenderThread { Camera.main.shake(1f, 1f) }
             return false
         }
 
@@ -982,6 +1010,11 @@ class Hero : Char() {
         sprite.move(pos, step)
         move(step)
         spend(1 / speed())
+
+        // The auto-search that used to run in onMotionComplete (render thread)
+        // is now performed at the start of the next actor turn, after the FOV
+        // has been refreshed for the new position.
+        pendingStepSearch = true
 
         return true
     }
@@ -1395,11 +1428,6 @@ class Hero : Char() {
     }
 
     // animation callbacks
-    override fun onMotionComplete() {
-        Dungeon.observe()
-        search(false)
-    }
-
     override fun onAttackComplete() {
         AttackIndicator.target(enemy)
 

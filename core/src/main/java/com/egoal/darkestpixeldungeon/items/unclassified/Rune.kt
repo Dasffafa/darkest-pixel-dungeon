@@ -1,5 +1,6 @@
 package com.egoal.darkestpixeldungeon.items.unclassified
 
+import com.watabou.noosa.Game
 import com.egoal.darkestpixeldungeon.Assets
 import com.egoal.darkestpixeldungeon.DungeonTilemap
 import com.egoal.darkestpixeldungeon.actors.Actor
@@ -27,8 +28,10 @@ abstract class Rune : Item() {
     fun consume(hero: Hero) {
         affect(hero)
 
-        GameScene.effect(Flare(7, 32f).color(glowing()?.color ?: 0xffffff, true).show(
-                hero.sprite.parent, DungeonTilemap.tileCenterToWorld(hero.pos), 2f))
+        Game.runOnRenderThread {
+            GameScene.effect(Flare(7, 32f).color(glowing()?.color ?: 0xffffff, true).show(
+                    hero.sprite.parent, DungeonTilemap.tileCenterToWorld(hero.pos), 2f))
+        }
     }
 
     protected abstract fun affect(hero: Hero)

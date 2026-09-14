@@ -20,6 +20,7 @@
  */
 package com.egoal.darkestpixeldungeon.actors.buffs
 
+import com.watabou.noosa.Game
 import com.egoal.darkestpixeldungeon.scenes.GameScene
 import com.egoal.darkestpixeldungeon.Dungeon
 
@@ -27,7 +28,7 @@ class Awareness : FlavourBuff() {
     override fun detach() {
         super.detach()
         Dungeon.observe()
-        GameScene.updateFog()
+        Game.runOnRenderThread { GameScene.updateFog() }
     }
 
     companion object {

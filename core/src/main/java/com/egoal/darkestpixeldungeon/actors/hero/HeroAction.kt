@@ -148,7 +148,7 @@ abstract class HeroAction(var dst: Int = 0) {
                     when (heap.type) {
                         Heap.Type.TOMB -> {
                             Sample.INSTANCE.play(Assets.SND_TOMB)
-                            Camera.main.shake(1f, 0.5f)
+                            Game.runOnRenderThread { Camera.main.shake(1f, 0.5f) }
                         }
                         Heap.Type.SKELETON, Heap.Type.REMAINS -> {
                         }

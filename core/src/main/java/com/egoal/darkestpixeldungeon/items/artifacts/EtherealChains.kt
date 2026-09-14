@@ -20,6 +20,7 @@
  */
 package com.egoal.darkestpixeldungeon.items.artifacts
 
+import com.watabou.noosa.Game
 import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.actors.Actor
 import com.egoal.darkestpixeldungeon.actors.Char
@@ -116,7 +117,7 @@ class EtherealChains : Artifact() {
                             Char.ProcessAttackDamage(affected.giveDamage(pulltarget).addFeature(Damage.Feature.ACCURATE))
                         } else Buff.prolong(affected, Cripple::class.java, 2f + level() / 2f)
                         Dungeon.observe()
-                        GameScene.updateFog()
+                        Game.runOnRenderThread { GameScene.updateFog() }
                         curUser.spendAndNext(1f)
                     }))
 
@@ -149,7 +150,7 @@ class EtherealChains : Artifact() {
                             curUser.spendAndNext(1f)
                             curUser.pos = newHeroPos
                             Dungeon.observe()
-                            GameScene.updateFog()
+                            Game.runOnRenderThread { GameScene.updateFog() }
                         }))
                     }
                 } else {

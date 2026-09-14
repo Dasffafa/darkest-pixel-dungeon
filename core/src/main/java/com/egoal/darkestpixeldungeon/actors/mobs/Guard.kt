@@ -20,6 +20,7 @@
  */
 package com.egoal.darkestpixeldungeon.actors.mobs
 
+import com.watabou.noosa.Game
 import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.actors.Actor
 import com.egoal.darkestpixeldungeon.actors.Char
@@ -92,7 +93,7 @@ class Guard : Mob() {
                         if (enemy === Dungeon.hero) {
                             Dungeon.hero.interrupt()
                             Dungeon.observe()
-                            GameScene.updateFog()
+                            Game.runOnRenderThread { GameScene.updateFog() }
                         }
                     }), -1f)
                     next()

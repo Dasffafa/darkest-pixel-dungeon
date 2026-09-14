@@ -20,6 +20,7 @@
  */
 package com.egoal.darkestpixeldungeon.actors.buffs
 
+import com.watabou.noosa.Game
 import com.egoal.darkestpixeldungeon.Assets
 import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.actors.hero.Hero
@@ -117,7 +118,7 @@ class Berserk : Buff() {
 
             SpellSprite.show(target, SpellSprite.BERSERK)
             Sample.INSTANCE.play(Assets.SND_CHALLENGE)
-            GameScene.flash(0xFF0000)
+            Game.runOnRenderThread { GameScene.flash(0xFF0000) }
         }
 
         return state == State.BERSERK
