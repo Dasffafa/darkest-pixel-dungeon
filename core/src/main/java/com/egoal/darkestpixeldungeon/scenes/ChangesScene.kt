@@ -82,6 +82,7 @@ class ChangesScene : PixelScene() {
         // add versions' button
         val HSPLIT = "---"
         val oldVersions = arrayOf(
+                "0.8.0a", "0.8.0", HSPLIT,
                 "0.7.2", "0.7.1", "0.7.0", HSPLIT,
                 "0.6.1", "0.6.0.ru", "0.6.0", HSPLIT,
                 "0.5.0", HSPLIT,
