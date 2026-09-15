@@ -9,6 +9,7 @@ import com.egoal.darkestpixeldungeon.effects.particles.ColdSnowParticles
 import com.egoal.darkestpixeldungeon.messages.Messages
 import com.watabou.noosa.Group
 import com.watabou.noosa.audio.Music
+import com.watabou.utils.Bundle
 import com.watabou.utils.PathFinder
 import com.watabou.utils.Random
 
@@ -17,6 +18,9 @@ class VillageLevel : RegularLevel() {
         color1 = 0x48763c
         color2 = 0x59994a
     }
+
+    /** Set once the bouquet has been touched; the village keeps snowing from then on. */
+    var snowing = false
 
     private val MAP_FILE = "data/VillageLevel.map"
 
@@ -181,6 +185,16 @@ class VillageLevel : RegularLevel() {
         return mob
     }
 
+    override fun storeInBundle(bundle: Bundle) {
+        super.storeInBundle(bundle)
+        bundle.put(SNOWING, snowing)
+    }
+
+    override fun restoreFromBundle(bundle: Bundle) {
+        super.restoreFromBundle(bundle)
+        snowing = bundle.getBoolean(SNOWING)
+    }
+
     override fun tileName(tile: Int): String = when (tile) {
         Terrain.WATER -> Messages.get(VillageLevel::class.java, "water_name")
         Terrain.STATUE -> Messages.get(VillageLevel::class.java, "statue_name")
@@ -196,7 +210,6 @@ class VillageLevel : RegularLevel() {
     }
 
     companion object {
-        /** Set once the bouquet has been touched; the village keeps snowing from then on. */
-        var snowing = false
+        private const val SNOWING = "snowing"
     }
 }

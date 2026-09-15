@@ -39,7 +39,8 @@ class TheBouquet : NPC.Unbreakable() {
     }
 
     private fun touch() {
-        if (VillageLevel.snowing) return
+        val village = Dungeon.level as? VillageLevel ?: return
+        if (village.snowing) return
 
         if (Dungeon.isHeroNull) return
         val hero = Dungeon.hero
@@ -47,7 +48,7 @@ class TheBouquet : NPC.Unbreakable() {
         Dungeon.level.drop(Icecap.Seed(), hero.pos).sprite.drop()
         GLog.w(M.L(this, "snow"))
 
-        (Dungeon.level as? VillageLevel)?.startSnow()
+        village.startSnow()
     }
 
     class Sprite : MobSprite() {

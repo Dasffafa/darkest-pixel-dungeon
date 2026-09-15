@@ -1250,6 +1250,12 @@ class Hero : Char() {
 
 
         Actor.fixTime()
+
+        // snapshot buff-derived values while the hero is still intact: super.die()
+        // detaches every buff before the spirit record is built.
+        deathRegeneration = regenerateSpeed()
+        deathCritChance = criticalChance()
+
         super.die(src)
 
         if (ankh == null) ReallyDie(src)
@@ -1489,6 +1495,10 @@ class Hero : Char() {
 
         private const val MAX_FOLLOWERS = 3
 
+        // buff-derived values captured before death tears the buffs down, for the spirit record
+        private var deathRegeneration: Float? = null
+        private var deathCritChance: Float? = null
+
         fun Preview(info: GamesInProgress.Info, bundle: Bundle) {
             info.level = bundle.getInt(LEVEL)
 
@@ -1524,7 +1534,9 @@ class Hero : Char() {
             }
 
             Bones.leave()
-            val spiritRecord = DarkSpirit.PrepareDeath()
+            val spiritRecord = DarkSpirit.PrepareDeath(deathRegeneration, deathCritChance)
+            deathRegeneration = null
+            deathCritChance = null
             val epitaphUser = Dungeon.hero.userName
 
             Dungeon.observe()

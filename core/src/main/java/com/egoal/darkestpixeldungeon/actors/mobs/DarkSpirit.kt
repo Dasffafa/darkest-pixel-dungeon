@@ -331,13 +331,13 @@ class DarkSpirit : Mob() {
          * to the pool, and the death itself (if it qualifies) is prepared as a new record.
          * The record's epitaph is filled in later by [CommitDeath].
          */
-        fun PrepareDeath(): SpiritRecord? {
+        fun PrepareDeath(regeneration: Float? = null, critChance: Float? = null): SpiritRecord? {
             val records = loadPool()
 
             val dirty = releaseHeld(records, GamesInProgress.curSlot)
             if (dirty) savePool(records)
 
-            return buildFromDeath()
+            return buildFromDeath(regeneration, critChance)
         }
 
         /** Finalizes a death prepared by [PrepareDeath]: stores it locally and uploads it. */
@@ -415,7 +415,7 @@ class DarkSpirit : Mob() {
             }
         }
 
-        private fun buildFromDeath(): SpiritRecord? {
+        private fun buildFromDeath(regeneration: Float?, critChance: Float?): SpiritRecord? {
             if (Dungeon.depth !in 0..10 || Dungeon.bossLevel() || abs(Dungeon.depth - Dungeon.hero.lvl) > 5) return null
 
             // those who won, die far above their max depth, or who are challenged drop no bones.
@@ -441,8 +441,8 @@ class DarkSpirit : Mob() {
                     level = hero.lvl,
                     armor = capUpgrade(hero.belongings.armor),
                     weapon = carriedWeapon(hero),
-                    regeneration = hero.regenerateSpeed(),
-                    critChance = hero.criticalChance(),
+                    regeneration = regeneration ?: hero.regenerateSpeed(),
+                    critChance = critChance ?: hero.criticalChance(),
                     epitaph = "",
                     uuid = java.util.UUID.randomUUID().toString())
         }
