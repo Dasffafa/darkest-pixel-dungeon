@@ -22,7 +22,6 @@ package com.egoal.darkestpixeldungeon.windows;
 
 import com.egoal.darkestpixeldungeon.CrashReporting;
 import com.egoal.darkestpixeldungeon.DarkestPixelDungeon;
-import com.egoal.darkestpixeldungeon.StallReport;
 import com.egoal.darkestpixeldungeon.messages.M;
 import com.egoal.darkestpixeldungeon.ui.OptionSlider;
 import com.egoal.darkestpixeldungeon.ui.RedButton;
@@ -123,10 +122,6 @@ public class WndSettings extends WndTabbed {
           if (value) last_index = 4;
         }
       });
-    }
-
-    if (crash != null && StallReport.INSTANCE.getHasPending()) {
-      last_index = 4;
     }
 
     resize(WIDTH, HEIGHT);
@@ -313,17 +308,6 @@ public class WndSettings extends WndTabbed {
       chkCrashReport.setRect(0, GAP_SML, WIDTH, BTN_HEIGHT);
       chkCrashReport.checked(CrashReporting.INSTANCE.isConsented());
       add(chkCrashReport);
-
-      if (CrashReporting.INSTANCE.isConsented() && StallReport.INSTANCE.getHasPending()) {
-        RedButton btnStallReport = new RedButton(Messages.get(this, "report_stall")) {
-          @Override
-          public void onClick() {
-            parent.parent.parent.add(new WndStallReport());
-          }
-        };
-        btnStallReport.setRect(0, chkCrashReport.bottom() + GAP_SML, WIDTH, BTN_HEIGHT);
-        add(btnStallReport);
-      }
     }
   }
 

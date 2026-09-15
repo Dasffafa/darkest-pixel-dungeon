@@ -96,9 +96,7 @@ public class DarkestPixelDungeon extends Game {
               for (StackTraceElement element : entry.getValue()) detail.append("at ").append(element).append('\n');
             }
             RuntimeException timeout = new RuntimeException(detail.toString());
-            StallReport.INSTANCE.record(timeout);
-            TopExceptionHandler.Companion.WriteErrorFile(timeout);
-            platform.reportException(timeout);
+            reportException(timeout);
           }
         } else {
           watchdogReported = false;
@@ -116,9 +114,7 @@ public class DarkestPixelDungeon extends Game {
             RuntimeException timeout = new RuntimeException(
                     "Actor thread blocked for more than 10 seconds.");
             timeout.setStackTrace(actor.getStackTrace());
-            StallReport.INSTANCE.record(timeout);
-            TopExceptionHandler.Companion.WriteErrorFile(timeout);
-            platform.reportException(timeout);
+            reportException(timeout);
           }
         } else {
           actorProcessingSince = 0L;
