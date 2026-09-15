@@ -31,6 +31,11 @@ public class ShadowBox extends NinePatch {
   public ShadowBox() {
     super(Assets.SHADOW, 1);
 
+    // The shadow texture uses white fully-transparent texels; with LINEAR
+    // filtering they bleed into a white halo around the opaque black center.
+    // The old engine premultiplied alpha on upload, which zeroed that RGB.
+    // Force the color multiplier to black so only the alpha gradient survives.
+    color(0);
     texture.filter(SmartTexture.LINEAR, SmartTexture.LINEAR);
 
     scale.set(SIZE, SIZE);
