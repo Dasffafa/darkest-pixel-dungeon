@@ -503,6 +503,14 @@ public class DarkestPixelDungeon extends Game {
     return Preferences.INSTANCE.getBoolean(Preferences.KEY_SPIRIT_DECIDED, false);
   }
 
+  public static void spiritServerUrl(String value) {
+    Preferences.INSTANCE.put(Preferences.KEY_SPIRIT_SERVER_URL, value);
+  }
+
+  public static String spiritServerUrl() {
+    return Preferences.INSTANCE.getString(Preferences.KEY_SPIRIT_SERVER_URL, "");
+  }
+
   public static void epitaphNotice(String value) {
     Preferences.INSTANCE.put(Preferences.KEY_EPITAPH_NOTICE, value);
   }

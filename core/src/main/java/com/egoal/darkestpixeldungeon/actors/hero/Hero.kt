@@ -48,6 +48,7 @@ import com.egoal.darkestpixeldungeon.ui.QuickSlotButton
 import com.egoal.darkestpixeldungeon.ui.StatusPane
 import com.egoal.darkestpixeldungeon.utils.BArray
 import com.egoal.darkestpixeldungeon.utils.GLog
+import com.egoal.darkestpixeldungeon.windows.InputDialog
 import com.egoal.darkestpixeldungeon.windows.WndMasterSubclass
 import com.egoal.darkestpixeldungeon.windows.WndResurrect
 import com.watabou.noosa.Camera
@@ -1523,7 +1524,8 @@ class Hero : Char() {
             }
 
             Bones.leave()
-            DarkSpirit.Leave()
+            val spiritRecord = DarkSpirit.PrepareDeath()
+            val epitaphUser = Dungeon.hero.userName
 
             Dungeon.observe()
 
@@ -1550,6 +1552,14 @@ class Hero : Char() {
             if (src is Doom) src.onDeath()
 
             Dungeon.deleteGame(true, true)
+
+            // let the player leave last words; fallback to default if dismissed or blank
+            val default = Rankings.deathDescription(src?.javaClass)
+            InputDialog.GetStringWithResult(Epitaphs.deathTitle(), default) { accepted, text ->
+                val epitaph = if (accepted) text.ifBlank { default } else default
+                DarkSpirit.CommitDeath(spiritRecord, epitaph)
+                Epitaphs.addOwn(epitaphUser, epitaph)
+            }
         }
 
         //

@@ -55,6 +55,7 @@ enum Preferences {
   public static final String KEY_SPIRIT_UPLOAD = "spirit_upload";
   public static final String KEY_SPIRIT_DOWNLOAD = "spirit_download";
   public static final String KEY_SPIRIT_DECIDED = "spirit_decided";
+  public static final String KEY_SPIRIT_SERVER_URL = "spirit_server_url";
   public static final String KEY_EPITAPH_NOTICE = "epitaph_notice";
   public static final String KEY_MORE_SLOTS = "more_slots";
   public static final String KEY_AUTO_PICKUP_STACKED = "auto_pickup_stacked";

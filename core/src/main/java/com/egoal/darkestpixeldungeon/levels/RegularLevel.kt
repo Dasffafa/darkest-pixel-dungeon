@@ -13,6 +13,7 @@ import com.egoal.darkestpixeldungeon.actors.mobs.npcs.Merchant
 import com.egoal.darkestpixeldungeon.actors.mobs.npcs.PotionSeller
 import com.egoal.darkestpixeldungeon.actors.mobs.npcs.ScrollSeller
 import com.egoal.darkestpixeldungeon.items.Generator
+import com.egoal.darkestpixeldungeon.Epitaphs
 import com.egoal.darkestpixeldungeon.items.Heap
 import com.egoal.darkestpixeldungeon.items.scrolls.Scroll
 import com.egoal.darkestpixeldungeon.levels.diggers.DigResult
@@ -259,14 +260,36 @@ abstract class RegularLevel : Level() {
                 index = 0
         }
 
-        DarkSpirit.Gen()?.let {
+        DarkSpirit.Gen()?.let { spirit ->
+            var placed = false
             for (i in 1..3) {
-                it.pos = randomRespawnCell()
-                if (it.pos >= 0) {
-                    mobs.add(it)
+                spirit.pos = randomRespawnCell()
+                if (spirit.pos >= 0) {
+                    mobs.add(spirit)
+                    placed = true
                     break
                 }
             }
+            if (!placed) {
+                DarkSpirit.Cancel()
+            }
+        }
+    }
+
+    override fun create() {
+        super.create()
+        assignEpitaphs()
+    }
+
+    /** Carves a random epitaph on every unmarked tombstone. About a third are
+     *  left deliberately blank, their inscriptions worn away by time. */
+    private fun assignEpitaphs() {
+        for (heap in heaps.values()) {
+            if (heap.type != Heap.Type.TOMB || heap.epitaphText != null) continue
+            if (Random.Float() < WORN_TOMB_CHANCE) continue
+            val entry = Epitaphs.take() ?: continue
+            heap.epitaphName = entry.name
+            heap.epitaphText = entry.text
         }
     }
 
@@ -498,6 +521,9 @@ abstract class RegularLevel : Level() {
 
     companion object {
         private val SPACES = "spaces"
+
+        /** Share of tombstones whose inscription has worn away to nothing. */
+        private const val WORN_TOMB_CHANCE = 1f / 3f
 
         val SpecialDiggers: Map<Class<out Digger>, Float> = mapOf(
                 ArmoryDigger::class.java to 0.5f,

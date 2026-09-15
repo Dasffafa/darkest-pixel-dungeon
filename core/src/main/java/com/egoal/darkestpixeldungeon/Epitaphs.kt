@@ -41,7 +41,9 @@ object Epitaphs {
     fun rejectedNotice(id: String, text: String): String =
             M.L(Epitaphs::class.java, "rejected", id, text)
 
-    fun graveLabel(name: String): String = M.L(Epitaphs::class.java, "grave_label", name)
+    fun graveLabel(name: String): String =
+            if (name.isBlank()) M.L(Epitaphs::class.java, "grave_label_nameless")
+            else M.L(Epitaphs::class.java, "grave_label", name)
 
     /** Asks the winner for a few words; the speech is only stored, never carved on a grave. */
     fun promptVictory(userName: String) {
@@ -82,6 +84,16 @@ object Epitaphs {
         entries.add(Entry(name, text, true))
         trim(entries)
         save(entries)
+
+        SpiritServer.uploadEpitaph(name, text)
+    }
+
+    fun removeOwn(text: String) {
+        if (text.isBlank()) return
+        val entries = load()
+        if (entries.removeAll { it.own && it.text == text }) {
+            save(entries)
+        }
     }
 
     fun mergeDownloaded(downloaded: List<Entry>) {

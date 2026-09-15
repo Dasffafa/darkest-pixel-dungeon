@@ -30,6 +30,7 @@ import com.egoal.darkestpixeldungeon.actors.buffs.Awareness
 import com.egoal.darkestpixeldungeon.actors.buffs.MindVision
 import com.egoal.darkestpixeldungeon.actors.hero.Hero
 import com.egoal.darkestpixeldungeon.actors.hero.HeroClass
+import com.egoal.darkestpixeldungeon.actors.mobs.DarkSpirit
 import com.egoal.darkestpixeldungeon.actors.mobs.npcs.*
 import com.egoal.darkestpixeldungeon.items.Catalog
 import com.egoal.darkestpixeldungeon.items.unclassified.Ankh
@@ -206,6 +207,8 @@ object Dungeon {
         Statistics.reset()
         Journal.reset()
 
+        DarkSpirit.Release(GamesInProgress.curSlot)
+
         quickslot.reset()
         QuickSlotButton.reset()
 
@@ -234,6 +237,7 @@ object Dungeon {
         Badges.reset()
         Catalog.Load()
         Challenge.Load()
+        Epitaphs.startNewRun()
 
         // hero init
         hero = Hero()
@@ -667,6 +671,7 @@ object Dungeon {
 
     fun deleteGame(deleteLevels: Boolean, deleteBackup: Boolean) {
         GamesInProgress.delete(GamesInProgress.curSlot, deleteLevels, deleteBackup)
+        DarkSpirit.Release(GamesInProgress.curSlot)
     }
 
     @Throws(IOException::class)
@@ -692,7 +697,7 @@ object Dungeon {
         hero.belongings.identify()
 
         // the run is over, whatever spirit the save was holding goes back to the pool
-        com.egoal.darkestpixeldungeon.actors.mobs.DarkSpirit.Release(GamesInProgress.curSlot)
+        DarkSpirit.Release(GamesInProgress.curSlot)
 
         if (IsChallenged()) Badges.validateChampion()
 

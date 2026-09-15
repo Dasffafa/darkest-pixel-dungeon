@@ -45,6 +45,7 @@ object Statistics {
     var CompletedWithNoKilling = false
 
     var AmuletObtained = false
+    var DarkSpiritSpawned = false
 
     val Clock = ClockTime()
 
@@ -65,6 +66,7 @@ object Statistics {
     private const val DURATION = "duration"
     private const val AMULET = "amuletObtained"
     private const val TOTAL_MINUTES = "total-minutes"
+    private const val DARK_SPIRIT = "darkSpiritSpawned"
 
     fun reset() {
 
@@ -84,6 +86,7 @@ object Statistics {
         QualifiedForNoKilling = false
 
         AmuletObtained = false
+        DarkSpiritSpawned = false
     }
 
     fun storeInBundle(bundle: Bundle) {
@@ -100,6 +103,7 @@ object Statistics {
         bundle.put(DURATION, Duration)
         bundle.put(AMULET, AmuletObtained)
         bundle.put(TOTAL_MINUTES, Clock.totalMinutes)
+        bundle.put(DARK_SPIRIT, DarkSpiritSpawned)
     }
 
     fun restoreFromBundle(bundle: Bundle) {
@@ -115,6 +119,7 @@ object Statistics {
         AnkhsUsed = bundle.getInt(ANKHS)
         Duration = bundle.getFloat(DURATION)
         AmuletObtained = bundle.getBoolean(AMULET)
+        DarkSpiritSpawned = bundle.getBoolean(DARK_SPIRIT)
 
         Clock.totalMinutes = bundle.getFloat(TOTAL_MINUTES)
         Clock.updateState()

@@ -53,6 +53,9 @@ class DarkSpirit : Mob() {
     private var spiritArmor: Armor? = null
     private var spiritWeapon: Weapon? = null
     private var spiritStrength = SPIRIT_STRENGTH_DEEP
+    private var spiritRegeneration = 0f
+    private var spiritCritChance = 0f
+    private var dreg = 0f
 
     init {
         applySpirit()
@@ -69,10 +72,12 @@ class DarkSpirit : Mob() {
         spiritClass = record.heroClass
         spiritPerk = record.perk
         spiritName = record.userName
-        spiritLevel = record.level
+        spiritLevel = record.level + Random.IntRange(2, 3)
         spiritArmor = record.armor
         spiritWeapon = record.weapon
         spiritStrength = strengthFor(record.depth)
+        spiritRegeneration = record.regeneration
+        spiritCritChance = record.critChance
 
         applySpirit()
     }
@@ -85,7 +90,9 @@ class DarkSpirit : Mob() {
                 AttackSkill = 10f + spiritLevel,
                 DefendSkill = 5f + spiritLevel,
                 MinDamage = weapon?.min() ?: Config.MinDamage,
-                MaxDamage = weapon?.max() ?: Config.MaxDamage)
+                MaxDamage = weapon?.max() ?: Config.MaxDamage,
+                CritChance = spiritCritChance,
+                CritRatio = if (spiritClass == HeroClass.EXILE) 1.75f else 1.5f)
 
         name = spiritName
     }
@@ -102,7 +109,24 @@ class DarkSpirit : Mob() {
     }
 
     override fun act(): Boolean {
-        HP = min(HP + 1, HT)
+        dreg += spiritRegeneration
+        if (HP < HT) {
+            val gain = dreg.toInt()
+            if (gain > 0) {
+                HP = min(HP + gain, HT)
+                dreg -= gain
+            } else if (gain < 0) {
+                HP = max(0, HP + gain)
+                dreg -= gain
+                if (HP <= 0) {
+                    die(this)
+                    return true
+                }
+            }
+        } else if (dreg > 0f) {
+            dreg = 0f
+        }
+
         potionCD -= 1
         val ratio = HP.toFloat() / HT
         if (ratio <= 0.6f && potions > 0 && potionCD <= 0 && Random.Float() < (2f * (0.6 - ratio))) {
@@ -195,6 +219,8 @@ class DarkSpirit : Mob() {
         bundle.put(USERNAME, spiritName)
         bundle.put(LEVEL, spiritLevel)
         bundle.put(STRENGTH, spiritStrength)
+        bundle.put(REGENERATION, spiritRegeneration)
+        bundle.put(CRIT_CHANCE, spiritCritChance)
         bundle.put(PERK, spiritPerk)
         bundle.put(ARMOR, spiritArmor)
         bundle.put(WEAPON, spiritWeapon)
@@ -206,6 +232,8 @@ class DarkSpirit : Mob() {
         spiritName = bundle.getString(USERNAME).ifEmpty { DEFAULT_NAME }
         spiritLevel = bundle.getInt(LEVEL).coerceAtLeast(1)
         spiritStrength = if (bundle.contains(STRENGTH)) bundle.getInt(STRENGTH) else SPIRIT_STRENGTH_DEEP
+        spiritRegeneration = if (bundle.contains(REGENERATION)) bundle.getFloat(REGENERATION) else 0f
+        spiritCritChance = if (bundle.contains(CRIT_CHANCE)) bundle.getFloat(CRIT_CHANCE) else 0f
         spiritPerk = bundle.get(PERK) as Perk?
         spiritArmor = bundle.get(ARMOR) as Armor?
         spiritWeapon = bundle.get(WEAPON) as Weapon?
@@ -270,6 +298,7 @@ class DarkSpirit : Mob() {
         private const val ARMOR = "armor"
         private const val WEAPON = "weapon"
         private const val EPITAPH = "epitaph"
+        private const val UUID = "uuid"
 
         private const val POTIONS = "potions"
         private const val POTION_CD = "potioncd"
@@ -278,8 +307,13 @@ class DarkSpirit : Mob() {
 
         private const val NO_SLOT = -1
 
+        private const val MAX_POOL_SIZE = 100
+
         private const val MAX_UPGRADE = 3
         private const val GEAR_DROP_CHANCE = 0.3f
+
+        /** the spirit haunts the dungeon this many floors below where its hero died */
+        private const val SPAWN_DEPTH_OFFSET = 5
 
         /** enough for some tier-3 weapon */
         private const val SPIRIT_STRENGTH = 13
@@ -294,15 +328,30 @@ class DarkSpirit : Mob() {
 
         /**
          * The hero died. This run is over, so the spirit this save was holding goes back
-         * to the pool, and the death itself (if it qualifies) leaves a new record as well.
+         * to the pool, and the death itself (if it qualifies) is prepared as a new record.
+         * The record's epitaph is filled in later by [CommitDeath].
          */
-        fun Leave() {
+        fun PrepareDeath(): SpiritRecord? {
             val records = loadPool()
 
-            var dirty = releaseHeld(records, GamesInProgress.curSlot)
-            if (addFromDeath(records)) dirty = true
-
+            val dirty = releaseHeld(records, GamesInProgress.curSlot)
             if (dirty) savePool(records)
+
+            return buildFromDeath()
+        }
+
+        /** Finalizes a death prepared by [PrepareDeath]: stores it locally and uploads it. */
+        fun CommitDeath(record: SpiritRecord?, epitaph: String) {
+            if (record == null) return
+
+            record.epitaph = epitaph
+
+            val records = loadPool()
+            records.add(record)
+            trimPool(records)
+            savePool(records)
+
+            SpiritServer.upload(record)
         }
 
         /** A run ended (won, died, or its save was deleted): the held spirit returns to the pool. */
@@ -311,32 +360,37 @@ class DarkSpirit : Mob() {
             if (releaseHeld(records, slot)) savePool(records)
         }
 
+        fun Cancel(slot: Int = GamesInProgress.curSlot) {
+            Release(slot)
+            Statistics.DarkSpiritSpawned = false
+        }
+
         /** A dark spirit died, by any hand: its record is deleted for good. */
         fun RemoveSpiritStoredInSlot(slot: Int) {
             val records = loadPool()
             if (records.removeAll { it.heldBy == slot }) savePool(records)
         }
 
+        fun RemoveRecordByUuid(uuid: String) {
+            val records = loadPool()
+            if (records.removeAll { it.uuid == uuid }) savePool(records)
+        }
+
         fun Gen(): DarkSpirit? {
-            if (Dungeon.IsChallenged()) return null
+            if (Dungeon.IsChallenged() || Statistics.DarkSpiritSpawned) return null
 
             val records = loadPool()
             val slot = GamesInProgress.curSlot
 
-            // this save already holds a spirit: it can only (re)appear on its own depth
-            val held = records.firstOrNull { it.heldBy == slot }
-            if (held != null) {
-                if (held.depth != Dungeon.depth) return null
+            // this save already holds a spirit: cannot generate any new spirit in this run
+            if (records.any { it.heldBy == slot }) return null
 
-                val spirit = DarkSpirit()
-                spirit.initFrom(held)
-                return spirit
-            }
-
-            val record = records.firstOrNull { it.heldBy == NO_SLOT && it.depth == Dungeon.depth } ?: return null
+            val record = records.firstOrNull { it.heldBy == NO_SLOT && it.depth + SPAWN_DEPTH_OFFSET == Dungeon.depth } ?: return null
 
             record.heldBy = slot
             savePool(records)
+
+            Statistics.DarkSpiritSpawned = true
 
             val spirit = DarkSpirit()
             spirit.initFrom(record)
@@ -344,17 +398,29 @@ class DarkSpirit : Mob() {
         }
 
         private fun releaseHeld(records: MutableList<SpiritRecord>, slot: Int): Boolean {
-            val held = records.firstOrNull { it.heldBy == slot } ?: return false
-            held.heldBy = NO_SLOT
-            return true
+            var dirty = false
+            for (r in records) {
+                if (r.heldBy == slot) {
+                    r.heldBy = NO_SLOT
+                    dirty = true
+                }
+            }
+            return dirty
         }
 
-        private fun addFromDeath(records: MutableList<SpiritRecord>): Boolean {
-            if (Dungeon.depth !in 0..10 || Dungeon.bossLevel() || abs(Dungeon.depth - Dungeon.hero.lvl) > 5) return false
+        private fun trimPool(records: MutableList<SpiritRecord>) {
+            while (records.size > MAX_POOL_SIZE) {
+                val indexToRemove = records.indexOfFirst { it.heldBy == NO_SLOT }.let { if (it >= 0) it else 0 }
+                records.removeAt(indexToRemove)
+            }
+        }
+
+        private fun buildFromDeath(): SpiritRecord? {
+            if (Dungeon.depth !in 0..10 || Dungeon.bossLevel() || abs(Dungeon.depth - Dungeon.hero.lvl) > 5) return null
 
             // those who won, die far above their max depth, or who are challenged drop no bones.
             if (Statistics.AmuletObtained || Statistics.DeepestFloor - 5 >= Dungeon.depth || Dungeon.IsChallenged())
-                return false
+                return null
 
             val hero = Dungeon.hero
             val initialPerks = hero.heroClass.initialPerks()
@@ -362,10 +428,10 @@ class DarkSpirit : Mob() {
             val perks = hero.heroPerk.perks.filter { p ->
                 !p.isNegative && initialPerks.none { it.javaClass == p.javaClass }
             }
-            if (perks.isEmpty()) return false
+            if (perks.isEmpty()) return null
 
             val perk = perks.random()
-            records.add(SpiritRecord(
+            return SpiritRecord(
                     depth = Dungeon.depth,
                     heldBy = NO_SLOT,
                     heroClass = hero.heroClass,
@@ -374,9 +440,11 @@ class DarkSpirit : Mob() {
                     userName = M.L(DarkSpirit::class.java, "name_of", hero.userName),
                     level = hero.lvl,
                     armor = capUpgrade(hero.belongings.armor),
-                    weapon = carriedWeapon(hero)))
-
-            return true
+                    weapon = carriedWeapon(hero),
+                    regeneration = hero.regenerateSpeed(),
+                    critChance = hero.criticalChance(),
+                    epitaph = "",
+                    uuid = java.util.UUID.randomUUID().toString())
         }
 
         /**
@@ -474,7 +542,12 @@ class DarkSpirit : Mob() {
         }
 
         private fun loadRecord(bundle: Bundle): SpiritRecord? {
-            val perk = bundle.get(PERK) as Perk? ?: return null
+            val perk = bundle.get(PERK) as? Perk ?: return null
+
+            val uuid = if (bundle.contains(UUID)) bundle.getString(UUID) else {
+                val fingerprint = "${bundle.getString(USERNAME)}_${bundle.getInt(DEPTH)}_${bundle.getInt(LEVEL)}_${bundle.getString(EPITAPH)}"
+                java.util.UUID.nameUUIDFromBytes(fingerprint.toByteArray(Charsets.UTF_8)).toString()
+            }
 
             return SpiritRecord(
                     depth = bundle.getInt(DEPTH),
@@ -483,14 +556,16 @@ class DarkSpirit : Mob() {
                     perk = perk,
                     userName = bundle.getString(USERNAME),
                     level = bundle.getInt(LEVEL),
-                    armor = bundle.get(ARMOR) as Armor?,
-                    weapon = bundle.get(WEAPON) as Weapon?,
+                    armor = bundle.get(ARMOR) as? Armor,
+                    weapon = bundle.get(WEAPON) as? Weapon,
                     regeneration = if (bundle.contains(REGENERATION)) bundle.getFloat(REGENERATION) else 0f,
                     critChance = if (bundle.contains(CRIT_CHANCE)) bundle.getFloat(CRIT_CHANCE) else 0f,
-                    epitaph = if (bundle.contains(EPITAPH)) bundle.getString(EPITAPH) else "")
+                    epitaph = if (bundle.contains(EPITAPH)) bundle.getString(EPITAPH) else "",
+                    uuid = uuid)
         }
 
         private fun saveRecord(bundle: Bundle, record: SpiritRecord) {
+            bundle.put(UUID, record.uuid)
             bundle.put(DEPTH, record.depth)
             bundle.put(HELD_BY, record.heldBy)
             bundle.put(PERK, record.perk)
@@ -520,18 +595,38 @@ class DarkSpirit : Mob() {
 
         /** Merges a downloaded gzipped JSON batch into the local pool. */
         fun ImportRecords(data: ByteArray) {
-            if (!BundleGuard.isSafe(data)) return
+            try {
+                if (!BundleGuard.isSafe(data)) return
 
-            val bundle = Bundle.read(ByteArrayInputStream(data))
-            val count = bundle.getInt("count")
+                val bundle = Bundle.read(ByteArrayInputStream(data))
+                val count = bundle.getInt("count")
 
-            val records = loadPool()
-            for (i in 0 until count) {
-                val key = "record$i"
-                if (!bundle.contains(key)) continue
-                loadRecord(bundle.getBundle(key))?.let { records.add(it) }
+                val records = loadPool()
+                var changed = false
+                for (i in 0 until count) {
+                    val key = "record$i"
+                    if (!bundle.contains(key)) continue
+                    val recBundle = bundle.getBundle(key)
+                    val record = loadRecord(recBundle) ?: continue
+
+                    // Downloaded records MUST be neutral (not held by any local slot)
+                    record.heldBy = NO_SLOT
+
+                    // Deduplicate against existing records
+                    if (records.any { it.uuid == record.uuid || (it.userName == record.userName && it.depth == record.depth && it.level == record.level && it.epitaph == record.epitaph) }) {
+                        continue
+                    }
+
+                    records.add(record)
+                    changed = true
+                }
+                if (changed) {
+                    trimPool(records)
+                    savePool(records)
+                }
+            } catch (e: Exception) {
+                DarkestPixelDungeon.reportException(e)
             }
-            savePool(records)
         }
     }
 }
@@ -548,4 +643,5 @@ class SpiritRecord(
         var weapon: Weapon?,
         var regeneration: Float = 0f,
         var critChance: Float = 0f,
-        var epitaph: String = "")
+        var epitaph: String = "",
+        var uuid: String = java.util.UUID.randomUUID().toString())

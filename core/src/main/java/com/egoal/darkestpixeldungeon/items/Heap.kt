@@ -67,6 +67,10 @@ class Heap : Bundlable {
 
     var items: LinkedList<Item> = LinkedList()
 
+    /** Epitaph carved on a TOMB, or null if this heap is not an inscribed grave. */
+    var epitaphName: String? = null
+    var epitaphText: String? = null
+
     fun size(): Int = items.size
     fun empty(): Boolean = size() == 0
 
@@ -124,6 +128,12 @@ class Heap : Bundlable {
         }
 
         if (type != Type.MIMIC) {
+            // A carved epitaph only belongs to an unopened tomb; once opened the
+            // heap is a normal pile, so never let the inscription leak onto it.
+            if (type == Type.TOMB) {
+                epitaphName = null
+                epitaphText = null
+            }
             type = Type.HEAP
             sprite!!.link()
             sprite!!.drop()
@@ -383,6 +393,11 @@ class Heap : Bundlable {
         seen = bundle.getBoolean(SEEN)
         type = Type.valueOf(bundle.getString(TYPE))
         items.addAll(bundle.getCollection(ITEMS) as Collection<Item>)
+        // Only a tomb can carry an epitaph; ignore any stale keys on other types.
+        if (type == Type.TOMB) {
+            if (bundle.contains(EPITAPH_NAME)) epitaphName = bundle.getString(EPITAPH_NAME)
+            if (bundle.contains(EPITAPH_TEXT)) epitaphText = bundle.getString(EPITAPH_TEXT)
+        }
     }
 
     override fun storeInBundle(bundle: Bundle) {
@@ -390,6 +405,10 @@ class Heap : Bundlable {
         bundle.put(SEEN, seen)
         bundle.put(TYPE, type.toString())
         bundle.put(ITEMS, items)
+        if (type == Type.TOMB) {
+            epitaphName?.let { bundle.put(EPITAPH_NAME, it) }
+            epitaphText?.let { bundle.put(EPITAPH_TEXT, it) }
+        }
     }
 
     companion object {
@@ -406,6 +425,8 @@ class Heap : Bundlable {
         private const val SEEN = "seen"
         private const val TYPE = "type"
         private const val ITEMS = "items"
+        private const val EPITAPH_NAME = "epitaph_name"
+        private const val EPITAPH_TEXT = "epitaph_text"
     }
 
 }

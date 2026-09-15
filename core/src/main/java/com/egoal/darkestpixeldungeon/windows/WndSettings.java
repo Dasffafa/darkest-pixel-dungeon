@@ -172,6 +172,20 @@ public class WndSettings extends WndTabbed {
       chkOnDoor.setRect(0, chkStacked.bottom() + GAP_SML, WIDTH, BTN_HEIGHT);
       chkOnDoor.checked(DarkestPixelDungeon.autoPickupOnDoor());
       add(chkOnDoor);
+
+      CheckBox chkSpiritSync = new CheckBox(Messages.get(this,
+              "spirit_sync")) {
+        @Override
+        public void onClick() {
+          super.onClick();
+          DarkestPixelDungeon.uploadSpirits(checked());
+          DarkestPixelDungeon.downloadSpirits(checked());
+          DarkestPixelDungeon.spiritSyncDecided(true);
+        }
+      };
+      chkSpiritSync.setRect(0, chkOnDoor.bottom() + GAP_SML, WIDTH, BTN_HEIGHT);
+      chkSpiritSync.checked(DarkestPixelDungeon.uploadSpirits() && DarkestPixelDungeon.downloadSpirits());
+      add(chkSpiritSync);
     }
   }
 
