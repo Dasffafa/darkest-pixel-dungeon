@@ -122,7 +122,7 @@ class WandOfPrismaticLight : DamageWand(isMissile = false) {
     }
 
     override fun fx(beam: Ballistica, callback: Callback) {
-        curUser.sprite.parent.add(Beam.LightRay(
+        curUser.sprite.parent?.add(Beam.LightRay(
                 DungeonTilemap.tileCenterToWorld(beam.sourcePos),
                 DungeonTilemap.tileCenterToWorld(beam.collisionPos)))
         callback.call()

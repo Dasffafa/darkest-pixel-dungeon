@@ -135,8 +135,11 @@ open class Boomerang : MissileWeapon(1), GreatBlueprint.Enchantable {
 
     private fun circleBack(from: Int, owner: Hero) {
         Game.runOnRenderThread {
-            (owner.sprite.parent.recycle(MissileSprite::class.java) as MissileSprite).reset(from,
-                    owner.pos, this, null)
+            val p = owner.sprite.parent
+            if (p != null) {
+                (p.recycle(MissileSprite::class.java) as MissileSprite).reset(from,
+                        owner.pos, this, null)
+            }
         }
 
         if (throwEquiped) {
@@ -172,12 +175,18 @@ open class Boomerang : MissileWeapon(1), GreatBlueprint.Enchantable {
         QuickSlotButton.target(enemy)
 
         val delay = Item.TIME_TO_THROW * speedFactor(user)
+        val onDone = Callback {
+            (this@Boomerang.detach(user.belongings.backpack) as Boomerang).onThrow(cell)
+            user.spend(delay) // spend but not next, next when the boomerang back to hand
+        }
         Game.runOnRenderThread {
-            (user.sprite.parent.recycle(MissileSprite::class.java) as MissileSprite)
-                    .reset(user.pos, cell, this, Callback {
-                        (this@Boomerang.detach(user.belongings.backpack) as Boomerang).onThrow(cell)
-                        user.spend(delay) // spend but not next, next when the boomerang back to hand
-                    })
+            val p = user.sprite.parent
+            if (p != null) {
+                (p.recycle(MissileSprite::class.java) as MissileSprite)
+                        .reset(user.pos, cell, this, onDone)
+            } else {
+                onDone.call()
+            }
         }
     }
 

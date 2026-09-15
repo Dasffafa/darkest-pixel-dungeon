@@ -95,13 +95,18 @@ class MagicBow : MeleeWeapon() {
             val enemy = Actor.findChar(shotpos)
             val delay = hero.attackDelay()
 
+            val onDone = Callback {
+                if (enemy != null) onShot(enemy)
+                hero.spendAndNext(delay)
+            }
             Game.runOnRenderThread {
-                (hero.sprite.parent.recycle(MissileSprite::class.java) as MissileSprite).reset(
-                        hero.pos, shotpos, ItemSpriteSheet.MAGIC_DART, null, Callback {
-                    if (enemy != null) onShot(enemy)
-
-                    hero.spendAndNext(delay)
-                })
+                val p = hero.sprite.parent
+                if (p != null) {
+                    (p.recycle(MissileSprite::class.java) as MissileSprite).reset(
+                            hero.pos, shotpos, ItemSpriteSheet.MAGIC_DART, null, onDone)
+                } else {
+                    onDone.call()
+                }
             }
         }
 

@@ -47,10 +47,13 @@ class DisintegrationTrap : Trap() {
     override fun activate() {
 
         if (Dungeon.visible[pos]) {
-            sprite.parent.add(Beam.DeathRay(DungeonTilemap.tileCenterToWorld(pos - 1),
-                    DungeonTilemap.tileCenterToWorld(pos + 1)))
-            sprite.parent.add(Beam.DeathRay(DungeonTilemap.tileCenterToWorld(pos - Dungeon.level.width()),
-                    DungeonTilemap.tileCenterToWorld(pos + Dungeon.level.width())))
+            val p = if (hasSprite) sprite.parent else null
+            if (p != null) {
+                p.add(Beam.DeathRay(DungeonTilemap.tileCenterToWorld(pos - 1),
+                        DungeonTilemap.tileCenterToWorld(pos + 1)))
+                p.add(Beam.DeathRay(DungeonTilemap.tileCenterToWorld(pos - Dungeon.level.width()),
+                        DungeonTilemap.tileCenterToWorld(pos + Dungeon.level.width())))
+            }
             Sample.INSTANCE.play(Assets.SND_RAY)
         }
 

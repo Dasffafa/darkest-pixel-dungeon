@@ -166,10 +166,12 @@ class WandOfBlastWave : DamageWand(isMissile = true) {
 
             fun blast(pos: Int) {
                 Game.runOnRenderThread {
-                    val parent = Dungeon.hero.sprite.parent
-                    val b = parent.recycle(BlastWave::class.java) as BlastWave
-                    parent.bringToFront(b)
-                    b.reset(pos)
+                    val parent = Dungeon.hero?.sprite?.parent
+                    if (parent != null) {
+                        val b = parent.recycle(BlastWave::class.java) as BlastWave
+                        parent.bringToFront(b)
+                        b.reset(pos)
+                    }
                 }
             }
         }

@@ -312,14 +312,18 @@ public class QuickSlotButton extends Button implements WndBag.Listener {
   private static void showTarget(Char target) {
     targetCell = target.getPos();
     crossM.remove();
-    target.getSprite().parent.add(crossM);
+    if (target.getSprite() != null && target.getSprite().parent != null) {
+      target.getSprite().parent.add(crossM);
+    }
     crossM.point(DungeonTilemap.tileToWorld(target.getPos()));
     HealthIndicator.instance.target(target);
   }
 
   private static void showTargetCell(int cell) {
     crossM.remove();
-    Dungeon.INSTANCE.getHero().getSprite().parent.add(crossM);
+    if (!Dungeon.INSTANCE.isHeroNull() && Dungeon.INSTANCE.getHero().getSprite() != null && Dungeon.INSTANCE.getHero().getSprite().parent != null) {
+      Dungeon.INSTANCE.getHero().getSprite().parent.add(crossM);
+    }
     crossM.point(DungeonTilemap.tileToWorld(cell));
     HealthIndicator.instance.target(null);
   }

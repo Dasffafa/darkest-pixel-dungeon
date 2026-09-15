@@ -126,18 +126,25 @@ class DM300 : Mob() {
 
     private fun setBumpCell(pos: Int) {
         bumpcell = pos
-        if (cross.parent == null) {
-            sprite.parent.add(cross)
-            cross.color(1f, 0.1f, 0.02f)
+        Game.runOnRenderThread {
+            val p = sprite.parent
+            if (p != null) {
+                if (cross.parent == null) {
+                    p.add(cross)
+                    cross.color(1f, 0.1f, 0.02f)
+                }
+                cross.visible = true
+                val cen = DungeonTilemap.tileCenterToWorld(bumpcell)
+                cross.point(cen.offset(-cross.width / 2f, -cross.height / 2f))
+            }
         }
-        cross.visible = true
-        val cen = DungeonTilemap.tileCenterToWorld(bumpcell)
-        cross.point(cen.offset(-cross.width / 2f, -cross.height / 2f))
     }
 
     private fun resetBumpCell() {
         bumpcell = -1
-        cross.visible = false
+        Game.runOnRenderThread {
+            cross.visible = false
+        }
     }
 
     override fun attackSpeed(): Float = super.attackSpeed() * if (overloaded) 1.5f else 1f

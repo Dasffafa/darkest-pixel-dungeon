@@ -43,7 +43,7 @@ class WaterOfAwareness : WellWater() {
     override fun affectHero(hero: Hero): Boolean {
 
         Sample.INSTANCE.play(Assets.SND_DRINK)
-        emitter!!.parent.add(Identification(DungeonTilemap.tileCenterToWorld(pos)))
+        emitter?.parent?.add(Identification(DungeonTilemap.tileCenterToWorld(pos)))
 
         hero.belongings.observe()
 
@@ -80,7 +80,7 @@ class WaterOfAwareness : WellWater() {
         item.identify()
         Badges.validateItemLevelAquired(item)
 
-        emitter!!.parent.add(Identification(DungeonTilemap.tileCenterToWorld(pos)))
+        emitter?.parent?.add(Identification(DungeonTilemap.tileCenterToWorld(pos)))
 
         Journal.remove(Journal.Feature.WELL_OF_AWARENESS)
 

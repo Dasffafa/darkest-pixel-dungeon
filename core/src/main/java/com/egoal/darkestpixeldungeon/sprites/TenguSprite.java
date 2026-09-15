@@ -80,14 +80,19 @@ public class TenguSprite extends MobSprite {
 
       final Char enemy = Actor.Companion.findChar(cell);
 
-      ((MissileSprite) parent.recycle(MissileSprite.class)).
-              reset(getCh().getPos(), cell, new Shuriken(), new Callback() {
-                @Override
-                public void call() {
-                  getCh().next();
-                  if (enemy != null) getCh().attack(enemy);
-                }
-              });
+      Callback callback = new Callback() {
+        @Override
+        public void call() {
+          getCh().next();
+          if (enemy != null) getCh().attack(enemy);
+        }
+      };
+      if (parent != null) {
+        ((MissileSprite) parent.recycle(MissileSprite.class)).
+                reset(getCh().getPos(), cell, new Shuriken(), callback);
+      } else {
+        callback.call();
+      }
 
       play(cast);
       turnTo(getCh().getPos(), cell);

@@ -70,16 +70,18 @@ public class DungeonTilemap extends Tilemap {
     // For bright mode
     tile.rm = tile.gm = tile.bm = rm;
     tile.ra = tile.ga = tile.ba = ra;
-    parent.add(tile);
+    if (parent != null) {
+      parent.add(tile);
 
-    parent.add(new AlphaTweener(tile, 0, 0.6f) {
-      protected void onComplete() {
-        tile.killAndErase();
-        killAndErase();
-      }
-
-      ;
-    });
+      parent.add(new AlphaTweener(tile, 0, 0.6f) {
+        protected void onComplete() {
+          tile.killAndErase();
+          killAndErase();
+        }
+      });
+    } else {
+      tile.killAndErase();
+    }
   }
 
   public static PointF tileToWorld(int pos) {

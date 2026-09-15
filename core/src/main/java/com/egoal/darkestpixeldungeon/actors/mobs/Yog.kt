@@ -173,7 +173,10 @@ class Yog : Mob() {
                 GLog.n(M.L(Yog::class.java, "no_hiding"))
                 zapCD_ = 5
 
-                sprite.parent.add(Beam.DarkRay(sprite.center(), DungeonTilemap.tileCenterToWorld(enemy!!.pos * 2 - pos)))
+                val p = sprite.parent
+                if (p != null) {
+                    p.add(Beam.DarkRay(sprite.center(), DungeonTilemap.tileCenterToWorld(enemy!!.pos * 2 - pos)))
+                }
             } else zapCD_ = max(zapCD_ - 1, 0)
 
             spend(1 / speed())

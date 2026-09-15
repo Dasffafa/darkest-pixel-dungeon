@@ -132,7 +132,7 @@ class WandOfLightning : DamageWand(isMissile = false) {
         }
 
         //don't want to wait for the effect before processing damage.
-        curUser.sprite.parent.add(Lightning(arcs, null))
+        curUser.sprite.parent?.add(Lightning(arcs, null))
         callback.call()
     }
 

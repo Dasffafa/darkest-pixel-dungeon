@@ -272,10 +272,13 @@ public class BadgeBanner extends Image {
             -image.origin.y * (image.scale.y - 1));
     p.offset(image.point());
 
-    Speck star = new Speck();
-    star.reset(0, p.x, p.y, Speck.DISCOVER);
-    star.camera = image.camera();
-    image.parent.add(star);
+    com.watabou.noosa.Group parent = image.parent;
+    if (parent != null) {
+      Speck star = new Speck();
+      star.reset(0, p.x, p.y, Speck.DISCOVER);
+      star.camera = image.camera();
+      parent.add(star);
+    }
   }
 
   public static BadgeBanner show(int image) {

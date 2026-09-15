@@ -37,7 +37,7 @@ class ScrollOfIdentify : InventoryScroll() {
     }
 
     override fun onItemSelected(item: Item) {
-        curUser.sprite.parent.add(Identification(curUser.sprite.center().offset(0f, -16f)))
+        curUser.sprite.parent?.add(Identification(curUser.sprite.center().offset(0f, -16f)))
 
         item.identify()
         GLog.i(Messages.get(this, "it_is", item))

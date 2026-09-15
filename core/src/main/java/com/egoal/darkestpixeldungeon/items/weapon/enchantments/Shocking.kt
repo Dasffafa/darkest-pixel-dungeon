@@ -56,7 +56,7 @@ class Shocking : Enchantment() {
             arcs.add(Lightning.Arc(attacker.pos, defender.pos))
             hit(defender, Random.Int(1, damage.value / 3))
 
-            attacker.sprite.parent.add(Lightning(arcs, null))
+            attacker.sprite.parent?.add(Lightning(arcs, null))
 
         }
 

@@ -184,16 +184,21 @@ open class CharSprite : MovieClip(), Tweener.Listener, MovieClip.Listener {
     open fun move(from: Int, to: Int) {
         turnTo(from, to)
 
-        play(run)
+        val p = parent
+        if (p != null) {
+            play(run)
 
-        motion = PosTweener(this, worldToCamera(to), MOVE_INTERVAL)
-        motion!!.listener = this
-        parent.add(motion!!)
+            motion = PosTweener(this, worldToCamera(to), MOVE_INTERVAL)
+            motion!!.listener = this
+            p.add(motion!!)
 
-        isMoving = true
+            isMoving = true
 
-        if (visible && Level.water[from] && !ch.flying) {
-            GameScene.ripple(from)
+            if (visible && Level.water[from] && !ch.flying) {
+                GameScene.ripple(from)
+            }
+        } else {
+            place(to)
         }
 
     }
@@ -244,9 +249,16 @@ open class CharSprite : MovieClip(), Tweener.Listener, MovieClip.Listener {
         jumpCallback = callback
 
         val distance = Dungeon.level.distance(from, to)
-        jumpTweener = JumpTweener(this, worldToCamera(to), (distance * 4).toFloat(), distance * 0.1f)
-        jumpTweener!!.listener = this
-        parent.add(jumpTweener!!)
+        val p = parent
+        if (p != null) {
+            jumpTweener = JumpTweener(this, worldToCamera(to), (distance * 4).toFloat(), distance * 0.1f)
+            jumpTweener!!.listener = this
+            p.add(jumpTweener!!)
+        } else {
+            place(to)
+            jumpCallback?.call()
+            jumpCallback = null
+        }
 
         turnTo(from, to)
     }

@@ -16,6 +16,7 @@ import com.egoal.darkestpixeldungeon.items.Item
 import com.egoal.darkestpixeldungeon.levels.Level
 import com.egoal.darkestpixeldungeon.scenes.GameScene
 import com.egoal.darkestpixeldungeon.sprites.MobSprite
+import com.watabou.noosa.Game
 import com.watabou.noosa.TextureFilm
 import com.watabou.noosa.tweeners.AlphaTweener
 import com.watabou.utils.Random
@@ -103,9 +104,14 @@ class DevilGhost : Wraith() {
 
                 GameScene.add(dg, 1f)
 
-                dg.sprite.alpha(0f)
-                dg.sprite.parent.add(AlphaTweener(dg.sprite, 1f, .5f))
-                dg.sprite.emitter().burst(ShadowParticle.CURSE, 8)
+                Game.runOnRenderThread {
+                    dg.sprite.alpha(0f)
+                    val p = dg.sprite.parent
+                    if (p != null) {
+                        p.add(AlphaTweener(dg.sprite, 1f, .5f))
+                        dg.sprite.emitter().burst(ShadowParticle.CURSE, 8)
+                    }
+                }
 
                 return dg
             } else {

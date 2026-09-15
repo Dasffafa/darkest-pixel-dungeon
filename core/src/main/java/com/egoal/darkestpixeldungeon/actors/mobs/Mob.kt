@@ -319,7 +319,7 @@ abstract class Mob : Char() {
     }
 
     protected fun moveSprite(from: Int, to: Int): Boolean {
-        if (sprite.isVisible && (Dungeon.visible[from] || Dungeon.visible[to])) {
+        if (sprite.parent != null && sprite.isVisible && (Dungeon.visible[from] || Dungeon.visible[to])) {
             sprite.move(from, to)
             return true
         } else {

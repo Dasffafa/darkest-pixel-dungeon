@@ -94,8 +94,16 @@ public class Pushing extends Actor {
 
       delay = 0;
 
-      if (sprite.parent != null)
-        sprite.parent.add(this);
+      com.watabou.noosa.Group p = sprite.parent;
+      if (p != null) {
+        p.add(this);
+      } else {
+        sprite.point(end);
+        killAndErase();
+        Actor.Companion.remove(Pushing.this);
+        if (callback != null) callback.call();
+        next();
+      }
     }
 
     @Override

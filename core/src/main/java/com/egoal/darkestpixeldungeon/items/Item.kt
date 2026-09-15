@@ -392,11 +392,17 @@ open class Item : Bundlable {
 
         val finalDelay = delay
 
+        val onDone = Callback {
+            this@Item.detach(user.belongings.backpack)?.onThrow(cell)
+            user.spendAndNext(finalDelay)
+        }
         Game.runOnRenderThread {
-            (user.sprite.parent.recycle(MissileSprite::class.java) as MissileSprite).reset(user.pos, cell, this, Callback {
-                this@Item.detach(user.belongings.backpack)?.onThrow(cell)
-                user.spendAndNext(finalDelay)
-            })
+            val p = user.sprite.parent
+            if (p != null) {
+                (p.recycle(MissileSprite::class.java) as MissileSprite).reset(user.pos, cell, this, onDone)
+            } else {
+                onDone.call()
+            }
         }
     }
 

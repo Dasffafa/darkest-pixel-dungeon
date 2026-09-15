@@ -61,7 +61,7 @@ class LightningTrap : Trap() {
             arcs.add(Lightning.Arc(pos - Dungeon.level.width(), pos + Dungeon.level.width()))
             arcs.add(Lightning.Arc(pos - 1, pos + 1))
 
-            it.sprite.parent.add(Lightning(arcs, null))
+            it.sprite.parent?.add(Lightning(arcs, null))
         }
 
         Dungeon.level.heaps.get(pos)?.let {

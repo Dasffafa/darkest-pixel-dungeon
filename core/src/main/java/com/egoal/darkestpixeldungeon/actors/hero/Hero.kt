@@ -1311,7 +1311,7 @@ class Hero : Char() {
             for (x in ax..bx) {
                 val p = Dungeon.level.xy2cell(x, y)
                 if (Dungeon.visible[p]) {
-                    if (intentional) sprite.parent.addToBack(CheckedCell(p))
+                    if (intentional) sprite.parent?.addToBack(CheckedCell(p))
 
                     if (Level.secret[p] && (intentional || Random.Float() < level)) {
                         GameScene.discoverTile(p, Dungeon.level.map[p])

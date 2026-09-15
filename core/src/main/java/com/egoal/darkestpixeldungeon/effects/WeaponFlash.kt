@@ -36,9 +36,10 @@ class WeaponFlash : MovieClip(), MovieClip.Listener {
 
     companion object {
         fun Flash(attacker: Char, defender: Char) {
-            if (defender.sprite.parent != null) {
-                val wf = defender.sprite.parent.recycle(WeaponFlash::class.java) as WeaponFlash
-                defender.sprite.parent.bringToFront(wf)
+            val p = defender.sprite.parent
+            if (p != null) {
+                val wf = p.recycle(WeaponFlash::class.java) as WeaponFlash
+                p.bringToFront(wf)
                 wf.reset(defender.pos)
                 wf.angle = PointF.angle(attacker.sprite.center(), defender.sprite.center())
                 wf.angle = Math.PI.toFloat() / 4f

@@ -32,6 +32,7 @@ import com.egoal.darkestpixeldungeon.effects.particles.ShadowParticle
 import com.egoal.darkestpixeldungeon.items.weapon.inscriptions.Grim
 import com.egoal.darkestpixeldungeon.scenes.GameScene
 import com.egoal.darkestpixeldungeon.sprites.WraithSprite
+import com.watabou.noosa.Game
 import com.watabou.noosa.tweeners.AlphaTweener
 import com.watabou.utils.Bundle
 import com.watabou.utils.PathFinder
@@ -111,10 +112,14 @@ open class Wraith : Mob() {
                 w.state = w.HUNTING
                 GameScene.add(w, SPAWN_DELAY)
 
-                w.sprite.alpha(0f)
-                w.sprite.parent.add(AlphaTweener(w.sprite, 1f, 0.5f))
-
-                w.sprite.emitter().burst(ShadowParticle.CURSE, 5)
+                Game.runOnRenderThread {
+                    w.sprite.alpha(0f)
+                    val p = w.sprite.parent
+                    if (p != null) {
+                        p.add(AlphaTweener(w.sprite, 1f, 0.5f))
+                        w.sprite.emitter().burst(ShadowParticle.CURSE, 5)
+                    }
+                }
 
                 return w
             } else {

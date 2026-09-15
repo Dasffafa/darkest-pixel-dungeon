@@ -103,7 +103,7 @@ class EyeballOfTheElder : Artifact() {
 
         for (e in enemies) {
             val beam = Ballistica(hero.pos, e.pos, Ballistica.WONT_STOP)
-            hero.sprite.parent.add(Beam.ThickDeathRay(
+            hero.sprite.parent?.add(Beam.ThickDeathRay(
                     DungeonTilemap.tileCenterToWorld(beam.sourcePos),
                     DungeonTilemap.tileCenterToWorld(beam.path[beam.dist])))
 
@@ -240,7 +240,7 @@ class EyeballOfTheElder : Artifact() {
             val dist = min(zapRange(), beam.dist)
 
             val dstCell = beam.path[dist]
-            Item.curUser.sprite.parent.add(Beam.ThickDeathRay(
+            Item.curUser.sprite.parent?.add(Beam.ThickDeathRay(
                     DungeonTilemap.tileCenterToWorld(beam.sourcePos),
                     DungeonTilemap.tileCenterToWorld(dstCell)))
 

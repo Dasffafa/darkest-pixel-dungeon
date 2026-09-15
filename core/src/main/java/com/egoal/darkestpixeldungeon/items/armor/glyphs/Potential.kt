@@ -53,7 +53,7 @@ class Potential : Armor.Glyph() {
                 Game.runOnRenderThread { Camera.main.shake(2f, 0.3f) }
             }
 
-            attacker.sprite.parent.add(Lightning(attacker.pos, defender.pos, null))
+            attacker.sprite.parent?.add(Lightning(attacker.pos, defender.pos, null))
 
         }
 

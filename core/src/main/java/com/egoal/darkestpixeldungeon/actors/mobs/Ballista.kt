@@ -50,11 +50,17 @@ open class Ballista : Mob() {
             super.onAttackComplete()
         else {
             // show animation
+            val onDone = Callback {
+                next()
+                if (enemy != null) attack(enemy!!)
+            }
             Game.runOnRenderThread {
-                (sprite.parent.recycle(MissileSprite::class.java) as MissileSprite).reset(pos, enemy!!.pos, Dart(), Callback {
-                    next()
-                    if (enemy != null) attack(enemy!!)
-                })
+                val p = sprite.parent
+                if (p != null) {
+                    (p.recycle(MissileSprite::class.java) as MissileSprite).reset(pos, enemy!!.pos, Dart(), onDone)
+                } else {
+                    onDone.call()
+                }
             }
         }
     }

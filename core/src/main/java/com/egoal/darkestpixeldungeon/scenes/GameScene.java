@@ -995,15 +995,25 @@ public class GameScene extends PixelScene {
   }
 
   public static void add(EmoIcon icon) {
-    scene.emoicons.add(icon);
+    if (icon == null) return;
+    com.watabou.noosa.Game.runOnRenderThread(() -> {
+      if (scene != null && scene.emoicons != null) {
+        scene.emoicons.add(icon);
+      }
+    });
   }
 
   public static void effect(Visual effect) {
-    scene.effects.add(effect);
+    if (effect == null) return;
+    com.watabou.noosa.Game.runOnRenderThread(() -> {
+      if (scene != null && scene.effects != null) {
+        scene.effects.add(effect);
+      }
+    });
   }
 
   public static Ripple ripple(int pos) {
-    if (scene != null) {
+    if (scene != null && scene.ripples != null) {
       Ripple ripple = (Ripple) scene.ripples.recycle(Ripple.class);
       ripple.reset(pos);
       return ripple;
@@ -1013,7 +1023,7 @@ public class GameScene extends PixelScene {
   }
 
   public static SpellSprite spellSprite() {
-    return (SpellSprite) scene.spells.recycle(SpellSprite.class);
+    return scene != null && scene.spells != null ? (SpellSprite) scene.spells.recycle(SpellSprite.class) : null;
   }
 
   public static Emitter emitter() {

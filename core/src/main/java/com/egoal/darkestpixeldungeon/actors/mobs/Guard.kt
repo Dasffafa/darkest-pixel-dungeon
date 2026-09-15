@@ -85,7 +85,7 @@ class Guard : Mob() {
             } else {
                 val newPosFinal = newPos
                 say(Messages.get(this, "scorpion"))
-                sprite.parent.add(Chains(pos, enemy!!.pos, Callback {
+                val onChainDone = Callback {
                     Actor.addDelayed(Pushing(enemy, enemy!!.pos, newPosFinal, Callback {
                         enemy!!.pos = newPosFinal
                         Dungeon.level.press(newPosFinal, enemy)
@@ -97,7 +97,13 @@ class Guard : Mob() {
                         }
                     }), -1f)
                     next()
-                }))
+                }
+                val p = sprite.parent
+                if (p != null) {
+                    p.add(Chains(pos, enemy!!.pos, onChainDone))
+                } else {
+                    onChainDone.call()
+                }
             }
         }
         chainsUsed = true

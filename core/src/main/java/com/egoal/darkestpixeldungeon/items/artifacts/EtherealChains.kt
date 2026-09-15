@@ -108,7 +108,7 @@ class EtherealChains : Artifact() {
                     updateQuickslot()
 
                     curUser.busy()
-                    curUser.sprite.parent.add(Chains(curUser.pos, pulltarget.pos, Callback {
+                    val onPullDone = Callback {
                         Actor.add(Pushing(affected, affected.pos, newpos, Callback { Dungeon.level.press(newpos, affected) }))
                         affected.pos = newpos
                         if (pullhero) {
@@ -119,7 +119,13 @@ class EtherealChains : Artifact() {
                         Dungeon.observe()
                         Game.runOnRenderThread { GameScene.updateFog() }
                         curUser.spendAndNext(1f)
-                    }))
+                    }
+                    val p = curUser.sprite.parent
+                    if (p != null) {
+                        p.add(Chains(curUser.pos, pulltarget.pos, onPullDone))
+                    } else {
+                        onPullDone.call()
+                    }
 
                 } else if (Level.solid[chain.path[chain.dist]]
                         || chain.dist > 0 && Level.solid[chain.path[chain.dist - 1]]
@@ -145,13 +151,19 @@ class EtherealChains : Artifact() {
                             updateQuickslot()
                         }
                         curUser.busy()
-                        curUser.sprite.parent.add(Chains(curUser.pos, target, Callback {
+                        val onGrappleDone = Callback {
                             Actor.add(Pushing(curUser, curUser.pos, newHeroPos, Callback { Dungeon.level.press(newHeroPos, curUser) }))
                             curUser.spendAndNext(1f)
                             curUser.pos = newHeroPos
                             Dungeon.observe()
                             Game.runOnRenderThread { GameScene.updateFog() }
-                        }))
+                        }
+                        val gp = curUser.sprite.parent
+                        if (gp != null) {
+                            gp.add(Chains(curUser.pos, target, onGrappleDone))
+                        } else {
+                            onGrappleDone.call()
+                        }
                     }
                 } else {
                     GLog.i(Messages.get(EtherealChains::class.java, "nothing_to_grab"))

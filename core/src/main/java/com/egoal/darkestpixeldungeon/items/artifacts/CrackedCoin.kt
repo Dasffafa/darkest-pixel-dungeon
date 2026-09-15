@@ -25,6 +25,7 @@ import com.egoal.darkestpixeldungeon.ui.QuickSlotButton
 import com.egoal.darkestpixeldungeon.utils.GLog
 import com.watabou.noosa.audio.Sample
 import com.watabou.utils.Bundle
+import com.watabou.utils.Callback
 import com.watabou.utils.PathFinder
 import com.watabou.utils.Random
 import java.util.*
@@ -212,7 +213,7 @@ class CrackedCoin : Artifact() {
         hero.sprite.zap(pos)
         arcs.clear()
         arcs.add(Lightning.Arc(shot.sourcePos, shot.collisionPos))
-        hero.sprite.parent.add(Lightning(arcs) {
+        val onZapDone = Callback {
             onZap(hero, shot)
 
             if (level() < levelCap) {
@@ -225,7 +226,13 @@ class CrackedCoin : Artifact() {
             }
 
             hero.spendAndNext(1f)
-        })
+        }
+        val p1 = hero.sprite.parent
+        if (p1 != null) {
+            p1.add(Lightning(arcs, onZapDone))
+        } else {
+            onZapDone.call()
+        }
         for (c in shot.subPath(1, shot.dist))
             if (Dungeon.visible[c])
                 CellEmitter.center(c).burst(ElectronParticle.FACTORY, Random.Int(4, 10))
@@ -248,7 +255,7 @@ class CrackedCoin : Artifact() {
                     Lightning.Arc(np - Dungeon.level.width() * 2, np)
                 })
 
-        hero.sprite.parent.add(Lightning(arcs) {
+        val onThunderDone = Callback {
             Dungeon.level.mobs.filter {
                 Dungeon.level.distance(it.pos, pos) <= 1
             }.forEach {
@@ -261,7 +268,13 @@ class CrackedCoin : Artifact() {
             }
 
             hero.spendAndNext(1f)
-        })
+        }
+        val p2 = hero.sprite.parent
+        if (p2 != null) {
+            p2.add(Lightning(arcs, onThunderDone))
+        } else {
+            onThunderDone.call()
+        }
         hero.say(M.L(this, "say_thunder"))
 
         Sample.INSTANCE.play(Assets.SND_LIGHTNING)

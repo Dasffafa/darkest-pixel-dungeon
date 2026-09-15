@@ -393,9 +393,13 @@ public class WndSettings extends WndTabbed {
         RedButton btnLanguage = new RedButton(Messages.get(this, "language")) {
           @Override
           public void onClick() {
-            ((WndSettings) parent.parent).parent.add(new WndLangs());
-            ((WndSettings) parent.parent).hide();
-            // parent.add(new WndLangs());
+            com.watabou.noosa.Group p = WndSettings.this.parent;
+            if (p != null) {
+              p.add(new WndLangs());
+            } else if (Game.scene() != null) {
+              Game.scene().add(new WndLangs());
+            }
+            WndSettings.this.hide();
           }
         };
         btnLanguage.setRect(0, chkFlipToolbar.bottom() + GAP_TINY, WIDTH,
