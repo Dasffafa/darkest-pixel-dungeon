@@ -1,5 +1,6 @@
 package com.egoal.darkestpixeldungeon.actors.hero
 
+import com.watabou.noosa.Game
 import com.watabou.utils.Log
 import com.egoal.darkestpixeldungeon.*
 import com.egoal.darkestpixeldungeon.actors.Actor
@@ -47,6 +48,7 @@ import com.egoal.darkestpixeldungeon.ui.QuickSlotButton
 import com.egoal.darkestpixeldungeon.ui.StatusPane
 import com.egoal.darkestpixeldungeon.utils.BArray
 import com.egoal.darkestpixeldungeon.utils.GLog
+import com.egoal.darkestpixeldungeon.windows.InputDialog
 import com.egoal.darkestpixeldungeon.windows.WndMasterSubclass
 import com.egoal.darkestpixeldungeon.windows.WndResurrect
 import com.watabou.noosa.Camera
@@ -104,14 +106,24 @@ class Hero : Char() {
     var pohDrunk = 0
 
     // behaviour
+    // Cross-thread control flags: written by the actor thread, read by the
+    // render thread to gate input. Volatile so the render thread observes the
+    // turn handoff without relying on a lock acquire it may not perform.
+    @Volatile
     var ready = false
+    @Volatile
     var resting = false
     private var damageInterrupt = true
+    @Volatile
     var curAction: HeroAction? = null
     var lastAction: HeroAction? = null
     internal var enemy: Char? = null
 
-    private val visibleEnemies = mutableListOf<Mob>()
+    // Visible-enemy cache. Written ONLY from the actor thread (see
+    // checkVisibleMobs) by atomically publishing a fully-built list, so
+    // readers on the actor or render thread never see a half-filled list.
+    @Volatile
+    private var visibleEnemies: MutableList<Mob> = mutableListOf()
     val mindVisionEnemies = mutableListOf<Mob>()
 
     // follower follow hero on level switch, just cache
@@ -574,8 +586,7 @@ class Hero : Char() {
             if (Dungeon.level.distance(pos, target.pos) <= wepRange) {
                 val passable = BArray.not(Level.solid, null)
                 for (mob in Dungeon.level.mobs) passable[mob.pos] = false
-                PathFinder.buildDistanceMap(target.pos, passable, wepRange)
-                canHit = PathFinder.distance[pos] <= wepRange
+                canHit = PathFinder.isReachable(pos, target.pos, passable, wepRange)
             }
         }
 
@@ -785,6 +796,11 @@ class Hero : Char() {
 
     var continuousMoving = false
 
+    // Set when a movement step commits; consumed on the next actor turn so the
+    // auto-search runs on the actor thread (with a fresh FOV) instead of the
+    // render thread.
+    private var pendingStepSearch = false
+
     fun stopContinuousMoving() {
         continuousMoving = false
         if (ready && sprite.looping()) sprite.idle()
@@ -825,6 +841,13 @@ class Hero : Char() {
 
     fun enemy(): Char? = enemy
 
+    /**
+     * Rebuilds the visible-enemy cache.
+     *
+     * ACTOR THREAD ONLY: called from [act]. Publishes the finished list with a
+     * single reference assignment so other threads always read a consistent
+     * snapshot.
+     */
     private fun checkVisibleMobs() {
         val visible = mutableListOf<Mob>()
         var newFound = false
@@ -852,15 +875,59 @@ class Hero : Char() {
             resting = false
         }
 
-        visibleEnemies.clear()
-        visibleEnemies.addAll(visible)
+        // Publish the fully-built list atomically; the old list is left
+        // untouched so concurrent readers always see a consistent snapshot.
+        visibleEnemies = visible
     }
 
+    /**
+     * Number of currently visible enemies.
+     *
+     * Thread-safe: may be called from the actor thread or the render thread.
+     */
     fun visibleEnemies(): Int = visibleEnemies.size
-    fun visibleEnemy(index: Int) = visibleEnemies[index % visibleEnemies.size]
+
+    /**
+     * Visible enemy at [index] (indices wrap around), or null when there is
+     * none.
+     *
+     * Thread-safe, but intended for a single lookup: the underlying list is
+     * read once, so callers that read several entries (especially from the
+     * render thread) should use [visibleEnemyList] instead to avoid observing
+     * a list that changes between calls.
+     */
+    fun visibleEnemy(index: Int): Mob? {
+        val list = visibleEnemies
+        return if (list.isEmpty()) null else list[index % list.size]
+    }
+
+    /**
+     * Immutable point-in-time copy of the visible enemies.
+     *
+     * Thread-safe and the preferred accessor from the render thread / UI code,
+     * where iterating the live list would otherwise risk mixing entries from
+     * different updates.
+     */
+    fun visibleEnemyList(): List<Mob> = visibleEnemies.toList()
 
     override fun act(): Boolean {
         super.act()
+
+        // Field-of-view/fog refresh belongs on the actor thread. It used to run
+        // from onMotionComplete (render thread), racing with actor mutations of
+        // the level. The actor thread is gated on the movement tween (see
+        // Actor.process), so this runs at the same point in the turn cycle.
+        if (!ready) {
+            if (!resting || buff(MindVision::class.java) != null || buff(Awareness::class.java) != null)
+                Dungeon.observe()
+            else
+                Dungeon.level.updateFieldOfView(this, Level.fieldOfView)
+        }
+
+        if (pendingStepSearch) {
+            pendingStepSearch = false
+            search(false)
+        }
 
         if (paralysed > 0) {
             curAction = null
@@ -891,7 +958,7 @@ class Hero : Char() {
         if (target == pos) return false
 
         if (rooted) {
-            Camera.main.shake(1f, 1f)
+            Game.runOnRenderThread { Camera.main.shake(1f, 1f) }
             return false
         }
 
@@ -944,6 +1011,11 @@ class Hero : Char() {
         sprite.move(pos, step)
         move(step)
         spend(1 / speed())
+
+        // The auto-search that used to run in onMotionComplete (render thread)
+        // is now performed at the start of the next actor turn, after the FOV
+        // has been refreshed for the new position.
+        pendingStepSearch = true
 
         return true
     }
@@ -1178,6 +1250,12 @@ class Hero : Char() {
 
 
         Actor.fixTime()
+
+        // snapshot buff-derived values while the hero is still intact: super.die()
+        // detaches every buff before the spirit record is built.
+        deathRegeneration = regenerateSpeed()
+        deathCritChance = criticalChance()
+
         super.die(src)
 
         if (ankh == null) ReallyDie(src)
@@ -1240,7 +1318,7 @@ class Hero : Char() {
             for (x in ax..bx) {
                 val p = Dungeon.level.xy2cell(x, y)
                 if (Dungeon.visible[p]) {
-                    if (intentional) sprite.parent.addToBack(CheckedCell(p))
+                    if (intentional) sprite.parent?.addToBack(CheckedCell(p))
 
                     if (Level.secret[p] && (intentional || Random.Float() < level)) {
                         GameScene.discoverTile(p, Dungeon.level.map[p])
@@ -1357,11 +1435,6 @@ class Hero : Char() {
     }
 
     // animation callbacks
-    override fun onMotionComplete() {
-        Dungeon.observe()
-        search(false)
-    }
-
     override fun onAttackComplete() {
         AttackIndicator.target(enemy)
 
@@ -1422,6 +1495,10 @@ class Hero : Char() {
 
         private const val MAX_FOLLOWERS = 3
 
+        // buff-derived values captured before death tears the buffs down, for the spirit record
+        private var deathRegeneration: Float? = null
+        private var deathCritChance: Float? = null
+
         fun Preview(info: GamesInProgress.Info, bundle: Bundle) {
             info.level = bundle.getInt(LEVEL)
 
@@ -1457,7 +1534,10 @@ class Hero : Char() {
             }
 
             Bones.leave()
-            DarkSpirit.Leave()
+            val spiritRecord = DarkSpirit.PrepareDeath(deathRegeneration, deathCritChance)
+            deathRegeneration = null
+            deathCritChance = null
+            val epitaphUser = Dungeon.hero.userName
 
             Dungeon.observe()
 
@@ -1484,6 +1564,14 @@ class Hero : Char() {
             if (src is Doom) src.onDeath()
 
             Dungeon.deleteGame(true, true)
+
+            // let the player leave last words; fallback to default if dismissed or blank
+            val default = Rankings.deathDescription(src?.javaClass)
+            InputDialog.GetStringWithResult(Epitaphs.deathTitle(), default) { accepted, text ->
+                val epitaph = if (accepted) text.ifBlank { default } else default
+                DarkSpirit.CommitDeath(spiritRecord, epitaph)
+                Epitaphs.addOwn(epitaphUser, epitaph)
+            }
         }
 
         //

@@ -58,7 +58,9 @@ public class BlacksmithSprite extends MobSprite {
     emitter = new Emitter();
     emitter.autoKill = false;
     emitter.pos(x + 7, y + 12);
-    parent.add(emitter);
+    if (parent != null) {
+      parent.add(emitter);
+    }
   }
 
   @Override

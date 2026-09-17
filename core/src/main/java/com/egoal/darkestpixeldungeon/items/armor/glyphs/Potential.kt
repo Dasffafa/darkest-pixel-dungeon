@@ -20,6 +20,7 @@
  */
 package com.egoal.darkestpixeldungeon.items.armor.glyphs
 
+import com.watabou.noosa.Game
 import com.egoal.darkestpixeldungeon.actors.Damage
 import com.egoal.darkestpixeldungeon.items.armor.Armor
 import com.egoal.darkestpixeldungeon.Dungeon
@@ -49,10 +50,10 @@ class Potential : Armor.Glyph() {
             checkOwner(defender)
             if (defender === Dungeon.hero) {
                 Dungeon.hero.belongings.charge(1f)
-                Camera.main.shake(2f, 0.3f)
+                Game.runOnRenderThread { Camera.main.shake(2f, 0.3f) }
             }
 
-            attacker.sprite.parent.add(Lightning(attacker.pos, defender.pos, null))
+            attacker.sprite.parent?.add(Lightning(attacker.pos, defender.pos, null))
 
         }
 

@@ -1,5 +1,6 @@
 package com.egoal.darkestpixeldungeon.items.artifacts
 
+import com.watabou.noosa.Game
 import com.egoal.darkestpixeldungeon.Assets
 import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.DungeonTilemap
@@ -64,7 +65,7 @@ class TimekeepersHourglass : Artifact() {
                 GLog.i(Messages.get(this, "onfreeze"))
                 Sample.INSTANCE.play(Assets.SND_TELEPORT)
 
-                GameScene.flash(0x444444)
+                Game.runOnRenderThread { GameScene.flash(0x444444) }
                 activated = TimeFreeze().attachTo(hero)
             }
         }

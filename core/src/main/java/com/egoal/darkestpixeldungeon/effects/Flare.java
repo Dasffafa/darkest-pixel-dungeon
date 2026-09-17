@@ -109,8 +109,13 @@ public class Flare extends Visual {
   }
 
   public Flare show(Visual visual, float duration) {
-    point(visual.center());
-    visual.parent.addToBack(this);
+    if (visual != null) {
+      point(visual.center());
+      Group p = visual.parent;
+      if (p != null) {
+        p.addToBack(this);
+      }
+    }
 
     lifespan = this.duration = duration;
 
@@ -119,7 +124,9 @@ public class Flare extends Visual {
 
   public Flare show(Group parent, PointF pos, float duration) {
     point(pos);
-    parent.add(this);
+    if (parent != null) {
+      parent.add(this);
+    }
 
     lifespan = this.duration = duration;
 

@@ -37,9 +37,10 @@ class PerkGain(private val hero: Hero, perk: Perk) : Image(icons) {
         private const val ALPHA = 0.6f
 
         fun Show(hero: Hero, perk: Perk) {
-            if (!hero.sprite.visible) return
-
-            hero.sprite.parent.add(PerkGain(hero, perk))
+            Game.runOnRenderThread {
+                if (!hero.sprite.visible) return@runOnRenderThread
+                hero.sprite.parent?.add(PerkGain(hero, perk))
+            }
         }
     }
 }

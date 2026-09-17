@@ -298,7 +298,7 @@ public class Group extends Gizmo {
   }
 
   public synchronized Gizmo bringToFront(Gizmo g) {
-    if (members.contains(g)) {
+    if (members != null && members.contains(g)) {
       members.remove(g);
       members.add(g);
       return g;
@@ -308,7 +308,7 @@ public class Group extends Gizmo {
   }
 
   public synchronized Gizmo sendToBack(Gizmo g) {
-    if (members.contains(g)) {
+    if (members != null && members.contains(g)) {
       members.remove(g);
       members.add(0, g);
       return g;

@@ -64,8 +64,7 @@ class ScrollOfRemoveCurse : InventoryScroll() {
             var procced = item.cursed
 
             when (item) {
-                is Weapon -> if (item.hasCurseInscription()) {
-                    item.inscribe(null)
+                is Weapon -> if (item.clearCurseInscription()) {
                     item.cursed = false
                     procced = true
                 }

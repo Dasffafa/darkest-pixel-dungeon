@@ -92,7 +92,7 @@ class Shadowmoon : Special() {
         enemy.takeDamage(enemy.defendDamage(dmg))
         if (enemy.isAlive && isNight) Buff.prolong(enemy, Paralysis::class.java, 1.5f)
 
-        curUser.sprite.parent.add(Beam.LightRay(
+        curUser.sprite.parent?.add(Beam.LightRay(
                 DungeonTilemap.tileCenterToWorld(enemy.pos - Dungeon.level.width()),
                 DungeonTilemap.tileCenterToWorld(enemy.pos)
         ))

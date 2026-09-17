@@ -33,6 +33,9 @@ import com.watabou.utils.PlatformSupport;
 import java.util.Map;
 
 public class DarkestPixelDungeon extends Game {
+  private static final long STALL_THRESHOLD = 10000L;
+  private static final long SUSPEND_THRESHOLD = 3000L;
+
   private volatile long renderHeartbeat;
   private volatile boolean watchdogReported;
   private volatile long actorProcessingSince;
@@ -62,35 +65,56 @@ public class DarkestPixelDungeon extends Game {
 
     renderHeartbeat = System.currentTimeMillis();
     Thread watchdog = new Thread(() -> {
+      long lastWake = System.currentTimeMillis();
       while (true) {
         try { Thread.sleep(1000L); } catch (InterruptedException ignored) { return; }
-        long stalled = System.currentTimeMillis() - renderHeartbeat;
-        if (!watchdogReported && stalled >= 10000L) {
-          watchdogReported = true;
-          StringBuilder detail = new StringBuilder("Render thread stalled for more than 10 seconds.\n");
-          for (Map.Entry<Thread, StackTraceElement[]> entry : Thread.getAllStackTraces().entrySet()) {
-            detail.append("\n--- ").append(entry.getKey().getName()).append(" ---\n");
-            for (StackTraceElement element : entry.getValue()) detail.append("at ").append(element).append('\n');
+        long now = System.currentTimeMillis();
+
+        // the process itself was frozen (app cached, machine asleep); not a game stall
+        if (now - lastWake - 1000L > SUSPEND_THRESHOLD) {
+          lastWake = now;
+          renderHeartbeat = now;
+          actorProcessingSince = 0L;
+          continue;
+        }
+        lastWake = now;
+
+        // rendering stops on purpose while the app is in the background
+        if (isPaused()) {
+          renderHeartbeat = now;
+          actorProcessingSince = 0L;
+          continue;
+        }
+
+        long stalled = now - renderHeartbeat;
+        if (stalled >= STALL_THRESHOLD) {
+          if (!watchdogReported) {
+            watchdogReported = true;
+            StringBuilder detail = new StringBuilder("Render thread stalled for more than 10 seconds.\n");
+            for (Map.Entry<Thread, StackTraceElement[]> entry : Thread.getAllStackTraces().entrySet()) {
+              detail.append("\n--- ").append(entry.getKey().getName()).append(" ---\n");
+              for (StackTraceElement element : entry.getValue()) detail.append("at ").append(element).append('\n');
+            }
+            RuntimeException timeout = new RuntimeException(detail.toString());
+            reportException(timeout);
           }
-          RuntimeException timeout = new RuntimeException(detail.toString());
-          TopExceptionHandler.Companion.WriteErrorFile(timeout);
-          platform.reportException(timeout);
-          return;
-        } else if (stalled < 10000L) {
+        } else {
           watchdogReported = false;
         }
 
         Thread actor = GameScene.currentActorThread();
-        if (actor != null && actor.isAlive() && com.egoal.darkestpixeldungeon.actors.Actor.Companion.processing()) {
-          if (actorProcessingSince == 0L) actorProcessingSince = System.currentTimeMillis();
-          if (!actorTimeoutReported && System.currentTimeMillis() - actorProcessingSince >= 10000L) {
+        // The actor thread is persistent and parks in wait() between turns, so
+        // `processing()` is often true while it is idle. Only a thread that is
+        // actively running a turn counts as "possibly stuck".
+        if (actor != null && actor.isAlive()
+                && com.egoal.darkestpixeldungeon.actors.Actor.Companion.isThreadActive()) {
+          if (actorProcessingSince == 0L) actorProcessingSince = now;
+          if (!actorTimeoutReported && now - actorProcessingSince >= STALL_THRESHOLD) {
             actorTimeoutReported = true;
             RuntimeException timeout = new RuntimeException(
-                    "Actor thread blocked for more than 10 seconds. depth=" + Dungeon.INSTANCE.getDepth());
+                    "Actor thread blocked for more than 10 seconds.");
             timeout.setStackTrace(actor.getStackTrace());
-            TopExceptionHandler.Companion.WriteErrorFile(timeout);
-            platform.reportException(timeout);
-            return;
+            reportException(timeout);
           }
         } else {
           actorProcessingSince = 0L;
@@ -102,6 +126,8 @@ public class DarkestPixelDungeon extends Game {
     watchdog.start();
 
     Thread.setDefaultUncaughtExceptionHandler(new TopExceptionHandler());
+
+    CrashReporting.INSTANCE.initIfConsented();
 
     updateImmersiveMode();
 
@@ -251,6 +277,14 @@ public class DarkestPixelDungeon extends Game {
     }
   }
 
+  @Override
+  public void dispose() {
+    super.dispose();
+    // GameScene.destroy() waits for the actor thread to park; only once the
+    // whole app is going away do we actually let it exit its loop.
+    GameScene.endActorThread();
+  }
+
   public static void updateImmersiveMode() {
     Game.platform.updateSystemUI();
   }
@@ -370,6 +404,22 @@ public class DarkestPixelDungeon extends Game {
     return Preferences.INSTANCE.getBoolean(Preferences.KEY_MORE_SLOTS, false);
   }
 
+  public static void autoPickupStacked(boolean value) {
+    Preferences.INSTANCE.put(Preferences.KEY_AUTO_PICKUP_STACKED, value);
+  }
+
+  public static boolean autoPickupStacked() {
+    return Preferences.INSTANCE.getBoolean(Preferences.KEY_AUTO_PICKUP_STACKED, true);
+  }
+
+  public static void autoPickupOnDoor(boolean value) {
+    Preferences.INSTANCE.put(Preferences.KEY_AUTO_PICKUP_DOOR, value);
+  }
+
+  public static boolean autoPickupOnDoor() {
+    return Preferences.INSTANCE.getBoolean(Preferences.KEY_AUTO_PICKUP_DOOR, true);
+  }
+
   public static void flipToolbar(boolean value) {
     Preferences.INSTANCE.put(Preferences.KEY_FLIPTOOLBAR, value);
   }
@@ -416,11 +466,61 @@ public class DarkestPixelDungeon extends Game {
 
   public static String lastHeroName(){ return Preferences.INSTANCE.getString(Preferences.KEY_HERO_NAME, "无名"); }
 
+  public static String deviceId() {
+    String id = Preferences.INSTANCE.getString(Preferences.KEY_DEVICE_ID, null);
+    if (id == null || id.isEmpty()) {
+      id = java.util.UUID.randomUUID().toString();
+      Preferences.INSTANCE.put(Preferences.KEY_DEVICE_ID, id);
+    }
+    return id;
+  }
+
+  public static void uploadSpirits(boolean value) {
+    Preferences.INSTANCE.put(Preferences.KEY_SPIRIT_UPLOAD, value);
+  }
+
+  public static boolean uploadSpirits() {
+    return Preferences.INSTANCE.getBoolean(Preferences.KEY_SPIRIT_UPLOAD, false);
+  }
+
+  public static void downloadSpirits(boolean value) {
+    Preferences.INSTANCE.put(Preferences.KEY_SPIRIT_DOWNLOAD, value);
+  }
+
+  public static boolean downloadSpirits() {
+    return Preferences.INSTANCE.getBoolean(Preferences.KEY_SPIRIT_DOWNLOAD, false);
+  }
+
+  public static void spiritSyncDecided(boolean value) {
+    Preferences.INSTANCE.put(Preferences.KEY_SPIRIT_DECIDED, value);
+  }
+
+  public static boolean spiritSyncDecided() {
+    return Preferences.INSTANCE.getBoolean(Preferences.KEY_SPIRIT_DECIDED, false);
+  }
+
+  public static void spiritServerUrl(String value) {
+    Preferences.INSTANCE.put(Preferences.KEY_SPIRIT_SERVER_URL, value);
+  }
+
+  public static String spiritServerUrl() {
+    return Preferences.INSTANCE.getString(Preferences.KEY_SPIRIT_SERVER_URL, "");
+  }
+
+  public static void epitaphNotice(String value) {
+    Preferences.INSTANCE.put(Preferences.KEY_EPITAPH_NOTICE, value);
+  }
+
+  public static String epitaphNotice() {
+    return Preferences.INSTANCE.getString(Preferences.KEY_EPITAPH_NOTICE, "");
+  }
+
   /*
    * <--- Preferences
    */
 
   public static void reportException(Throwable tr) {
+    CrashReporting.INSTANCE.capture(tr);
     TopExceptionHandler.Companion.WriteErrorFile(tr);
     Game.platform.reportException(tr);
   }

@@ -50,16 +50,23 @@ class LootIndicator : Tag(0x1F75CC) {
                     Heap.Type.TOMB -> ItemSlot.TOMB
                     Heap.Type.SKELETON -> ItemSlot.SKELETON
                     Heap.Type.REMAINS -> ItemSlot.REMAINS
-                    else -> heap.peek()!!
+                    else -> heap.peek()
                 }
-                if (item !== lastItem || item.quantity() != lastQuantity) {
-                    lastItem = item
-                    lastQuantity = item.quantity()
+                // A heap can briefly be empty while it is being picked up on the
+                // logic thread; treat it like there is nothing to loot.
+                if (item != null) {
+                    if (item !== lastItem || item.quantity() != lastQuantity) {
+                        lastItem = item
+                        lastQuantity = item.quantity()
 
-                    slot.item(item)
-                    flash()
+                        slot.item(item)
+                        flash()
+                    }
+                    visible = true
+                } else {
+                    lastItem = null
+                    visible = false
                 }
-                visible = true
             } else {
                 lastItem = null
                 visible = false

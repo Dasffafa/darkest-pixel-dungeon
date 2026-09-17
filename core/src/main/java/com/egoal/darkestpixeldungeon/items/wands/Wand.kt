@@ -95,6 +95,7 @@ abstract class Wand(val isMissile: Boolean) : Item() {
         if (action == AC_ZAP) {
             curUser = hero
             curItem = this
+            zappingWand = this
             GameScene.selectCell(zapper)
         }
     }
@@ -381,12 +382,14 @@ abstract class Wand(val isMissile: Boolean) : Item() {
         private const val PARTIALCHARGE = "partialCharge"
         private const val OVERLOADS = "overloads"
 
+        private var zappingWand: Wand? = null
+
         protected var zapper: CellSelector.Listener = object : CellSelector.Listener {
 
             override fun onSelect(target: Int?) {
 
                 if (target != null) {
-                    val curWand = curItem as Wand
+                    val curWand = zappingWand ?: return
 
                     val shot = Ballistica(curUser.pos, target, curWand.collisionProperties)
                     val cell = shot.collisionPos

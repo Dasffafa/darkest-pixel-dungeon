@@ -20,6 +20,7 @@
  */
 package com.egoal.darkestpixeldungeon.items.armor.curses
 
+import com.watabou.noosa.Game
 import com.egoal.darkestpixeldungeon.actors.Char
 import com.egoal.darkestpixeldungeon.actors.Damage
 import com.egoal.darkestpixeldungeon.actors.buffs.Buff
@@ -45,7 +46,7 @@ class Entanglement : Armor.Glyph() {
             Buff.prolong(defender, Roots::class.java, 5f)
             Buff.affect(defender, Earthroot.Armor::class.java).level(5 + level)
             CellEmitter.bottom(defender.pos).start(EarthParticle.FACTORY, 0.05f, 8)
-            Camera.main.shake(1f, 0.4f)
+            Game.runOnRenderThread { Camera.main.shake(1f, 0.4f) }
 
         }
 

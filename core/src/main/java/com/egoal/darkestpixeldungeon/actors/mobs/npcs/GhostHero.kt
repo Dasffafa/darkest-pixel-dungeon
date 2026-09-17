@@ -1,5 +1,6 @@
 package com.egoal.darkestpixeldungeon.actors.mobs.npcs
 
+import com.watabou.noosa.Game
 import com.egoal.darkestpixeldungeon.Assets
 import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.actors.Actor
@@ -145,7 +146,7 @@ class GhostHero(var roseLevel: Int = 0) : NPC(), Callback {
             enemy.sprite.flash()
 
             if (enemy === Dungeon.hero) {
-                Camera.main.shake(2f, 0.3f)
+                Game.runOnRenderThread { Camera.main.shake(2f, 0.3f) }
                 if (!enemy.isAlive) {
                     Dungeon.fail(javaClass)
                     GLog.n(Messages.get(this, "zap-kill"))

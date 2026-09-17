@@ -22,6 +22,7 @@ package com.egoal.darkestpixeldungeon.scenes;
 
 import com.egoal.darkestpixeldungeon.Assets;
 import com.egoal.darkestpixeldungeon.Dungeon;
+import com.egoal.darkestpixeldungeon.Epitaphs;
 import com.egoal.darkestpixeldungeon.effects.Speck;
 import com.egoal.darkestpixeldungeon.items.unclassified.Amulet;
 import com.egoal.darkestpixeldungeon.messages.Messages;
@@ -111,6 +112,10 @@ public class AmuletScene extends PixelScene {
     new Flare(8, 48).color(0xFFDDBB, true).show(amulet, 0).angularSpeed = +30;
 
     fadeIn();
+
+    if (Dungeon.INSTANCE.getHero() != null) {
+      Epitaphs.INSTANCE.promptVictory(Dungeon.INSTANCE.getHero().getUserName());
+    }
   }
 
   @Override

@@ -98,13 +98,14 @@ public class Enchanting extends ItemSprite {
   }
 
   public static void show(Char ch, Item item) {
-
-    if (!ch.getSprite().visible) {
+    if (ch == null || ch.getSprite() == null) return;
+    com.watabou.noosa.Group parent = ch.getSprite().parent;
+    if (parent == null || !ch.getSprite().visible) {
       return;
     }
 
     Enchanting sprite = new Enchanting(item);
     sprite.target = ch;
-    ch.getSprite().parent.add(sprite);
+    parent.add(sprite);
   }
 }

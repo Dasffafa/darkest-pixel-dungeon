@@ -151,23 +151,30 @@ open class CharSprite : MovieClip(), Tweener.Listener, MovieClip.Listener {
     }
 
     fun showStatus(color: Int, text: String, vararg args: Any) {
-        if (!visible) return
+        val message = if (args.isNotEmpty()) Messages.format(text, *args) else text
 
-        if (args.isNotEmpty()) showStatus(color, Messages.format(text, *args))
+        // Floating text recycles/creates render objects and reads camera state,
+        // so it must run on the render thread. This can be reached from the
+        // actor thread (buffs, damage status).
+        Game.runOnRenderThread {
+            if (!visible) return@runOnRenderThread
 
-        if (hasChar) {
-            val tile = DungeonTilemap.tileCenterToWorld(ch.pos)
-            FloatingText.show(tile.x, tile.y - width * 0.5f, ch.pos, text, color)
-        } else FloatingText.show(x + width * 0.5f, y, text, color)
+            if (hasChar) {
+                val tile = DungeonTilemap.tileCenterToWorld(ch.pos)
+                FloatingText.show(tile.x, tile.y - width * 0.5f, ch.pos, message, color)
+            } else FloatingText.show(x + width * 0.5f, y, message, color)
+        }
     }
 
     fun showSentence(color: Int, text: String, vararg args: Any) {
-        if (!visible) return
+        val message = if (args.isNotEmpty()) Messages.format(text, *args) else text
 
-        if (args.isNotEmpty()) showSentence(color, Messages.format(text, *args))
-
-        //todo: auto-warp
-        BubbleText.Show(this, width / 2f, -height / 4f, text, color)
+        // BubbleText measures text and touches the scene, so defer it as well.
+        Game.runOnRenderThread {
+            if (!visible) return@runOnRenderThread
+            //todo: auto-warp
+            BubbleText.Show(this, width / 2f, -height / 4f, message, color)
+        }
     }
 
     fun idle() {
@@ -177,16 +184,21 @@ open class CharSprite : MovieClip(), Tweener.Listener, MovieClip.Listener {
     open fun move(from: Int, to: Int) {
         turnTo(from, to)
 
-        play(run)
+        val p = parent
+        if (p != null) {
+            play(run)
 
-        motion = PosTweener(this, worldToCamera(to), MOVE_INTERVAL)
-        motion!!.listener = this
-        parent.add(motion!!)
+            motion = PosTweener(this, worldToCamera(to), MOVE_INTERVAL)
+            motion!!.listener = this
+            p.add(motion!!)
 
-        isMoving = true
+            isMoving = true
 
-        if (visible && Level.water[from] && !ch.flying) {
-            GameScene.ripple(from)
+            if (visible && Level.water[from] && !ch.flying) {
+                GameScene.ripple(from)
+            }
+        } else {
+            place(to)
         }
 
     }
@@ -237,9 +249,16 @@ open class CharSprite : MovieClip(), Tweener.Listener, MovieClip.Listener {
         jumpCallback = callback
 
         val distance = Dungeon.level.distance(from, to)
-        jumpTweener = JumpTweener(this, worldToCamera(to), (distance * 4).toFloat(), distance * 0.1f)
-        jumpTweener!!.listener = this
-        parent.add(jumpTweener!!)
+        val p = parent
+        if (p != null) {
+            jumpTweener = JumpTweener(this, worldToCamera(to), (distance * 4).toFloat(), distance * 0.1f)
+            jumpTweener!!.listener = this
+            p.add(jumpTweener!!)
+        } else {
+            place(to)
+            jumpCallback?.call()
+            jumpCallback = null
+        }
 
         turnTo(from, to)
     }

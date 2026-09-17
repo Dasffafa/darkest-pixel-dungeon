@@ -1,5 +1,6 @@
 package com.egoal.darkestpixeldungeon.actors.blobs
 
+import com.watabou.noosa.Game
 import com.egoal.darkestpixeldungeon.Assets
 import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.DungeonTilemap
@@ -114,8 +115,10 @@ class SacrificialFire : Blob() {
                         Journal.remove(Journal.Feature.SACRIFICIAL_FIRE)
 
                         GLog.w(Messages.get(SacrificialFire::class.java, "reward"))
-                        GameScene.effect(Flare(7, 32f).color(0x66ffff, true).show(
-                                ch.sprite.parent, DungeonTilemap.tileCenterToWorld(fire.pos), 2f))
+                        Game.runOnRenderThread {
+                            GameScene.effect(Flare(7, 32f).color(0x66ffff, true).show(
+                                    ch.sprite.parent, DungeonTilemap.tileCenterToWorld(fire.pos), 2f))
+                        }
                         Dungeon.level.drop(Prize(), ch.pos).sprite.drop()
                         return true
                     }

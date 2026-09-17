@@ -67,11 +67,14 @@ public class Surprise extends Image {
   }
 
   public static void hit(Char ch, float angle) {
-    if (ch.getSprite().parent != null) {
-      Surprise s = (Surprise) ch.getSprite().parent.recycle(Surprise.class);
-      ch.getSprite().parent.bringToFront(s);
-      s.reset(ch.getPos());
-      s.angle = angle;
+    if (ch != null && ch.getSprite() != null) {
+      Group parent = ch.getSprite().parent;
+      if (parent != null) {
+        Surprise s = (Surprise) parent.recycle(Surprise.class);
+        parent.bringToFront(s);
+        s.reset(ch.getPos());
+        s.angle = angle;
+      }
     }
   }
 
@@ -80,10 +83,13 @@ public class Surprise extends Image {
   }
 
   public static void hit(int pos, float angle) {
+    if (Dungeon.INSTANCE.isHeroNull() || Dungeon.INSTANCE.getHero().getSprite() == null) return;
     Group parent = Dungeon.INSTANCE.getHero().getSprite().parent;
-    Wound w = (Wound) parent.recycle(Wound.class);
-    parent.bringToFront(w);
-    w.reset(pos);
-    w.angle = angle;
+    if (parent != null) {
+      Surprise s = (Surprise) parent.recycle(Surprise.class);
+      parent.bringToFront(s);
+      s.reset(pos);
+      s.angle = angle;
+    }
   }
 }

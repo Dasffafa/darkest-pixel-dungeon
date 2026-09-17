@@ -28,10 +28,15 @@ class ArchDemon : NPC.Unbreakable() {
 
     private var hasDealt = false
 
+    override fun act(): Boolean {
+        if (!hasDealt && Dungeon.visible[pos]) {
+            Journal.add(name)
+        }
+        return super.act()
+    }
+
     override fun interact(): Boolean {
         if (hasDealt) return false
-
-        Journal.add(name)
 
         WndDialogue.Show(this, M.L(this, "greetings"), M.L(this, "skillmodify"), M.L(this, "skillup")) { index ->
             if (index == 0) {

@@ -20,6 +20,7 @@
  */
 package com.egoal.darkestpixeldungeon.plants
 
+import com.watabou.noosa.Game
 import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.actors.Actor
 import com.egoal.darkestpixeldungeon.actors.Char
@@ -43,7 +44,7 @@ class Earthroot : Plant(5) {
 
         if (Dungeon.visible[pos]) {
             CellEmitter.bottom(pos).start(EarthParticle.FACTORY, 0.05f, 8)
-            Camera.main.shake(1f, 0.4f)
+            Game.runOnRenderThread { Camera.main.shake(1f, 0.4f) }
         }
     }
 

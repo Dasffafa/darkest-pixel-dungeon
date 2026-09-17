@@ -1,5 +1,6 @@
 package com.egoal.darkestpixeldungeon.items.unclassified
 
+import com.watabou.noosa.Game
 import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.actors.buffs.Buff
 import com.egoal.darkestpixeldungeon.actors.buffs.MoonNight
@@ -50,7 +51,7 @@ class MoonStone : Item() {
             GLog.w(Messages.get(MoonStone::class.java, "used"))
 
             Dungeon.observe()
-            GameScene.updateFog()
+            Game.runOnRenderThread { GameScene.updateFog() }
         }
     }
 

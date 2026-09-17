@@ -165,10 +165,14 @@ class WandOfBlastWave : DamageWand(isMissile = true) {
             private const val TIME_TO_FADE = 0.2f
 
             fun blast(pos: Int) {
-                val parent = Dungeon.hero.sprite.parent
-                val b = parent.recycle(BlastWave::class.java) as BlastWave
-                parent.bringToFront(b)
-                b.reset(pos)
+                Game.runOnRenderThread {
+                    val parent = Dungeon.hero?.sprite?.parent
+                    if (parent != null) {
+                        val b = parent.recycle(BlastWave::class.java) as BlastWave
+                        parent.bringToFront(b)
+                        b.reset(pos)
+                    }
+                }
             }
         }
 

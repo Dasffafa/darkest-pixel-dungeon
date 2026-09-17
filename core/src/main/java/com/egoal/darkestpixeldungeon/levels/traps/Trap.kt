@@ -60,10 +60,11 @@ abstract class Trap : Bundlable {
         visible = true
         if (hasSprite && !sprite.visible) {
             Game.runOnRenderThread {
-                if (hasSprite && !sprite.visible && sprite.parent != null) {
+                val p = if (hasSprite) sprite.parent else null
+                if (hasSprite && !sprite.visible && p != null) {
                     sprite.visible = true
                     sprite.alpha(0f)
-                    sprite.parent.add(AlphaTweener(sprite, 1f, 0.6f))
+                    p.add(AlphaTweener(sprite, 1f, 0.6f))
                 }
             }
         }

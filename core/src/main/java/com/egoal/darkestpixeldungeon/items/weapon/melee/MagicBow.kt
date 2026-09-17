@@ -1,5 +1,6 @@
 package com.egoal.darkestpixeldungeon.items.weapon.melee
 
+import com.watabou.noosa.Game
 import com.egoal.darkestpixeldungeon.Assets
 import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.Statistics
@@ -94,12 +95,19 @@ class MagicBow : MeleeWeapon() {
             val enemy = Actor.findChar(shotpos)
             val delay = hero.attackDelay()
 
-            (hero.sprite.parent.recycle(MissileSprite::class.java) as MissileSprite).reset(
-                    hero.pos, shotpos, ItemSpriteSheet.MAGIC_DART, null, Callback {
+            val onDone = Callback {
                 if (enemy != null) onShot(enemy)
-
                 hero.spendAndNext(delay)
-            })
+            }
+            Game.runOnRenderThread {
+                val p = hero.sprite.parent
+                if (p != null) {
+                    (p.recycle(MissileSprite::class.java) as MissileSprite).reset(
+                            hero.pos, shotpos, ItemSpriteSheet.MAGIC_DART, null, onDone)
+                } else {
+                    onDone.call()
+                }
+            }
         }
 
         override fun prompt(): String = M.L(MagicBow::class.java, "prompt")

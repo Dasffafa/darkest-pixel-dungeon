@@ -1,6 +1,7 @@
 package com.egoal.darkestpixeldungeon.scenes
 
 import com.egoal.darkestpixeldungeon.Chrome
+import com.egoal.darkestpixeldungeon.CrashReporting
 import com.egoal.darkestpixeldungeon.DarkestPixelDungeon
 import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.TopExceptionHandler
@@ -67,8 +68,11 @@ class ErrorReportScene : PixelScene() {
             y = log.bottom() + 2f
         }
 
-        // copy + delete buttons
-        val bw = (panel.innerWidth() - 4f - 2f) / 2f
+        // feedback + copy + delete buttons
+        val inner = panel.innerWidth()
+        val bw = (inner - 4f - 2f) / 2f
+        var btnTop = y + 2f
+
         val btnCopy = object : RedButton(M.L(this, "copy")) {
             override fun onClick() {
                 val report = buildString {
@@ -81,8 +85,6 @@ class ErrorReportScene : PixelScene() {
                 Game.platform.copyToClipboard(report)
             }
         }
-        btnCopy.setRect(2f, y + 2f, bw, 15f)
-        content.add(btnCopy)
 
         val btnDelete = object : RedButton(M.L(this, "delete")) {
             override fun onClick() {
@@ -90,10 +92,31 @@ class ErrorReportScene : PixelScene() {
                 onBackPressed()
             }
         }
-        btnDelete.setRect(btnCopy.right() + 2f, y + 2f, bw, 15f)
-        content.add(btnDelete)
 
-        content.setSize(panel.innerWidth(), btnDelete.bottom())
+        if (CrashReporting.feedbackAvailable) {
+            val btnFeedback = object : RedButton(M.L(this, "send_feedback")) {
+                override fun onClick() {
+                    CrashReporting.showFeedback(TopExceptionHandler.LoadErrorEventId())
+                }
+            }
+            btnFeedback.setRect(2f, btnTop, bw, 15f)
+            content.add(btnFeedback)
+
+            btnCopy.setRect(btnFeedback.right() + 2f, btnTop, bw, 15f)
+            content.add(btnCopy)
+
+            btnTop = btnCopy.bottom() + 2f
+            btnDelete.setRect(2f, btnTop, inner - 4f, 15f)
+            content.add(btnDelete)
+        } else {
+            btnCopy.setRect(2f, btnTop, bw, 15f)
+            content.add(btnCopy)
+
+            btnDelete.setRect(btnCopy.right() + 2f, btnTop, bw, 15f)
+            content.add(btnDelete)
+        }
+
+        content.setSize(inner, btnDelete.bottom())
 
         list.setRect(panel.x + panel.marginLeft(), panel.y + panel.marginTop(),
                 panel.innerWidth(), panel.innerHeight())

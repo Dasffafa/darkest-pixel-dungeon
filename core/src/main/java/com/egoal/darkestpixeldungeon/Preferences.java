@@ -48,9 +48,18 @@ enum Preferences {
   public static final String KEY_VERSION = "version";
 
   public static final String KEY_DEBUG = "debug";
+  public static final String KEY_CRASH_REPORT = "crash_report";
   public static final String KEY_CHANGE_LIST_CHECKED = "change_list_checked";
   public static final String KEY_HERO_NAME = "hero_name";
+  public static final String KEY_DEVICE_ID = "device_id";
+  public static final String KEY_SPIRIT_UPLOAD = "spirit_upload";
+  public static final String KEY_SPIRIT_DOWNLOAD = "spirit_download";
+  public static final String KEY_SPIRIT_DECIDED = "spirit_decided";
+  public static final String KEY_SPIRIT_SERVER_URL = "spirit_server_url";
+  public static final String KEY_EPITAPH_NOTICE = "epitaph_notice";
   public static final String KEY_MORE_SLOTS = "more_slots";
+  public static final String KEY_AUTO_PICKUP_STACKED = "auto_pickup_stacked";
+  public static final String KEY_AUTO_PICKUP_DOOR = "auto_pickup_door";
 
   private com.badlogic.gdx.Preferences prefs;
 

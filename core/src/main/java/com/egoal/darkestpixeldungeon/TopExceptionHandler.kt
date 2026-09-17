@@ -2,6 +2,7 @@ package com.egoal.darkestpixeldungeon
 
 import com.badlogic.gdx.Gdx
 import com.watabou.utils.Bundle
+import io.sentry.protocol.SentryId
 import java.io.IOException
 
 class TopExceptionHandler : Thread.UncaughtExceptionHandler {
@@ -31,6 +32,7 @@ class TopExceptionHandler : Thread.UncaughtExceptionHandler {
 
             val bundle = Bundle().apply {
                 put(STR_ERROR, strError.toTypedArray()) // Log.getStackTraceString(tr))
+                CrashReporting.lastEventId?.let { put(STR_EVENT_ID, it.toString()) }
             }
             try {
                 com.watabou.utils.FileUtils.bundleToFile(ERROR_FILE, bundle)
@@ -52,6 +54,13 @@ class TopExceptionHandler : Thread.UncaughtExceptionHandler {
             null
         }
 
+        fun LoadErrorEventId(): SentryId? = try {
+            val id = com.watabou.utils.FileUtils.bundleFromFile(ERROR_FILE).getString(STR_EVENT_ID)
+            if (id.isNullOrBlank()) null else SentryId(id)
+        } catch (e: IOException) {
+            null
+        }
+
         fun HasErrorFile(): Boolean = com.watabou.utils.FileUtils.fileExists(ERROR_FILE)
 
         fun DeleteErrorFile() {
@@ -60,5 +69,6 @@ class TopExceptionHandler : Thread.UncaughtExceptionHandler {
 
         private const val ERROR_FILE = "error.dat"
         private const val STR_ERROR = "error"
+        private const val STR_EVENT_ID = "event_id"
     }
 }

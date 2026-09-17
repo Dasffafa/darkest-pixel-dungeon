@@ -77,8 +77,10 @@ class PitfallTrap : Trap() {
                 Level[pos] = Terrain.CHASM_FLOOR
             }
 
-            sprite.parent.add(WindParticle.Wind(pos))
-            sprite.kill()
+            if (hasSprite) {
+                sprite.parent?.add(WindParticle.Wind(pos))
+                sprite.kill()
+            }
             GameScene.updateMap(pos)
         }
     }

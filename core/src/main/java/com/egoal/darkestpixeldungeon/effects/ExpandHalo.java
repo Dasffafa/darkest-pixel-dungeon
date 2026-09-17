@@ -21,7 +21,12 @@ public class ExpandHalo extends Halo {
 
   public ExpandHalo show(Visual visual, float duration) {
     target = visual;
-    visual.parent.addToBack(this);
+    if (visual != null) {
+      com.watabou.noosa.Group p = visual.parent;
+      if (p != null) {
+        p.addToBack(this);
+      }
+    }
 
     lifespan = this.duration = duration;
 

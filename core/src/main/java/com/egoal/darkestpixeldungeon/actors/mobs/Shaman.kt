@@ -21,6 +21,7 @@
 
 package com.egoal.darkestpixeldungeon.actors.mobs
 
+import com.watabou.noosa.Game
 import com.egoal.darkestpixeldungeon.Assets
 import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.actors.Char
@@ -77,7 +78,7 @@ class Shaman : Mob(), Callback {
                 enemy.sprite.flash()
 
                 if (enemy === Dungeon.hero) {
-                    Camera.main.shake(2f, 0.3f)
+                    Game.runOnRenderThread { Camera.main.shake(2f, 0.3f) }
                 }
             }) {
                 if (enemy === Dungeon.hero) {

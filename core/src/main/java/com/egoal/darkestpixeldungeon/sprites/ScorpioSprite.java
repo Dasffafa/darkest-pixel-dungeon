@@ -79,13 +79,18 @@ public class ScorpioSprite extends MobSprite {
     if (anim == getZap()) {
       idle();
 
-      ((MissileSprite) parent.recycle(MissileSprite.class)).
-              reset(getCh().getPos(), cellToAttack, new Dart(), new Callback() {
-                @Override
-                public void call() {
-                  getCh().onAttackComplete();
-                }
-              });
+      Callback callback = new Callback() {
+        @Override
+        public void call() {
+          getCh().onAttackComplete();
+        }
+      };
+      if (parent != null) {
+        ((MissileSprite) parent.recycle(MissileSprite.class)).
+                reset(getCh().getPos(), cellToAttack, new Dart(), callback);
+      } else {
+        callback.call();
+      }
     } else {
       super.onComplete(anim);
     }

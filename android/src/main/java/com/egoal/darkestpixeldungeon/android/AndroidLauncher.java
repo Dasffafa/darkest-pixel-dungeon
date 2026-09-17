@@ -32,6 +32,7 @@ public class AndroidLauncher extends AndroidApplication {
         config.r = config.g = config.b = 8;
         config.useCompass = false;
         config.useAccelerometer = false;
+        AndroidCrashReporting.install(this);
         initialize(new DarkestPixelDungeon(platformSupport), config);
     }
 

@@ -51,7 +51,10 @@ public class Game implements ApplicationListener {
 
     protected Scene scene;
     protected Scene requestedScene;
-    protected boolean requestedReset = true;
+    // Read by the actor thread (via switchingScene()), written by the render
+    // thread, so make the handoff visible.
+    protected volatile boolean requestedReset = true;
+    protected volatile boolean switchingScene = false;
     protected SceneChangeCallback onChange;
     protected static Class<? extends Scene> sceneClass;
 
@@ -192,14 +195,26 @@ public class Game implements ApplicationListener {
         return instance.scene;
     }
 
+    /**
+     * True while a scene switch has been requested but not yet performed.
+     * The actor thread consults this so it never advances actors whose level is
+     * about to be torn down (mirrors modern Shattered Pixel Dungeon).
+     */
+    public static boolean switchingScene() {
+        return instance != null && (instance.requestedReset || instance.switchingScene);
+    }
+
     protected void step() {
         if (requestedReset) {
             requestedReset = false;
+            switchingScene = true;
             try {
                 requestedScene = sceneClass.newInstance();
                 switchScene();
             } catch (InstantiationException | IllegalAccessException e) {
                 e.printStackTrace();
+            } finally {
+                switchingScene = false;
             }
         }
         update();

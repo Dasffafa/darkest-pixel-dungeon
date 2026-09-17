@@ -52,7 +52,7 @@ public class QuickSlotButton extends Button implements WndBag.Listener {
   private static int targetingSlot = -1;
   private static int targetCell = -1;
   private static Item targetingItem = null;
-  public static Char lastTarget = null;
+  public static volatile Char lastTarget = null;
 
   public QuickSlotButton(int slotNum) {
     super();
@@ -118,7 +118,10 @@ public class QuickSlotButton extends Button implements WndBag.Listener {
     // Keyboard shortcuts can arrive faster than the actor turn completes.
     // Match the toolbar's disabled state and never execute an item while the
     // hero is busy, otherwise a rapid press can reuse a detached stack item.
-    if (Dungeon.INSTANCE.isHeroNull() || !Dungeon.INSTANCE.getHero().getReady()) {
+    // Also reject a dead hero: Hero.die leaves `ready` set, so the slot state
+    // alone is not enough to tell that the run is over.
+    if (Dungeon.INSTANCE.isHeroNull() || !Dungeon.INSTANCE.getHero().isAlive()
+            || !Dungeon.INSTANCE.getHero().getReady()) {
       return;
     }
     if (slotNum >= 0 && slotNum < instance.length && instance[slotNum] != null) {
@@ -134,10 +137,21 @@ public class QuickSlotButton extends Button implements WndBag.Listener {
   }
 
   private void useItem() {
-//    // Targeting items have already been consumed when their action starts.
-//    // Re-clicking the same slot while waiting for a destination must not
-//    // execute the item a second time.
-//    if (targeting && targetingSlot == slotNum) return;
+    // A tap can be queued before the actor thread kills the hero (which detaches
+    // every buff, Hunger included). Hero.die never clears `ready`, and the
+    // toolbar only disables slots based on `ready`, so the slot can still look
+    // usable after death. Re-check life and readiness at execution time, exactly
+    // as use(int) does for the keyboard path, so a stale item is never executed.
+    if (Dungeon.INSTANCE.isHeroNull() || !Dungeon.INSTANCE.getHero().isAlive()
+            || !Dungeon.INSTANCE.getHero().getReady()) {
+      if (targeting) cancel();
+      return;
+    }
+    // NOTE: there is deliberately no "same slot while targeting" early return
+    // here. Clicking the active slot again is how the player fires at the
+    // currently selected/auto-aimed target, so an early return would break that.
+    // The duplicate-execution case is instead handled below by rejecting
+    // zero-quantity items (a targeting item is consumed when its action starts).
     Item item = select(slotNum);
     // A slot can be cleared (for example, when its item is removed) while the
     // button or an in-progress targeting state is still present. Treat that as
@@ -161,8 +175,7 @@ public class QuickSlotButton extends Button implements WndBag.Listener {
         useItem();
         return;
       }
-      int cell = lastTarget == null ? targetCell : autoAim(lastTarget, item);
-      GameScene.handleCell(cell != -1 ? cell : targetCell);
+      fireAtTarget(item);
     } else {
       if (item.getUsesTargeting()) useTargeting(item);
       item.execute(Dungeon.INSTANCE.getHero());
@@ -233,7 +246,14 @@ public class QuickSlotButton extends Button implements WndBag.Listener {
   }
 
   public static void beginTargeting(Item item) {
-    beginTargeting(item, -1);
+    // Bind targeting to the item's quickslot when it has one, so tapping that
+    // slot confirms the target. Items without a slot keep external targeting.
+    int slotNum = Dungeon.INSTANCE.getQuickslot().getSlot(item);
+    if (slotNum >= 0 && slotNum < instance.length && instance[slotNum] != null) {
+      instance[slotNum].useTargeting(item);
+    } else {
+      beginTargeting(item, slotNum);
+    }
   }
 
   private static void beginTargeting(Item item, int slotNum) {
@@ -279,8 +299,7 @@ public class QuickSlotButton extends Button implements WndBag.Listener {
 
   private static List<Char> availableTargets(Item item) {
     ArrayList<Char> targets = new ArrayList<>();
-    for (int i = 0; i < Dungeon.INSTANCE.getHero().visibleEnemies(); i++) {
-      Char target = Dungeon.INSTANCE.getHero().visibleEnemy(i);
+    for (Char target : Dungeon.INSTANCE.getHero().visibleEnemyList()) {
       if (target.isAlive() && Dungeon.INSTANCE.getVisible()[target.getPos()] &&
               autoAim(target, item) != -1) targets.add(target);
     }
@@ -293,22 +312,33 @@ public class QuickSlotButton extends Button implements WndBag.Listener {
   private static void showTarget(Char target) {
     targetCell = target.getPos();
     crossM.remove();
-    target.getSprite().parent.add(crossM);
+    if (target.getSprite() != null && target.getSprite().parent != null) {
+      target.getSprite().parent.add(crossM);
+    }
     crossM.point(DungeonTilemap.tileToWorld(target.getPos()));
     HealthIndicator.instance.target(target);
   }
 
   private static void showTargetCell(int cell) {
     crossM.remove();
-    Dungeon.INSTANCE.getHero().getSprite().parent.add(crossM);
+    if (!Dungeon.INSTANCE.isHeroNull() && Dungeon.INSTANCE.getHero().getSprite() != null && Dungeon.INSTANCE.getHero().getSprite().parent != null) {
+      Dungeon.INSTANCE.getHero().getSprite().parent.add(crossM);
+    }
     crossM.point(DungeonTilemap.tileToWorld(cell));
     HealthIndicator.instance.target(null);
   }
 
   public static boolean confirmExternalTarget() {
-    if (!targeting || targetingSlot >= 0 || targetCell < 0) return false;
-    GameScene.handleCell(targetCell);
+    // Confirm works for any active targeting, whether or not it is bound to a
+    // quickslot, so keyboard confirm stays available alongside slot taps.
+    if (!targeting || targetCell < 0) return false;
+    fireAtTarget(targetingItem);
     return true;
+  }
+
+  private static void fireAtTarget(Item item) {
+    int cell = lastTarget == null ? targetCell : autoAim(lastTarget, item);
+    GameScene.handleCell(cell != -1 ? cell : targetCell);
   }
 
   public static int autoAim(Char target) {

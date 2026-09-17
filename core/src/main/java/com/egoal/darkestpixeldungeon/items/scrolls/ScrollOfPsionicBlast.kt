@@ -20,6 +20,7 @@
  */
 package com.egoal.darkestpixeldungeon.items.scrolls
 
+import com.watabou.noosa.Game
 import com.egoal.darkestpixeldungeon.actors.Damage
 import com.egoal.darkestpixeldungeon.levels.Level
 import com.egoal.darkestpixeldungeon.Assets
@@ -42,7 +43,7 @@ class ScrollOfPsionicBlast : Scroll() {
     }
 
     override fun doRead() {
-        GameScene.flash(0xFFFFFF)
+        Game.runOnRenderThread { GameScene.flash(0xFFFFFF) }
 
         Sample.INSTANCE.play(Assets.SND_BLAST)
         Invisibility.dispel()

@@ -20,6 +20,7 @@
  */
 package com.egoal.darkestpixeldungeon.actors.mobs
 
+import com.watabou.noosa.Game
 import com.egoal.darkestpixeldungeon.*
 import com.egoal.darkestpixeldungeon.actors.Actor
 import com.egoal.darkestpixeldungeon.actors.Char
@@ -85,6 +86,15 @@ class DM300 : Mob() {
     }
 
     public override fun act(): Boolean {
+        // The bump effect used to run in onMotionComplete (render thread) and
+        // mutates the level and other actors. Run it here on the actor thread,
+        // which is gated on the movement tween by Actor.process.
+        onBumped?.let {
+            onBumped = null
+            it.invoke()
+            return false
+        }
+
         GameScene.add(Blob.seed(pos, 30, ToxicGas::class.java))
 
         if (bumpcd > 0) --bumpcd
@@ -105,8 +115,10 @@ class DM300 : Mob() {
         if (bumpcell >= 0 && paralysed <= 0) {
             val tgt = bumpcell
             resetBumpCell()
+            // Re-enter act() so onBumped runs on the actor thread once the
+            // movement tween completes (Actor.process gates on sprite motion).
             if (bump(tgt))
-                return false
+                return true
         }
 
         return super.act()
@@ -114,18 +126,25 @@ class DM300 : Mob() {
 
     private fun setBumpCell(pos: Int) {
         bumpcell = pos
-        if (cross.parent == null) {
-            sprite.parent.add(cross)
-            cross.color(1f, 0.1f, 0.02f)
+        Game.runOnRenderThread {
+            val p = sprite.parent
+            if (p != null) {
+                if (cross.parent == null) {
+                    p.add(cross)
+                    cross.color(1f, 0.1f, 0.02f)
+                }
+                cross.visible = true
+                val cen = DungeonTilemap.tileCenterToWorld(bumpcell)
+                cross.point(cen.offset(-cross.width / 2f, -cross.height / 2f))
+            }
         }
-        cross.visible = true
-        val cen = DungeonTilemap.tileCenterToWorld(bumpcell)
-        cross.point(cen.offset(-cross.width / 2f, -cross.height / 2f))
     }
 
     private fun resetBumpCell() {
         bumpcell = -1
-        cross.visible = false
+        Game.runOnRenderThread {
+            cross.visible = false
+        }
     }
 
     override fun attackSpeed(): Float = super.attackSpeed() * if (overloaded) 1.5f else 1f
@@ -160,7 +179,7 @@ class DM300 : Mob() {
 
         if (Dungeon.visible[cell]) {
             CellEmitter.get(cell).start(Speck.factory(Speck.ROCK), 0.07f, 10)
-            Camera.main.shake(3f, 0.7f)
+            Game.runOnRenderThread { Camera.main.shake(3f, 0.7f) }
             Sample.INSTANCE.play(Assets.SND_ROCKS)
 
             if (Level.water[cell]) {
@@ -275,7 +294,7 @@ class DM300 : Mob() {
         onBumped = {
             super.move(dst) // super: no moving paralysis
             CellEmitter.get(pos).start(Speck.factory(Speck.ROCK), 0.07f, 20)
-            Camera.main.shake(5f, 1.2f)
+            Game.runOnRenderThread { Camera.main.shake(5f, 1.2f) }
             Sample.INSTANCE.play(Assets.SND_ROCKS)
 
             for (i in bumpPath.path) if (Level.water[i]) GameScene.ripple(cell)
@@ -313,13 +332,6 @@ class DM300 : Mob() {
         sprite.move(pos, dst)
 
         return true
-    }
-
-    override fun onMotionComplete() {
-        if (onBumped != null) {
-            onBumped!!.invoke()
-            onBumped = null
-        }
     }
 
     override fun defendDamage(dmg: Damage): Damage {

@@ -14,6 +14,9 @@ import kotlin.math.pow
 private const val STR_LEVEL = "level"
 
 abstract class Perk(val maxLevel: Int = 1, var level: Int = 1) : Bundlable {
+    /** a drawback rather than a boon, such as a class trade-off */
+    open val isNegative: Boolean = false
+
     enum class Tag {
         Bare,
         Crit,

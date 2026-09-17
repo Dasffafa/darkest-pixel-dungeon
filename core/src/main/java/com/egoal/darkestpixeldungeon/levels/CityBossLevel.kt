@@ -16,6 +16,7 @@ import com.egoal.darkestpixeldungeon.items.keys.SkeletonKey
 import com.egoal.darkestpixeldungeon.messages.M
 import com.egoal.darkestpixeldungeon.messages.Messages
 import com.egoal.darkestpixeldungeon.scenes.GameScene
+import com.watabou.noosa.Game
 import com.watabou.noosa.Group
 import com.watabou.noosa.audio.Music
 import com.watabou.noosa.audio.Sample
@@ -90,8 +91,13 @@ class CityBossLevel : Level() {
 
             if (Dungeon.visible[boss.pos]) {
                 boss.notice()
-                boss.sprite.alpha(0f)
-                boss.sprite.parent.add(AlphaTweener(boss.sprite, 1f, 1f))
+                Game.runOnRenderThread {
+                    boss.sprite.alpha(0f)
+                    val p = boss.sprite.parent
+                    if (p != null) {
+                        p.add(AlphaTweener(boss.sprite, 1f, 1f))
+                    }
+                }
             }
 
             // set(arenaDoor, Terrain.LOCKED_DOOR)

@@ -1,5 +1,6 @@
 package com.egoal.darkestpixeldungeon.actors.mobs
 
+import com.watabou.noosa.Game
 import com.egoal.darkestpixeldungeon.Assets
 import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.actors.Char
@@ -49,10 +50,18 @@ open class Ballista : Mob() {
             super.onAttackComplete()
         else {
             // show animation
-            (sprite.parent.recycle(MissileSprite::class.java) as MissileSprite).reset(pos, enemy!!.pos, Dart(), Callback {
+            val onDone = Callback {
                 next()
                 if (enemy != null) attack(enemy!!)
-            })
+            }
+            Game.runOnRenderThread {
+                val p = sprite.parent
+                if (p != null) {
+                    (p.recycle(MissileSprite::class.java) as MissileSprite).reset(pos, enemy!!.pos, Dart(), onDone)
+                } else {
+                    onDone.call()
+                }
+            }
         }
     }
 

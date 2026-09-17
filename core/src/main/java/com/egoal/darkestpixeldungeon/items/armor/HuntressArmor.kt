@@ -20,6 +20,7 @@
  */
 package com.egoal.darkestpixeldungeon.items.armor
 
+import com.watabou.noosa.Game
 import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.items.weapon.missiles.Shuriken
 import com.egoal.darkestpixeldungeon.levels.Level
@@ -41,13 +42,21 @@ class HuntressArmor : ClassArmor() {
         val targets = Dungeon.level.mobs.filter { Level.fieldOfView[it.pos] && Dungeon.level.distance(it.pos, curUser.pos) <= 8 }
         var finished = 0
         for (mob in targets) {
-            (curUser.sprite.parent.recycle(MissileSprite::class.java) as MissileSprite)
-                    .reset(curUser.pos, mob.pos, proto, Callback {
-                        curUser.attack(mob)
-                        finished++
-                        if (finished >= targets.size)  // all targets done, animation finished.
-                            curUser.spendAndNext(curUser.attackDelay())
-                    })
+            val onDone = Callback {
+                curUser.attack(mob)
+                finished++
+                if (finished >= targets.size)  // all targets done, animation finished.
+                    curUser.spendAndNext(curUser.attackDelay())
+            }
+            Game.runOnRenderThread {
+                val p = curUser.sprite.parent
+                if (p != null) {
+                    (p.recycle(MissileSprite::class.java) as MissileSprite)
+                            .reset(curUser.pos, mob.pos, proto, onDone)
+                } else {
+                    onDone.call()
+                }
+            }
         }
 
         if (targets.isEmpty()) {

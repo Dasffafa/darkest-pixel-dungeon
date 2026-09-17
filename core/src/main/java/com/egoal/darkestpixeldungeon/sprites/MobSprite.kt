@@ -37,12 +37,17 @@ open class MobSprite : CharSprite() {
         super.onComplete(anim)
 
         if (anim === die) {
-            parent.add(object : AlphaTweener(this, 0f, FADE_TIME) {
-                override fun onComplete() {
-                    this@MobSprite.killAndErase()
-                    parent.erase(this)
-                }
-            })
+            val p = parent
+            if (p != null) {
+                p.add(object : AlphaTweener(this, 0f, FADE_TIME) {
+                    override fun onComplete() {
+                        this@MobSprite.killAndErase()
+                        parent?.erase(this)
+                    }
+                })
+            } else {
+                killAndErase()
+            }
         }
     }
 
@@ -50,17 +55,22 @@ open class MobSprite : CharSprite() {
         origin.set(width / 2, height - DungeonTilemap.SIZE / 2)
         angularSpeed = (if (Random.Int(2) == 0) -720 else 720).toFloat()
 
-        parent.add(object : ScaleTweener(this, PointF(0f, 0f), FALL_TIME) {
-            override fun onComplete() {
-                this@MobSprite.killAndErase()
-                parent.erase(this)
-            }
+        val p = parent
+        if (p != null) {
+            p.add(object : ScaleTweener(this, PointF(0f, 0f), FALL_TIME) {
+                override fun onComplete() {
+                    this@MobSprite.killAndErase()
+                    parent?.erase(this)
+                }
 
-            override fun updateValues(progress: Float) {
-                super.updateValues(progress)
-                am = 1 - progress
-            }
-        })
+                override fun updateValues(progress: Float) {
+                    super.updateValues(progress)
+                    am = 1 - progress
+                }
+            })
+        } else {
+            killAndErase()
+        }
     }
 
     companion object {

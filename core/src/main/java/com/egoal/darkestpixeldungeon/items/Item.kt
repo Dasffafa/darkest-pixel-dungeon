@@ -20,6 +20,7 @@
  */
 package com.egoal.darkestpixeldungeon.items
 
+import com.watabou.noosa.Game
 import com.egoal.darkestpixeldungeon.Assets
 import com.egoal.darkestpixeldungeon.Badges
 import com.egoal.darkestpixeldungeon.DarkestPixelDungeon
@@ -106,6 +107,8 @@ open class Item : Bundlable {
 
     open fun doThrow(hero: Hero) {
         if (!QuickSlotButton.isTargeting()) QuickSlotButton.beginTargeting(this)
+        throwingItem = this
+        throwingUser = hero
         GameScene.selectCell(thrower)
     }
 
@@ -326,7 +329,9 @@ open class Item : Bundlable {
     open fun status(): String? = if (quantity != 1) "$quantity" else null
 
     fun updateQuickslot() {
-        QuickSlotButton.refresh()
+        // May be called from the actor thread; defer the UI refresh to the
+        // render thread (see GameScene.updateItemDisplays).
+        GameScene.updateItemDisplays = true
     }
 
     override fun storeInBundle(bundle: Bundle) {
@@ -387,10 +392,18 @@ open class Item : Bundlable {
 
         val finalDelay = delay
 
-        (user.sprite.parent.recycle(MissileSprite::class.java) as MissileSprite).reset(user.pos, cell, this, Callback {
+        val onDone = Callback {
             this@Item.detach(user.belongings.backpack)?.onThrow(cell)
             user.spendAndNext(finalDelay)
-        })
+        }
+        Game.runOnRenderThread {
+            val p = user.sprite.parent
+            if (p != null) {
+                (p.recycle(MissileSprite::class.java) as MissileSprite).reset(user.pos, cell, this, onDone)
+            } else {
+                onDone.call()
+            }
+        }
     }
 
     companion object {
@@ -433,10 +446,19 @@ open class Item : Bundlable {
 
         lateinit var curUser: Hero
         lateinit var curItem: Item
+
+        // Bound to the item that actually started the current throw targeting, so
+        // the listener never reads the mutable global curItem/curUser. Another
+        // item's execute() can overwrite those while this selection is pending.
+        private var throwingItem: Item? = null
+        private var throwingUser: Hero? = null
+
         protected var thrower: CellSelector.Listener = object : CellSelector.Listener {
             override fun onSelect(target: Int?) {
                 if (target != null) {
-                    curItem.cast(curUser, target)
+                    val item = throwingItem ?: return
+                    val user = throwingUser ?: return
+                    item.cast(user, target)
                 }
             }
 

@@ -20,6 +20,7 @@
  */
 package com.egoal.darkestpixeldungeon.actors.mobs
 
+import com.watabou.noosa.Game
 import com.egoal.darkestpixeldungeon.Assets
 import com.egoal.darkestpixeldungeon.Badges
 import com.egoal.darkestpixeldungeon.Dungeon
@@ -117,7 +118,7 @@ class Goo : Mob() {
         }
 
         if (pumpedUp > 0) {
-            Camera.main.shake(3f, 0.2f)
+            Game.runOnRenderThread { Camera.main.shake(3f, 0.2f) }
         }
 
         return damage

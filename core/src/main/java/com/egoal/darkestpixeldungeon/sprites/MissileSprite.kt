@@ -38,9 +38,16 @@ class MissileSprite : ItemSprite(), Tweener.Listener {
         } else
             angularSpeed = (if (image == 15 || image == 106) 1800 else 900).toFloat()
 
-        val tweener = PosTweener(this, dst, d.length() / SPEED)
-        tweener.listener = this
-        parent.add(tweener)
+        val p = parent
+        if (p != null) {
+            val tweener = PosTweener(this, dst, d.length() / SPEED)
+            tweener.listener = this
+            p.add(tweener)
+        } else {
+            point(dst)
+            kill()
+            callback?.call()
+        }
     }
 
     override fun onComplete(tweener: Tweener?) {

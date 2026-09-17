@@ -20,6 +20,7 @@
  */
 package com.egoal.darkestpixeldungeon.items.armor
 
+import com.watabou.noosa.Game
 import com.egoal.darkestpixeldungeon.actors.buffs.Buff
 import com.egoal.darkestpixeldungeon.actors.buffs.Burning
 import com.egoal.darkestpixeldungeon.effects.particles.ElmoParticle
@@ -104,7 +105,7 @@ class MageArmor : ClassArmor(), GreatBlueprint.Enchantable {
                     Item.curUser.move(dst)
                     Dungeon.level.press(dst, Item.curUser)
                     Dungeon.observe()
-                    GameScene.updateFog()
+                    Game.runOnRenderThread { GameScene.updateFog() }
 
                     Item.curUser.spendAndNext(1f)
                 })

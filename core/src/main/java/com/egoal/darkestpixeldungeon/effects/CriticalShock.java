@@ -72,10 +72,12 @@ public class CriticalShock extends Image {
   }
 
   public static void show(Char ch, float dir, float power) {
-    if (!ch.getSprite().visible || ch.getSprite().parent == null) return; // already removed.
+    if (ch == null || ch.getSprite() == null) return;
+    com.watabou.noosa.Group p = ch.getSprite().parent;
+    if (p == null || !ch.getSprite().visible) return; // already removed.
 
     CriticalShock cs = new CriticalShock(ch).set(dir, power);
 
-    ch.getSprite().parent.addToBack(cs);
+    p.addToBack(cs);
   }
 }

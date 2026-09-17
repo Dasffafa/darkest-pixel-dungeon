@@ -221,7 +221,7 @@ class LloydsBeacon : Artifact() {
                 ScrollOfTeleportation.appear(hero, returnPos)
                 Dungeon.level.press(returnPos, hero)
                 Dungeon.observe()
-                GameScene.updateFog()
+                Game.runOnRenderThread { GameScene.updateFog() }
             } else {
 
                 val buff = Dungeon.hero.buff(TimekeepersHourglass.TimeFreeze::class.java)

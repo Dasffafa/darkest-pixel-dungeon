@@ -1,5 +1,6 @@
 package com.egoal.darkestpixeldungeon.items.specials
 
+import com.watabou.noosa.Game
 import com.egoal.darkestpixeldungeon.Badges
 import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.actors.Actor
@@ -203,10 +204,10 @@ class Combo : Special() {
                 hero.move(cell)
                 Dungeon.level.press(cell, hero)
                 Dungeon.observe()
-                GameScene.updateFog()
+                Game.runOnRenderThread { GameScene.updateFog() }
 
                 hero.spendAndNext(1f)
-                Camera.main.shake(2f, .5f)
+                Game.runOnRenderThread { Camera.main.shake(2f, .5f) }
             }, -1f)
             hero.next()
         }

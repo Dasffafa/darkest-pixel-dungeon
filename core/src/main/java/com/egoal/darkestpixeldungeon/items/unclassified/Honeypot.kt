@@ -32,6 +32,7 @@ import com.egoal.darkestpixeldungeon.actors.mobs.Bee
 import com.egoal.darkestpixeldungeon.effects.Splash
 import com.egoal.darkestpixeldungeon.scenes.GameScene
 import com.egoal.darkestpixeldungeon.sprites.ItemSpriteSheet
+import com.watabou.noosa.Game
 import com.watabou.noosa.audio.Sample
 import com.watabou.noosa.tweeners.AlphaTweener
 import com.watabou.utils.Bundle
@@ -120,8 +121,10 @@ class Honeypot : Item() {
             GameScene.add(bee)
             Actor.addDelayed(Pushing(bee, pos, newPos), -1f)
 
-            bee.sprite.alpha(0f)
-            bee.sprite.parent.add(AlphaTweener(bee.sprite, 1f, 0.15f))
+            Game.runOnRenderThread {
+                bee.sprite.alpha(0f)
+                bee.sprite.parent?.add(AlphaTweener(bee.sprite, 1f, 0.15f))
+            }
 
             Sample.INSTANCE.play(Assets.SND_BEE)
             return ShatteredPot().setBee(bee)

@@ -2,7 +2,6 @@ package com.egoal.darkestpixeldungeon.items.books
 
 import com.egoal.darkestpixeldungeon.actors.hero.Hero
 import com.egoal.darkestpixeldungeon.actors.hero.perks.Perk
-import com.egoal.darkestpixeldungeon.actors.hero.perks.RavenousAppetite
 import com.egoal.darkestpixeldungeon.messages.M
 import com.egoal.darkestpixeldungeon.scenes.GameScene
 import com.egoal.darkestpixeldungeon.sprites.ItemSpriteSheet
@@ -23,7 +22,7 @@ class TomeOfRetrain : Book() {
 
     override fun doRead(hero: Hero) {
         //todo: refactor
-        val perks = hero.heroPerk.perks.filter { it !is RavenousAppetite && it.level > 0 }
+        val perks = hero.heroPerk.perks.filter { !it.isNegative && it.level > 0 }
         if (perks.isEmpty()) {
             GLog.w(M.L(Book::class.java, "cannot_understand"))
             return

@@ -20,6 +20,7 @@
  */
 package com.egoal.darkestpixeldungeon.actors
 
+import com.watabou.noosa.Game
 import com.egoal.darkestpixeldungeon.Assets
 import com.egoal.darkestpixeldungeon.Badges
 import com.egoal.darkestpixeldungeon.Dungeon
@@ -43,6 +44,7 @@ import com.watabou.utils.GameMath
 import com.watabou.utils.PathFinder
 import com.watabou.utils.Random
 import java.util.*
+import java.util.concurrent.CopyOnWriteArraySet
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.round
@@ -86,7 +88,7 @@ abstract class Char : Actor() {
 
     val immunities = hashSetOf<Class<*>>()
 
-    private val buffs = HashSet<Buff>()
+    private val buffs = CopyOnWriteArraySet<Buff>()
 
     var camp: Camp = Camp.NEUTRAL
 
@@ -251,7 +253,7 @@ abstract class Char : Actor() {
             val ten = buff(Tenacity::class.java)
             if (ten != null) {
                 HP = 1
-                GameScene.flash(0xFF0000)
+                Game.runOnRenderThread { GameScene.flash(0xFF0000) }
                 ten.detach()
             } else
                 HP = 0 //note: this is a important setting
@@ -384,6 +386,7 @@ abstract class Char : Actor() {
     @Synchronized
     fun isCharmedBy(ch: Char): Boolean = buffs.filterIsInstance<Charm>().any { it.objectid == ch.id() }
 
+    @Synchronized
     open fun add(buff: Buff) {
         buffs.add(buff)
         Actor.add(buff)
@@ -398,12 +401,14 @@ abstract class Char : Actor() {
             }
     }
 
+    @Synchronized
     open fun remove(buff: Buff) {
         buffs.remove(buff)
         Actor.remove(buff)
 
     }
 
+    @Synchronized
     fun remove(buffClass: Class<out Buff>) {
         for (buff in buffs(buffClass)) remove(buff)
     }
@@ -569,7 +574,7 @@ abstract class Char : Actor() {
             // camera shake
             if (defenderIsHero) { //  || dmg.isFeatured(Damage.Feature.CRITICAL)
                 val shake = dmg.value * 4f / defender.HT
-                if (shake > 1f) Camera.main.shake(GameMath.clampf(shake, 1f, 5f), 0.3f)
+                if (shake > 1f) Game.runOnRenderThread { Camera.main.shake(GameMath.clampf(shake, 1f, 5f), 0.3f) }
             }
 
             // take

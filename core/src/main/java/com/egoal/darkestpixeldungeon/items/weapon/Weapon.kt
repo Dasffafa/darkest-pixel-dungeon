@@ -211,7 +211,13 @@ abstract class Weapon : KindOfWeapon() {
     open fun isInscribed(type: Class<out Inscription>): Boolean = inscription?.javaClass == type
 
     fun hasGoodInscription(): Boolean = inscription?.curse == false
-    fun hasCurseInscription(): Boolean = inscription?.curse == true
+    open fun hasCurseInscription(): Boolean = inscription?.curse == true
+
+    open fun clearCurseInscription(): Boolean {
+        if (!hasCurseInscription()) return false
+        inscribe(null)
+        return true
+    }
 
     open fun enchant(type: Class<out Enchantment>, duration: Float): Weapon {
         // prolong

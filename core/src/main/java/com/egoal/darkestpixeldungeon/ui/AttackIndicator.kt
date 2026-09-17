@@ -71,12 +71,9 @@ class AttackIndicator : Tag(0xFF4C4C) {
 
     private fun checkEnemies() {
         candidates.clear()
-        candidates.addAll((0 until Dungeon.hero.visibleEnemies())
-                .map {
-                    Dungeon.hero.visibleEnemy(it)
-                }.filter {
-                    Dungeon.hero.canAttack(it)
-                })
+        candidates.addAll(Dungeon.hero.visibleEnemyList().filter {
+            Dungeon.hero.canAttack(it)
+        })
 
         if (!candidates.contains(lastTarget)) {
             if (candidates.isEmpty()) {
@@ -103,7 +100,10 @@ class AttackIndicator : Tag(0xFF4C4C) {
             sprite = null
         }
 
-        sprite = lastTarget!!.spriteClass.newInstance()
+        // Use sprite() instead of spriteClass.newInstance(): some mobs (e.g. DarkSpirit)
+        // override sprite() with an inner sprite class and never initialize the lateinit
+        // spriteClass, which would otherwise throw UninitializedPropertyAccessException.
+        sprite = lastTarget!!.sprite()
         active = true
 
         add(sprite!!.let {
@@ -167,13 +167,19 @@ class AttackIndicator : Tag(0xFF4C4C) {
         private lateinit var instance: AttackIndicator
         private var lastTarget: Mob? = null
         fun target(target: Char?) {
-            lastTarget = target as Mob?
-            instance.updateImage()
-            HealthIndicator.instance.target(target)
+            Game.runOnRenderThread {
+                if (!::instance.isInitialized) return@runOnRenderThread
+                lastTarget = target as Mob?
+                instance.updateImage()
+                HealthIndicator.instance.target(target)
+            }
         }
 
         fun updateState() {
-            instance.checkEnemies()
+            Game.runOnRenderThread {
+                if (!::instance.isInitialized || Dungeon.hero == null) return@runOnRenderThread
+                instance.checkEnemies()
+            }
         }
     }
 }

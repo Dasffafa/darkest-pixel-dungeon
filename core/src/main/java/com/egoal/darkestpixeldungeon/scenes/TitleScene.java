@@ -23,6 +23,7 @@ package com.egoal.darkestpixeldungeon.scenes;
 import com.badlogic.gdx.Gdx;
 
 import com.egoal.darkestpixeldungeon.Assets;
+import com.egoal.darkestpixeldungeon.CrashReporting;
 import com.egoal.darkestpixeldungeon.DarkestPixelDungeon;
 import com.egoal.darkestpixeldungeon.Dungeon;
 import com.egoal.darkestpixeldungeon.TopExceptionHandler;
@@ -35,6 +36,7 @@ import com.egoal.darkestpixeldungeon.ui.ChangesButton;
 import com.egoal.darkestpixeldungeon.ui.ErrorButton;
 import com.egoal.darkestpixeldungeon.ui.ExitButton;
 import com.egoal.darkestpixeldungeon.ui.QQGroupButton;
+import com.egoal.darkestpixeldungeon.windows.WndCrashReportConsent;
 import com.egoal.darkestpixeldungeon.windows.WndDonate;
 import com.egoal.darkestpixeldungeon.windows.WndSettings;
 import com.watabou.noosa.BitmapText;
@@ -229,6 +231,10 @@ public class TitleScene extends PixelScene {
         add(btnExit);
 
         fadeIn();
+
+        if (CrashReporting.INSTANCE.getShouldPrompt()) {
+            addToFront(new WndCrashReportConsent());
+        }
     }
 
     private void placeTorch(float x, float y) {

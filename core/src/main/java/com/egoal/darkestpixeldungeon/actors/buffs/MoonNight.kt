@@ -1,5 +1,6 @@
 package com.egoal.darkestpixeldungeon.actors.buffs
 
+import com.watabou.noosa.Game
 import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.actors.Char
 import com.egoal.darkestpixeldungeon.messages.Messages
@@ -21,7 +22,7 @@ class MoonNight : FlavourBuff() {
         val attached = super.attachTo(target)
         if (attached) {
             Dungeon.observe()
-            GameScene.updateFog()
+            Game.runOnRenderThread { GameScene.updateFog() }
         }
         
         return attached
@@ -30,7 +31,7 @@ class MoonNight : FlavourBuff() {
     override fun detach() {
         super.detach()
         Dungeon.observe()
-        GameScene.updateFog()
+        Game.runOnRenderThread { GameScene.updateFog() }
     }
 
     companion object {

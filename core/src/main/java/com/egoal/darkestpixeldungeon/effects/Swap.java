@@ -116,7 +116,13 @@ public class Swap extends Actor {
 
       passed = 0;
 
-      sprite.parent.add(this);
+      com.watabou.noosa.Group p = sprite.parent;
+      if (p != null) {
+        p.add(this);
+      } else {
+        sprite.point(end);
+        finish(this);
+      }
     }
 
     @Override

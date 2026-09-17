@@ -26,7 +26,16 @@ class PuddleDigger : RectDigger() {
         Fill(level, r.shrink(1), Terrain.WATER)
 
         level.mobs.add(Piranha().apply {
-            pos = level.pointToCell(rect.center)
+            var placed = false
+            for (i in 0 until 100) {
+                val cell = level.pointToCell(r.random(1))
+                if (level.map[cell] == Terrain.WATER && level.findMobAt(cell) == null) {
+                    pos = cell
+                    placed = true
+                    break
+                }
+            }
+            if (!placed) pos = level.pointToCell(rect.center)
         })
 
         return dr

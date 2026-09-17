@@ -1,5 +1,6 @@
 package com.egoal.darkestpixeldungeon.levels
 
+import com.watabou.noosa.Game
 import com.egoal.darkestpixeldungeon.Assets
 import com.egoal.darkestpixeldungeon.Challenge
 import com.egoal.darkestpixeldungeon.Dungeon
@@ -100,8 +101,10 @@ class CityLevel : RegularLevel() {
             companion object {
                 val factory = object : Factory() {
                     override fun emit(emitter: Emitter, index: Int, x: Float, y: Float) {
-                        val sp = emitter.recycle(SmokeParticle::class.java) as SmokeParticle
-                        sp.reset(x, y)
+                        Game.runOnRenderThread {
+                            val sp = emitter.recycle(SmokeParticle::class.java) as SmokeParticle
+                            sp.reset(x, y)
+                        }
                     }
                 }
             }

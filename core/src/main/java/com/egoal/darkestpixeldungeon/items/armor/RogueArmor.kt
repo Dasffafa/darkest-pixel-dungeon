@@ -20,6 +20,7 @@
  */
 package com.egoal.darkestpixeldungeon.items.armor
 
+import com.watabou.noosa.Game
 import com.egoal.darkestpixeldungeon.Assets
 import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.actors.Actor
@@ -75,7 +76,7 @@ class RogueArmor : ClassArmor() {
                     Sample.INSTANCE.play(Assets.SND_PUFF)
                     Dungeon.level.press(target, curUser)
                     Dungeon.observe()
-                    GameScene.updateFog()
+                    Game.runOnRenderThread { GameScene.updateFog() }
 
                     curUser.spendAndNext(Actor.TICK)
                 }

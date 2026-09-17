@@ -8,6 +8,8 @@ import com.egoal.darkestpixeldungeon.actors.mobs.npcs.*
 import com.egoal.darkestpixeldungeon.effects.particles.ColdSnowParticles
 import com.egoal.darkestpixeldungeon.messages.Messages
 import com.watabou.noosa.Group
+import com.watabou.noosa.audio.Music
+import com.watabou.utils.Bundle
 import com.watabou.utils.PathFinder
 import com.watabou.utils.Random
 
@@ -16,6 +18,9 @@ class VillageLevel : RegularLevel() {
         color1 = 0x48763c
         color2 = 0x59994a
     }
+
+    /** Set once the bouquet has been touched; the village keeps snowing from then on. */
+    var snowing = false
 
     private val MAP_FILE = "data/VillageLevel.map"
 
@@ -111,6 +116,9 @@ class VillageLevel : RegularLevel() {
         // seeker
         putMobAt(Seeker::class.java, 12, 18)
 
+        // thebouquet
+        putMobAt(TheBouquet::class.java, 4, 2)
+
 //         Buff.affect(putMobAt(Rat::class.java, 16, 29), Dementage::class.java)
 //        (putMobAt(Merchant::class.java, 16, 27) as Merchant).apply {
 //            for (i in 1..10) addItemToSell(Generator.generate())
@@ -144,20 +152,47 @@ class VillageLevel : RegularLevel() {
 //        drop(MendingRune(), xy2cell(17, 5))
     }
 
+    override fun trackMusic(): String =
+        if (snowing) Assets.TRACK_SNOW_IS_FALLING else super.trackMusic()
+
     override fun addVisuals(): Group {
         super.addVisuals()
+        if (snowing)
+            addSnow()
+        return visuals
+    }
+
+    /** The bouquet's energy brings the snow; once it has begun, it never stops. */
+    fun startSnow() {
+        if (snowing) return
+        snowing = true
+        // called from an NPC interaction, so the scene (and its visuals) already exists
+        addSnow()
+        Music.INSTANCE.play(Assets.TRACK_SNOW_IS_FALLING, true)
+    }
+
+    private fun addSnow() {
         for (cell in 0 until length()) {
             if (passable[cell]) {
                 visuals.add(ColdSnowParticles.Snow(cell))
             }
         }
-        return visuals
     }
 
     private fun putMobAt(cls: Class<out Mob>, x: Int, y: Int): Mob {
         val mob = cls.newInstance().apply { pos = xy2cell(x, y) }
         mobs.add(mob)
         return mob
+    }
+
+    override fun storeInBundle(bundle: Bundle) {
+        super.storeInBundle(bundle)
+        bundle.put(SNOWING, snowing)
+    }
+
+    override fun restoreFromBundle(bundle: Bundle) {
+        super.restoreFromBundle(bundle)
+        snowing = bundle.getBoolean(SNOWING)
     }
 
     override fun tileName(tile: Int): String = when (tile) {
@@ -172,5 +207,9 @@ class VillageLevel : RegularLevel() {
         Terrain.WATER -> Messages.get(VillageLevel::class.java, "water_desc")
         Terrain.STATUE -> Messages.get(VillageLevel::class.java, "statue_desc")
         else -> super.tileDesc(tile)
+    }
+
+    companion object {
+        private const val SNOWING = "snowing"
     }
 }

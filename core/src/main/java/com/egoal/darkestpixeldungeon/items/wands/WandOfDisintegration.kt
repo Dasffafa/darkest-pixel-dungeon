@@ -111,7 +111,7 @@ class WandOfDisintegration : DamageWand(isMissile = false) {
     override fun fx(beam: Ballistica, callback: Callback) {
 
         val cell = beam.path[Math.min(beam.dist, distance())]
-        curUser.sprite.parent.add(Beam.DeathRay(
+        curUser.sprite.parent?.add(Beam.DeathRay(
                 DungeonTilemap.tileCenterToWorld(beam.sourcePos),
                 DungeonTilemap.tileCenterToWorld(cell)))
         callback.call()

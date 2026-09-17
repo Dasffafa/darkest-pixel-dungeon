@@ -176,6 +176,13 @@ object Rankings {
     private const val REC_ID = "gameID"
     private const val REC_USER_NAME = "username"
 
+    /** The same cause-of-death line shown in the rankings, used as the default epitaph. */
+    fun deathDescription(cause: Class<*>?): String {
+        if (cause == null) return M.L(Record::class.java, "something")
+        val result = M.L(cause, "rankings_desc", M.L(cause, "name"))
+        return if (result.contains("missed string")) M.L(Record::class.java, "something") else result
+    }
+
     class Record : Bundlable {
         var cause: Class<*>? = null
         var win: Boolean = false

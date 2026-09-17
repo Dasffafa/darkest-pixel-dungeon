@@ -1,5 +1,6 @@
 package com.egoal.darkestpixeldungeon.actors.mobs.npcs
 
+import com.watabou.noosa.Game
 import com.egoal.darkestpixeldungeon.Assets
 import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.Journal
@@ -254,7 +255,7 @@ class Statuary : NPC.Unbreakable() {
                             Dungeon.limitedDrops.boethiahsBlade.drop()
                             GLog.n(M.L(Statuary::class.java, "give_blade"))
                             gold += 500 // disable
-                            GameScene.flash(0x5a7878)
+                            Game.runOnRenderThread { GameScene.flash(0x5a7878) }
                             Sample.INSTANCE.play(Assets.SND_BLAST)
                             BoethiahsBlade().identify()
                         }
@@ -275,7 +276,7 @@ class Statuary : NPC.Unbreakable() {
             StatusPane.needsCompassUpdate = true
 
             Dungeon.observe()
-            GameScene.updateFog()
+            Game.runOnRenderThread { GameScene.updateFog() }
 
             val item = if (Random.Float() < 0.4f) Generator.WEAPON.generate() else Generator.ARMOR.generate()
             item.level(0)
@@ -296,7 +297,7 @@ class Statuary : NPC.Unbreakable() {
 
             Dungeon.level.drop(item, hero.pos).sprite.drop()
 
-            GameScene.flash(0x5a7878)
+            Game.runOnRenderThread { GameScene.flash(0x5a7878) }
             Sample.INSTANCE.play(Assets.SND_BLAST)
 
             GLog.i(M.L(this, "blasphemy"))

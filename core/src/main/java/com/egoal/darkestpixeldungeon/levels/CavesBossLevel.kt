@@ -20,6 +20,7 @@
  */
 package com.egoal.darkestpixeldungeon.levels
 
+import com.watabou.noosa.Game
 import com.egoal.darkestpixeldungeon.DarkestPixelDungeon
 import com.egoal.darkestpixeldungeon.effects.CellEmitter
 import com.egoal.darkestpixeldungeon.Assets
@@ -180,7 +181,7 @@ class CavesBossLevel : Level() {
             Dungeon.observe()
 
             CellEmitter.get(ArenaDoor).start(Speck.factory(Speck.ROCK), 0.07f, 10)
-            Camera.main.shake(3f, 0.7f)
+            Game.runOnRenderThread { Camera.main.shake(3f, 0.7f) }
             Sample.INSTANCE.play(Assets.SND_ROCKS)
 
             Music.INSTANCE.play(trackMusic(), true)

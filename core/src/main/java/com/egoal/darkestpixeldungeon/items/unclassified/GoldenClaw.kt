@@ -70,8 +70,10 @@ open class GoldenClaw : Item() {
         val g = Gold(q, true)
         hero.heroPerk.get(GreedyMidas::class.java)?.procGold(g)
         if (g.quantity() > q) {
-            GameScene.effect(Flare(5, 32f).color(0xffdd00, true).show(
-                    hero.sprite.parent, DungeonTilemap.tileCenterToWorld(hero.pos), 1.5f))
+            Game.runOnRenderThread {
+                GameScene.effect(Flare(5, 32f).color(0xffdd00, true).show(
+                        hero.sprite.parent, DungeonTilemap.tileCenterToWorld(hero.pos), 1.5f))
+            }
         }
 
         hero.sprite.operate(hero.pos)

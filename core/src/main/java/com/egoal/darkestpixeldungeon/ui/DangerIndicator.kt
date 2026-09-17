@@ -86,8 +86,9 @@ class DangerIndicator : Tag(0xFF4C4C) {
     }
 
     override fun onClick() {
-        if (Dungeon.hero.visibleEnemies() > 0) {
-            val target = Dungeon.hero.visibleEnemy(enemyIndex++)
+        val enemies = Dungeon.hero.visibleEnemyList()
+        if (enemies.isNotEmpty()) {
+            val target = enemies[enemyIndex++ % enemies.size]
 
             HealthIndicator.instance.target(
                     if (target === HealthIndicator.instance.target()) null
