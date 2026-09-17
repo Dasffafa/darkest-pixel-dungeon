@@ -1665,8 +1665,8 @@ class Hero : Char() {
             for (p in bundle.getCollection(SPAWNED_PERKS)) if (p is Perk) spawnedPerks.add(p)
         belongings.restoreFromBundle(bundle)
 
-        val pre = buff(Pressure::class.java)
-        if (pre != null) pressure = pre
+        // ensure Pressure always exists, even for old savers that predate it
+        pressure = Buff.affect(this, Pressure::class.java)
 
         val a = bundle.getStringArray(CHALLENGES)
         if (a != null) {

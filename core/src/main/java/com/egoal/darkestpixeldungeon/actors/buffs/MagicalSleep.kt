@@ -55,7 +55,7 @@ open class MagicalSleep : Buff() {
         if (target is Hero) {
             target.HP = min(target.HP + 1, target.HT)
             (target as Hero).resting = true
-            target.buff(Pressure::class.java)!!.downPressure(.5f)
+            target.buff(Pressure::class.java)?.downPressure(.5f)
             sleeped_ += STEP
             if (sleeped_ > MAX_SLEEP_TIME) {
                 GLog.p(Messages.get(this, "wakeup"))

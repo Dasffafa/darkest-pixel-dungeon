@@ -341,7 +341,7 @@ enum class HeroClass(private val title: String, vararg subclasses: HeroSubClass)
             regeneration += 0.03f
 
             recoverSanity(min(Random.NormalIntRange(1, lvl * 3 / 4).toFloat(),
-                    buff(Pressure::class.java)!!.pressure * 0.3f))
+                    (buff(Pressure::class.java)?.pressure ?: 0f) * 0.3f))
         }
 
         hero.heroPerk.get(StrongConstitution::class.java)?.upgradeHero(hero)
