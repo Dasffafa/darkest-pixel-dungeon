@@ -312,19 +312,22 @@ object Dungeon {
 
         PathFinder.setMapSize(level.width(), level.height())
 
+        // set the new level's visible array and the hero's position before Actor.init():
+        // Actor.init re-adds the hero's buffs and calls their onAdd(), some of which
+        // (e.g. TempPathLight) run Dungeon.observe() and would otherwise use the
+        // previous level's position against the new level's dimensions.
+        visible = BooleanArray(level.length())
+        hero.pos = pos
+
         // add into level.mobs, then into actor.
         hero.restoreFollowers(level, pos)
         Actor.init()
-
-        visible = BooleanArray(level.length())
 
         val respawner = level.respawner()
         if (respawner != null) {
             Actor.add(respawner)
         }
         Actor.add(Resident())
-
-        hero.pos = pos
 
         observe()
         try {

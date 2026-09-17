@@ -170,7 +170,8 @@ public final class ShadowCaster {
     BArray.setFalse(fieldOfView);
 
     //set source cell to true
-    fieldOfView[y * Dungeon.INSTANCE.getLevel().width() + x] = true;
+    int index = y * Dungeon.INSTANCE.getLevel().width() + x;
+    if (index >= 0 && index < fieldOfView.length) fieldOfView[index] = true;
 
     boolean[] losBlocking = Level.Companion.getLosBlocking();
 
