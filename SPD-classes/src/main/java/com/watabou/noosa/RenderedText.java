@@ -90,6 +90,7 @@ public class RenderedText extends Image {
     public static void clearCache() { Game.platform.resetFonts(); }
     public static void reloadCache() { Game.platform.resetFonts(); }
     public static void setFont(String asset) { Game.platform.setFont(asset); }
+    public static void setCjkFont(String asset) { Game.platform.setCjkFont(asset); }
 
     private static class TextRenderBatch implements Batch {
         private static final TextRenderBatch INSTANCE = new TextRenderBatch();

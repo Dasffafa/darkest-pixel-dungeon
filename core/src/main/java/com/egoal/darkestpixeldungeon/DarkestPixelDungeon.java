@@ -36,6 +36,11 @@ public class DarkestPixelDungeon extends Game {
   private static final long STALL_THRESHOLD = 10000L;
   private static final long SUSPEND_THRESHOLD = 3000L;
 
+  private static final String FONT_LATIN_CLASSIC = "pixelfont.ttf";
+  private static final String FONT_LATIN_SMOOTH = "font.ttf";
+  private static final String FONT_CJK_CLASSIC = "fonts/fusion_pixel_12px_zh_hans.ttf";
+  private static final String FONT_CJK_SMOOTH = "droid_sans.ttf";
+
   private volatile long renderHeartbeat;
   private volatile boolean watchdogReported;
   private volatile long actorProcessingSince;
@@ -201,9 +206,11 @@ public class DarkestPixelDungeon extends Game {
             Assets.SND_HIT2);
 
     if (classicFont()) {
-      RenderedText.setFont("pixelfont.ttf");
+      RenderedText.setFont(FONT_LATIN_CLASSIC);
+      RenderedText.setCjkFont(FONT_CJK_CLASSIC);
     } else {
-      RenderedText.setFont("font.ttf");
+      RenderedText.setFont(FONT_LATIN_SMOOTH);
+      RenderedText.setCjkFont(FONT_CJK_SMOOTH);
     }
   }
 
@@ -365,9 +372,11 @@ public class DarkestPixelDungeon extends Game {
   public static void classicFont(boolean classic) {
     Preferences.INSTANCE.put(Preferences.KEY_CLASSICFONT, classic);
     if (classic) {
-      RenderedText.setFont("pixelfont.ttf");
+      RenderedText.setFont(FONT_LATIN_CLASSIC);
+      RenderedText.setCjkFont(FONT_CJK_CLASSIC);
     } else {
-      RenderedText.setFont("font.ttf");
+      RenderedText.setFont(FONT_LATIN_SMOOTH);
+      RenderedText.setCjkFont(FONT_CJK_SMOOTH);
     }
   }
 

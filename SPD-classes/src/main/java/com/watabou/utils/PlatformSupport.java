@@ -33,13 +33,13 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 public class PlatformSupport {
-    private static final String CJK_FONT_ASSET = "droid_sans.ttf";
     private static final Pattern CJK_TEXT = Pattern.compile(
             "[\\p{IsHan}\\p{InHiragana}\\p{InKatakana}\\p{InHangul_Syllables}"
                     + "\\p{InCJK_Symbols_and_Punctuation}"
                     + "\\p{InHalfwidth_and_Fullwidth_Forms}]");
 
     private String fontAsset = "font.ttf";
+    private String cjkFontAsset = "droid_sans.ttf";
     private FreeTypeFontGenerator fontGenerator;
     private FreeTypeFontGenerator cjkFontGenerator;
     private PixmapPacker fontPacker;
@@ -71,10 +71,17 @@ public class PlatformSupport {
         }
     }
 
+    public synchronized void setCjkFont(String asset) {
+        if (!asset.equals(cjkFontAsset)) {
+            cjkFontAsset = asset;
+            resetFonts();
+        }
+    }
+
     public synchronized BitmapFont getFont(int size, String text) {
         if (fontGenerator == null) {
             fontGenerator = new FreeTypeFontGenerator(Gdx.files.internal(fontAsset));
-            cjkFontGenerator = new FreeTypeFontGenerator(Gdx.files.internal(CJK_FONT_ASSET));
+            cjkFontGenerator = new FreeTypeFontGenerator(Gdx.files.internal(cjkFontAsset));
             fontPacker = new PixmapPacker(1024, 1024, Pixmap.Format.RGBA8888, 1, false);
         }
         boolean useCjkFont = CJK_TEXT.matcher(text).find();
