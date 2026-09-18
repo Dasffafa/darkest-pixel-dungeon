@@ -41,6 +41,7 @@ class Damage(var value: Int, var from: Any, var to: Any) {
         const val PURE = 0x0004
         const val DEATH = 0x0008
         const val RANGED = 0x0010
+        const val HUNGER = 0x0020
     }
 
     // attributes

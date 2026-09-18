@@ -20,40 +20,67 @@
  */
 package com.egoal.darkestpixeldungeon.effects
 
-import com.watabou.noosa.RenderedText
-import com.watabou.noosa.Game
-import com.egoal.darkestpixeldungeon.effects.FloatingText
-import com.egoal.darkestpixeldungeon.scenes.PixelScene
+import com.egoal.darkestpixeldungeon.Assets
 import com.egoal.darkestpixeldungeon.DungeonTilemap
 import com.egoal.darkestpixeldungeon.scenes.GameScene
+import com.egoal.darkestpixeldungeon.scenes.PixelScene
+import com.egoal.darkestpixeldungeon.ui.RenderedTextBlock
 import com.watabou.noosa.Camera
+import com.watabou.noosa.Game
+import com.watabou.noosa.Image
+import com.watabou.noosa.TextureFilm
+import com.watabou.noosa.ui.Component
 import com.watabou.utils.SparseArray
-import java.util.ArrayList
+import kotlin.math.log10
+import kotlin.math.max
+import kotlin.math.roundToInt
 
-class FloatingText : RenderedText() {
+/**
+ * A single floating damage/status line.
+ *
+ * It can hold several [Entry] segments rendered side by side (e.g. physical
+ * damage plus elemental damage), each with its own icon and colour. The whole
+ * line shares one log-scaled font size based on the total value.
+ */
+class FloatingText : Component() {
+
+    /** One "icon + number" segment of the line. */
+    data class Entry(val text: String, val color: Int, val icon: Int, val value: Int)
+
+    private class Part(val block: RenderedTextBlock, val icon: Image?)
+
+    private val parts = ArrayList<Part>()
+
+    private var scale = 1f
     private var timeLeft = 0f
     private var key = -1
-    private var cameraZoom = -1f
-
-    init {
-        speed.y = -DISTANCE / LIFESPAN
-    }
 
     override fun update() {
         super.update()
-        if (timeLeft > 0) {
-            if (Game.elapsed.let { timeLeft -= it; timeLeft } <= 0) {
+        if (timeLeft > 0f) {
+            timeLeft -= Game.elapsed
+            if (timeLeft <= 0f) {
                 kill()
-            } else {
-                val p = timeLeft / LIFESPAN
-                alpha(if (p > 0.5f) 1f else p * 2)
+                return
+            }
+            val p = timeLeft / LIFESPAN
+            val a = if (p > 0.5f) 1f else p * 2f
+            val yMove = DISTANCE / LIFESPAN * Game.elapsed
+            y -= yMove
+            for (part in parts) {
+                part.block.alpha(a)
+                part.block.shift(-yMove)
+                part.icon?.let {
+                    it.alpha(a)
+                    it.y -= yMove
+                }
             }
         }
     }
 
     override fun kill() {
         if (key != -1) {
-            stacks[key].remove(this)
+            stacks[key]?.remove(this)
             key = -1
         }
         super.kill()
@@ -64,35 +91,148 @@ class FloatingText : RenderedText() {
         super.destroy()
     }
 
-    fun reset(x: Float, y: Float, text: String?, color: Int) {
-        revive()
-        if (cameraZoom != Camera.main.zoom) {
-            cameraZoom = Camera.main.zoom
-            PixelScene.chooseFont(9f, cameraZoom)
-            size(9 * cameraZoom.toInt())
-            scale.set(1 / cameraZoom)
+    override fun layout() {
+        super.layout()
+        var x = left()
+        var maxHeight = 0f
+        for (part in parts) {
+            val block = part.block
+            val lineHeight = block.height()
+            part.icon?.let {
+                it.x = x + ICON_OFFSET_X * scale
+                it.y = top()
+                PixelScene.align(it)
+                x += it.width() + ICON_GAP * scale
+            }
+            block.setPos(x, top())
+            x += block.width() + SEGMENT_GAP * scale
+            if (lineHeight > maxHeight) maxHeight = lineHeight
         }
-        text(text)
-        hardlight(color)
-        this.x = PixelScene.align(Camera.main, x - width() / 2)
-        this.y = PixelScene.align(Camera.main, y - height())
+        if (parts.isNotEmpty()) x -= SEGMENT_GAP * scale
+        width = x - left()
+        height = maxHeight
+    }
+
+    private fun reset(x: Float, y: Float, entries: List<Entry>, total: Int, baseSize: Int) {
+        revive()
+
+        clear()
+        parts.clear()
+
+        val camZoom = Camera.main.zoom
+        val factor = scaleFactor(total)
+        scale = factor
+        val fontPx = (baseSize * camZoom * factor).roundToInt()
+        val wordScale = 1f / camZoom
+
+        for (entry in entries) {
+            if (entry.value <= 0) continue
+
+            val block = RenderedTextBlock(fontPx)
+            block.zoom(wordScale)
+            block.text(entry.text)
+            block.hardlight(entry.color)
+
+            var icon: Image? = null
+            if (entry.icon != NO_ICON) {
+                icon = Image(Assets.TEXT_ICONS)
+                icon.frame(iconFilm.get(entry.icon))
+                icon.scale.set(factor)
+            }
+
+            add(block)
+            if (icon != null) add(icon)
+            parts.add(Part(block, icon))
+        }
+
+        if (parts.isEmpty()) {
+            kill()
+            return
+        }
+
+        layout()
+        setPos(
+            PixelScene.align(Camera.main, x - width() / 2f),
+            PixelScene.align(Camera.main, y - height())
+        )
+
         timeLeft = LIFESPAN
     }
 
     companion object {
         private const val LIFESPAN = 1f
-        private const val DISTANCE = DungeonTilemap.SIZE.toFloat()
+        private val DISTANCE = DungeonTilemap.SIZE.toFloat()
+
+        /** Base font size for plain text status lines. */
+        const val SIZE_STATUS = 9
+
+        /** Base font size for numeric damage/heal lines, matching the 7px icons. */
+        const val SIZE_NUMERIC = 7
+
+        private const val ICON_SIZE = 7
+        private const val ICON_GAP = 1f
+        private const val SEGMENT_GAP = 3f
+        // nudge all icons one base-scale cell to the right
+        private const val ICON_OFFSET_X = 1f
+        private const val SCALE_THRESHOLD = 100
+
         private val stacks = SparseArray<ArrayList<FloatingText>>()
 
-        /* STATIC METHODS */
-        fun show(x: Float, y: Float, text: String?, color: Int) {
-            GameScene.status()?.reset(x, y, text, color)
+        private val iconFilm: TextureFilm by lazy {
+            TextureFilm(Assets.TEXT_ICONS, ICON_SIZE, ICON_SIZE)
         }
 
-        fun show(x: Float, y: Float, key: Int, text: String?, color: Int) {
-            GameScene.status()?.let {
-                it.reset(x, y, text, color)
-                push(it, key)
+        const val NO_ICON = -1
+
+        // physical / magical
+        const val PHYS_DMG = 0
+        const val PHYS_DMG_NO_ARMOR = 1
+        const val MAGIC_DMG = 2
+
+        // elements
+        const val ELEM_FIRE = 6
+        const val ELEM_POISON = 13
+        const val ELEM_ICE = 8
+        const val ELEM_LIGHT = 27
+        const val ELEM_SHADOW = 16
+        const val ELEM_HOLY = 28
+
+        // special sources
+        const val HUNGER = 5
+
+        // positive
+        const val HEALING = 18
+
+        // critical
+        const val CRIT = 25
+        const val CRIT_NO_ARMOR = 26
+
+        /**
+         * Log scaling for large numbers. Values at or below [SCALE_THRESHOLD]
+         * render at 1x; above it the factor grows smoothly from 1x
+         * (100: 1.0x, 1000: 1.5x, 10000: 2.0x), uncapped.
+         */
+        fun scaleFactor(value: Int): Float =
+            if (value > SCALE_THRESHOLD) {
+                1f + 0.5f * log10(value / SCALE_THRESHOLD.toFloat())
+            } else 1f
+
+        fun showDmg(
+            x: Float,
+            y: Float,
+            key: Int,
+            entries: List<Entry>,
+            total: Int,
+            shake: Float,
+            shakeDuration: Float,
+            baseSize: Int
+        ) {
+            if (entries.none { it.value > 0 }) return
+            Game.runOnRenderThread {
+                val txt = GameScene.status() ?: return@runOnRenderThread
+                txt.reset(x, y, entries, total, baseSize)
+                if (key != -1) push(txt, key)
+                if (shake > 0f) Camera.main.shake(shake, shakeDuration)
             }
         }
 
@@ -103,13 +243,17 @@ class FloatingText : RenderedText() {
                 stack = ArrayList()
                 stacks.put(key, stack)
             }
-            if (stack.size > 0) {
+            if (stack.isNotEmpty()) {
                 var below = txt
                 var aboveIndex = stack.size - 1
+                var numBelow = 0
                 while (aboveIndex >= 0) {
+                    numBelow++
                     val above = stack[aboveIndex]
-                    if (above.y + above.height() > below.y) {
-                        above.y = below.y - above.height()
+                    if (above.bottom() + 4f > below.top()) {
+                        above.setPos(above.left(), below.top() - above.height() - 4f)
+                        above.timeLeft = minOf(above.timeLeft, LIFESPAN - numBelow / 5f)
+                        above.timeLeft = max(above.timeLeft, 0f)
                         below = above
                         aboveIndex--
                     } else {

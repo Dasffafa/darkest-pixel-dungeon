@@ -172,6 +172,7 @@ public class Assets {
     // effects
     public static final String SPECKS = MISCS + "specks.png";
     public static final String EFFECTS = MISCS + "effects.png";
+    public static final String TEXT_ICONS = MISCS + "text_icons.png";
 
     // other
     public static final String ARCS_BG = MISCS + "arcs1.png";

@@ -77,7 +77,8 @@ class Hunger : Buff(), Hero.Doom {
 
                 if (partialDamage > 1) {
                     target.takeDamage(Damage(partialDamage.toInt(), this, target)
-                            .type(Damage.Type.MAGICAL).addFeature(Damage.Feature.PURE))
+                            .type(Damage.Type.MAGICAL)
+                            .addFeature(Damage.Feature.PURE or Damage.Feature.HUNGER))
                     if (target.isAlive) {
                         target.takeDamage(Damage(Random.Int(0, partialDamage.toInt() + 1), this, target)
                                 .type(Damage.Type.MENTAL).addFeature(Damage.Feature.PURE))
@@ -107,7 +108,7 @@ class Hunger : Buff(), Hero.Doom {
                     GLog.n(Messages.get(this, "onstarving"))
                     hero.resting = false
                     target.takeDamage(Damage(1, this, target).type(Damage.Type
-                            .MAGICAL).addFeature(Damage.Feature.PURE))
+                            .MAGICAL).addFeature(Damage.Feature.PURE or Damage.Feature.HUNGER))
                     statusUpdated = true
 
                 } else if (newLevel >= HUNGRY && level < HUNGRY) {
