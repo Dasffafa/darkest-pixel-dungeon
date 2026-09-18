@@ -193,7 +193,7 @@ class Heap : Bundlable {
     fun drop(item: Item) {
         var theItem = item
         if(theItem.stackable){
-            items.find { it.isSimilar(theItem) }?.let {
+            items.find { it !== theItem && it.isSimilar(theItem) }?.let {
                 it.quantity += theItem.quantity
                 theItem = it
             }
