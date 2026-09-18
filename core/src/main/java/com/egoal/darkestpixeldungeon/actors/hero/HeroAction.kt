@@ -339,6 +339,10 @@ abstract class HeroAction(var dst: Int = 0) {
     class Attack(var target: Char) : HeroAction() {
         override fun act(hero: Hero): Boolean {
             hero.enemy = target
+
+            val weapon = hero.belongings.weapon
+            if (weapon != null && !weapon.beforeAttack(hero, target, this)) return false
+
             if (target.isAlive && hero.canAttack(target) && !hero.isCharmedBy(target) && hero.buff(Disarm::class.java) == null) {
                 Invisibility.dispel()
                 hero.spend(hero.attackDelay())

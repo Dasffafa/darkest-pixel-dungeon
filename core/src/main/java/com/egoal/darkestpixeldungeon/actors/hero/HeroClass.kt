@@ -370,6 +370,7 @@ enum class HeroClass(private val title: String, vararg subclasses: HeroSubClass)
         LongSpear().identify().collect()
         Nunchakus().identify().collect()
         MeadWine().identify().collect()
+        Kusarigama().identify().upgrade(6).collect()
 
         hero.heroPerk.add(IntendedTransportation())
         Dungeon.quickslot.setSlot(6, ScrollOfUpgrade().apply {

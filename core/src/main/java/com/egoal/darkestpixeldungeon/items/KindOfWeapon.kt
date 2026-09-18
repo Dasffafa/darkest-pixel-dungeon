@@ -23,8 +23,8 @@ package com.egoal.darkestpixeldungeon.items
 import com.egoal.darkestpixeldungeon.actors.Char
 import com.egoal.darkestpixeldungeon.actors.Damage
 import com.egoal.darkestpixeldungeon.actors.hero.Hero
+import com.egoal.darkestpixeldungeon.actors.hero.HeroAction
 import com.egoal.darkestpixeldungeon.messages.M
-import com.egoal.darkestpixeldungeon.messages.Messages
 import com.egoal.darkestpixeldungeon.utils.GLog
 import com.watabou.utils.Random
 
@@ -86,7 +86,13 @@ abstract class KindOfWeapon : EquipableItem() {
 
     open fun reachFactor(hero: Hero): Int = 1
 
+    // called before a melee attack is resolved; return false to let the weapon handle this action
+    open fun beforeAttack(attacker: Hero, defender: Char, action: HeroAction.Attack): Boolean = true
+
     open fun defendDamage(dmg: Damage): Damage = dmg
+
+    // sound played when this weapon lands a hit, null to use the default hit sound
+    open fun hitSound(): String? = null
 
     // process, called in attackProc
     open fun proc(dmg: Damage): Damage = dmg
