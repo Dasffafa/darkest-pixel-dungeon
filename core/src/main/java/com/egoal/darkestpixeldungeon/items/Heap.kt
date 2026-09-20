@@ -64,6 +64,8 @@ class Heap : Bundlable {
 //    var sprite: ItemSprite? = null
     lateinit var sprite: ItemSprite
     var seen = false
+    var isPending = false
+    var pendingKind = PendingKind.NONE
 
     var items: LinkedList<Item> = LinkedList()
 
@@ -85,6 +87,15 @@ class Heap : Bundlable {
         MIMIC
     }
 
+    /** Which limited drop a pending heap carries, resolved with the hero's real-time luck. */
+    enum class PendingKind {
+        NONE,
+        POS,
+        ARCANE_STYLUS,
+        WINE,
+        LULLABY
+    }
+
     fun image(): Int = when (type) {
         Type.HEAP -> if (size() > 0) items.peek().image() else 0
         Type.CHEST, Type.MIMIC -> ItemSpriteSheet.CHEST
@@ -97,7 +108,51 @@ class Heap : Bundlable {
 
     fun glowing(): ItemSprite.Glowing? = if (type == Type.HEAP && !empty()) items.peek().glowing() else null
 
+    fun checkItemsSeen(hero: Hero) {
+        if (type == Type.HEAP) {
+            var changed = false
+            for (item in ArrayList(items)) {
+                if (!item.everSeen) {
+                    item.everSeen = true
+                    item.onFirstSeen(hero)
+                    changed = true
+                }
+            }
+            if (changed && ::sprite.isInitialized && !empty()) {
+                sprite.view(items.peek())
+            }
+        }
+    }
+
+    fun resolvePending(hero: Hero) {
+        if (!isPending) return
+        isPending = false
+
+        val generated: List<Item> = when {
+            pendingKind != PendingKind.NONE && !Dungeon.isLevelNull ->
+                Dungeon.level.createPendingLimitedDrop(pendingKind, hero)
+            pendingKind != PendingKind.NONE -> emptyList()
+            Random.Float() < 0.25f + 0.05f * hero.wealthBonus() ->
+                listOf(if (Dungeon.depth > 5) Generator.generate(hero) else Generator.generate())
+            else -> emptyList()
+        }
+
+        if (generated.isEmpty()) {
+            destroy()
+            return
+        }
+
+        items.addAll(generated)
+        if (::sprite.isInitialized) {
+            if (type == Type.HEAP) sprite.view(items.peek())
+            else sprite.view(image(), glowing())
+        }
+    }
+
     fun open(hero: Hero) {
+        if (isPending) resolvePending(hero)
+        if (!Dungeon.isLevelNull && Dungeon.level.heaps.get(pos) !== this) return
+
         when (type) {
             Type.MIMIC -> if (Mimic.SpawnAt(pos, items) != null) {
                 destroy()
@@ -137,6 +192,7 @@ class Heap : Bundlable {
             type = Type.HEAP
             sprite!!.link()
             sprite!!.drop()
+            checkItemsSeen(hero)
         }
     }
 
@@ -191,6 +247,7 @@ class Heap : Bundlable {
     fun peek(): Item? = items.peek()
 
     fun drop(item: Item) {
+        if (isPending) isPending = false
         var theItem = item
         if(theItem.stackable){
             items.find { it !== theItem && it.isSimilar(theItem) }?.let {
@@ -208,6 +265,10 @@ class Heap : Bundlable {
             if(type== Type.HEAP) sprite.view(items.peek())
             else sprite.view(image(), glowing())
         }
+
+        if (type == Type.HEAP && !Dungeon.isLevelNull && Dungeon.visible[pos] && !Dungeon.isHeroNull && Dungeon.hero.isAlive) {
+            checkItemsSeen(Dungeon.hero)
+        }
     }
 
     fun replace(a: Item, b: Item) {
@@ -219,6 +280,8 @@ class Heap : Bundlable {
     }
 
     fun burn() {
+        if (isPending && !Dungeon.isHeroNull) resolvePending(Dungeon.hero)
+        if (!Dungeon.isLevelNull && Dungeon.level.heaps.get(pos) !== this) return
 
         if (type == Type.MIMIC) {
             val m = Mimic.SpawnAt(pos, items)
@@ -275,12 +338,17 @@ class Heap : Bundlable {
     //Note: should not be called to initiate an explosion, but rather by an
     // explosion that is happening.
     fun explode() {
+        if (isPending && !Dungeon.isHeroNull) resolvePending(Dungeon.hero)
+        if (!Dungeon.isLevelNull && Dungeon.level.heaps.get(pos) !== this) return
 
         //breaks open most standard containers, mimics die.
         if (type == Type.MIMIC || type == Type.CHEST || type == Type.SKELETON) {
             type = Type.HEAP
             sprite!!.link()
             sprite!!.drop()
+            if (!Dungeon.isLevelNull && Dungeon.visible[pos] && !Dungeon.isHeroNull && Dungeon.hero.isAlive) {
+                checkItemsSeen(Dungeon.hero)
+            }
             return
         }
 
@@ -398,6 +466,8 @@ class Heap : Bundlable {
             if (bundle.contains(EPITAPH_NAME)) epitaphName = bundle.getString(EPITAPH_NAME)
             if (bundle.contains(EPITAPH_TEXT)) epitaphText = bundle.getString(EPITAPH_TEXT)
         }
+        if (bundle.contains(IS_PENDING)) isPending = bundle.getBoolean(IS_PENDING)
+        if (bundle.contains(PENDING_KIND)) pendingKind = bundle.getEnum(PENDING_KIND, PendingKind::class.java)
     }
 
     override fun storeInBundle(bundle: Bundle) {
@@ -405,6 +475,8 @@ class Heap : Bundlable {
         bundle.put(SEEN, seen)
         bundle.put(TYPE, type.toString())
         bundle.put(ITEMS, items)
+        if (isPending) bundle.put(IS_PENDING, isPending)
+        if (pendingKind != PendingKind.NONE) bundle.put(PENDING_KIND, pendingKind)
         if (type == Type.TOMB) {
             epitaphName?.let { bundle.put(EPITAPH_NAME, it) }
             epitaphText?.let { bundle.put(EPITAPH_TEXT, it) }
@@ -425,6 +497,8 @@ class Heap : Bundlable {
         private const val SEEN = "seen"
         private const val TYPE = "type"
         private const val ITEMS = "items"
+        private const val IS_PENDING = "is_pending"
+        private const val PENDING_KIND = "pending_kind"
         private const val EPITAPH_NAME = "epitaph_name"
         private const val EPITAPH_TEXT = "epitaph_text"
     }

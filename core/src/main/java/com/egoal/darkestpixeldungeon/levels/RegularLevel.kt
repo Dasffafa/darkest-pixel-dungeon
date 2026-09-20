@@ -299,19 +299,29 @@ abstract class RegularLevel : Level() {
             else Generator.generate()
         }
 
-        var nItems = 3
-
-        // bonus from wealth
-        while (nItems <= 6 && Random.Float() < .25f + Dungeon.hero.wealthBonus() * 0.05f)
-            ++nItems
-
-        for (i in 1..nItems) {
+        // 3 guaranteed heaps
+        for (i in 1..3) {
             val heap = when (Random.Int(10)) {
                 0 -> Heap.Type.SKELETON
                 in 1..4 -> if (Dungeon.depth > 1 && Random.Float() < 0.25f) Heap.Type.MIMIC else Heap.Type.CHEST
                 else -> Heap.Type.HEAP
             }
-            drop(random_item(), randomDropCell()).type = heap
+            var cell = randomDropCell()
+            while (heaps.get(cell) != null) cell = randomDropCell()
+            drop(random_item(), cell).type = heap
+        }
+
+        // 4 pending empty heaps resolved in real-time when seen, depending on player's luck
+        for (i in 1..4) {
+            val heapType = when (Random.Int(10)) {
+                0 -> Heap.Type.SKELETON
+                in 1..4 -> if (Dungeon.depth > 1 && Random.Float() < 0.25f) Heap.Type.MIMIC else Heap.Type.CHEST
+                else -> Heap.Type.HEAP
+            }
+            var cell = randomDropCell()
+            while (heaps.get(cell) != null) cell = randomDropCell()
+            val heap = dropEmpty(cell, heapType)
+            heap.isPending = true
         }
 
         // extra missile weapon
@@ -334,6 +344,15 @@ abstract class RegularLevel : Level() {
                     c = randomDropCell()
 
             drop(item, c).type = Heap.Type.HEAP
+        }
+
+        // reserved limited drops: contents are rolled when the hero first sees them
+        for (kind in pendingLimitedDrops) {
+            var cell = randomDropCell()
+            while (heaps.get(cell) != null) cell = randomDropCell()
+            val heap = dropEmpty(cell, Heap.Type.HEAP)
+            heap.isPending = true
+            heap.pendingKind = kind
         }
 
         // hero remains

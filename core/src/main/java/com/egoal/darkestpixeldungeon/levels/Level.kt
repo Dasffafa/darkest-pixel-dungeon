@@ -26,6 +26,7 @@ import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.Statistics
 import com.egoal.darkestpixeldungeon.actors.Actor
 import com.egoal.darkestpixeldungeon.actors.Char
+import com.egoal.darkestpixeldungeon.actors.hero.Hero
 import com.egoal.darkestpixeldungeon.actors.blobs.Blob
 import com.egoal.darkestpixeldungeon.actors.blobs.WellWater
 import com.egoal.darkestpixeldungeon.actors.buffs.*
@@ -111,6 +112,10 @@ abstract class Level : Bundlable {
     private var lightMapDirty = true
 
     protected var itemsToSpawn = ArrayList<Item>()
+
+    // limited drops whose wealth-dependent roll is deferred to the moment the
+    // hero first sees them; filled by createStationaryItems(), consumed by createItems().
+    val pendingLimitedDrops = ArrayList<Heap.PendingKind>()
 
     // visuals is added each time the scene is created,
     // so, no need to keep track on them in the bundle
@@ -686,6 +691,21 @@ abstract class Level : Bundlable {
         }
     }
 
+    open fun dropEmpty(cell: Int, type: Heap.Type = Heap.Type.HEAP): Heap {
+        var heap: Heap? = heaps.get(cell)
+        if (heap == null) {
+            heap = Heap()
+            heap.type = type
+            heap.seen = false
+            heap.pos = cell
+            heaps.put(cell, heap)
+            GameScene.add(heap)
+        } else {
+            heap.type = type
+        }
+        return heap
+    }
+
     open fun drop(item: Item, cell: Int): Heap {
         var cell = cell
 
@@ -947,15 +967,46 @@ abstract class Level : Bundlable {
                 .forEach { observeN9(it.pos) }
 
         if (c === Dungeon.hero) {
-            for (heap in heaps.values())
-                if (!heap.seen && fieldOfView[heap.pos])
-                    heap.seen = true
+            for (heap in heaps.values()) {
+                if (fieldOfView[heap.pos] || visited[heap.pos]) {
+                    if (heap.isPending) {
+                        heap.resolvePending(Dungeon.hero)
+                    }
+                    if (heaps.get(heap.pos) === heap) {
+                        heap.seen = true
+                        heap.checkItemsSeen(Dungeon.hero)
+                    }
+                }
+            }
         }
 
     }
 
+    /** Rolls one reserved limited drop using the hero's real-time luck. */
+    open fun createPendingLimitedDrop(kind: Heap.PendingKind, hero: Hero): List<Item> {
+        val p = 0.925f.pow(hero.wealthBonus())
+        return when (kind) {
+            Heap.PendingKind.POS ->
+                listOf<Item>(if (Random.Float() > p) PotionOfMight() else PotionOfStrength())
+            Heap.PendingKind.ARCANE_STYLUS -> buildList<Item> {
+                if (Random.Float() > p) add(Stylus())
+                add(Stylus())
+            }
+            Heap.PendingKind.WINE -> buildList<Item> {
+                if (Random.Float() > p) add(Wine())
+                add(if (Random.Float() < 0.6f) Wine() else BrownAle())
+            }
+            Heap.PendingKind.LULLABY -> buildList<Item> {
+                if (Random.Float() > p) add(ScrollOfLullaby())
+                add(ScrollOfLullaby())
+            }
+            Heap.PendingKind.NONE -> emptyList()
+        }
+    }
+
     private fun createStationaryItems(): ArrayList<Item> {
         val items = ArrayList<Item>()
+        pendingLimitedDrops.clear()
         if (Dungeon.depth == 0 || Dungeon.depth == 21 || Dungeon.bossLevel())
             return items
 
@@ -963,9 +1014,10 @@ abstract class Level : Bundlable {
         items.add(Food())
         if (Random.Float() < 0.12f) items.add(Generator.FOOD.generate())
 
-        val p = 0.925f.pow(Dungeon.hero.wealthBonus())
+        // wealth-dependent drops: reserve the quota now, but roll the actual
+        // result when the hero first sees the heap (see createPendingLimitedDrop).
         if (Dungeon.posNeeded()) {
-            items.add(if (Random.Float() > p) PotionOfMight() else PotionOfStrength())
+            pendingLimitedDrops.add(Heap.PendingKind.POS)
             Dungeon.limitedDrops.strengthPotions.count++
         }
         if (Dungeon.souNeeded()) {
@@ -973,18 +1025,15 @@ abstract class Level : Bundlable {
             Dungeon.limitedDrops.upgradeScrolls.count++
         }
         if (Dungeon.asNeeded()) {
-            if (Random.Float() > p) items.add(Stylus())
-            items.add(Stylus())
+            pendingLimitedDrops.add(Heap.PendingKind.ARCANE_STYLUS)
             Dungeon.limitedDrops.arcaneStyli.count++
         }
         if (Dungeon.wineNeeded()) {
-            if (Random.Float() > p) items.add(Wine())
-            items.add(if (Random.Float() < 0.6f) Wine() else BrownAle())
+            pendingLimitedDrops.add(Heap.PendingKind.WINE)
             Dungeon.limitedDrops.wine.count++
         }
         if (Dungeon.scrollOfLullabyNeed()) {
-            if (Random.Float() > p) items.add(ScrollOfLullaby())
-            items.add(ScrollOfLullaby())
+            pendingLimitedDrops.add(Heap.PendingKind.LULLABY)
             Dungeon.limitedDrops.lullabyScrolls.count++
         }
 

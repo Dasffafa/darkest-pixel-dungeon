@@ -65,6 +65,7 @@ open class Item : Bundlable {
     var cursedKnown = false
 
     var everPicked = false // if is the first time get picked
+    var everSeen = false // if is the first time seen by hero
     var unique = false // Unique items persist through revival
     var bones = false // whether an item can be included in heroes remains
 
@@ -78,6 +79,9 @@ open class Item : Bundlable {
 
     open fun doPickUp(hero: Hero): Boolean {
         if (collect(hero.belongings.backpack)) {
+            if (!everSeen) onFirstSeen(hero)
+            everSeen = true
+
             if (!everPicked) onFirstPick(hero)
             everPicked = true
 
@@ -94,9 +98,13 @@ open class Item : Bundlable {
         hero.heroPerk.get(Knowledgeable::class.java)?.affectItem(this)
     }
 
+    open fun onFirstSeen(hero: Hero) {}
+
     open fun doDrop(hero: Hero) {
         hero.spendAndNext(TIME_TO_DROP)
-        Dungeon.level.drop(detachAll(hero.belongings.backpack), hero.pos).sprite.drop(hero.pos)
+        val dropped = detachAll(hero.belongings.backpack)
+        dropped.everSeen = true
+        Dungeon.level.drop(dropped, hero.pos).sprite.drop(hero.pos)
     }
 
     // resets an item's properties, to ensure consistency between runs
@@ -130,6 +138,7 @@ open class Item : Bundlable {
     }
 
     protected open fun onThrow(cell: Int) {
+        everSeen = true
         val heap = Dungeon.level.drop(this, cell)
         if (!heap.empty()) {
             heap.sprite.drop(cell)
@@ -167,6 +176,7 @@ open class Item : Bundlable {
             Badges.validateItemLevelAquired(this)
         }
         items.add(this)
+        everSeen = true
 
         if (stackable || this is Boomerang)
             Dungeon.quickslot.replaceSimilar(this)
@@ -341,6 +351,7 @@ open class Item : Bundlable {
         bundle.put(CURSED, cursed)
         bundle.put(CURSED_KNOWN, cursedKnown)
         bundle.put(EVER_PICKED, everPicked)
+        bundle.put(EVER_SEEN, everSeen)
         if (Dungeon.quickslot.contains(this)) {
             bundle.put(QUICKSLOT, Dungeon.quickslot.getSlot(this))
         }
@@ -351,6 +362,7 @@ open class Item : Bundlable {
         levelKnown = bundle.getBoolean(LEVEL_KNOWN)
         cursedKnown = bundle.getBoolean(CURSED_KNOWN)
         everPicked = bundle.getBoolean(EVER_PICKED)
+        everSeen = bundle.getBoolean(EVER_SEEN)
 
         val level = bundle.getInt(LEVEL)
         if (level > 0) {
@@ -443,6 +455,7 @@ open class Item : Bundlable {
         private const val CURSED_KNOWN = "cursedKnown"
         private const val QUICKSLOT = "quickslotpos"
         private const val EVER_PICKED = "everpicked"
+        private const val EVER_SEEN = "everseen"
 
         lateinit var curUser: Hero
         lateinit var curItem: Item
