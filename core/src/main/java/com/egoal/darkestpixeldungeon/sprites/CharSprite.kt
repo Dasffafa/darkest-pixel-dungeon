@@ -155,7 +155,7 @@ open class CharSprite : MovieClip(), Tweener.Listener, MovieClip.Listener {
         emit { px, py, key ->
             FloatingText.showDmg(
                     px, py, key,
-                    listOf(FloatingText.Entry(message, color, FloatingText.NO_ICON, 0)),
+                    listOf(FloatingText.Entry(message, color, FloatingText.NO_ICON, 0, true)),
                     0, 0f, 0f, FloatingText.SIZE_STATUS)
         }
     }

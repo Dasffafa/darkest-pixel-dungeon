@@ -273,9 +273,9 @@ abstract class Char : Actor() {
 
             if (dmg.add_value > 0) {
                 sprite.burst(dmg.element.color, Random.Int(2, min(dmg.add_value / 2, 6)))
-                val icon = elementIcon(dmg.element)
                 entries.add(FloatingText.Entry(
-                        "${dmg.add_value}", DamagePalette.colorFor(icon), icon, dmg.add_value))
+                        "${dmg.add_value}", DamagePalette.colorFor(dmg.element),
+                        dmg.element.ordinal, dmg.add_value, elementIcon = true))
             }
 
             if (entries.isNotEmpty()) {
@@ -308,6 +308,8 @@ abstract class Char : Actor() {
     }
 
     private fun floatingIcon(dmg: Damage): Int {
+        if (dmg.from is Bleeding) return FloatingText.BLEEDING
+        if (dmg.from is Ooze) return FloatingText.OOZE
         if (dmg.isFeatured(Damage.Feature.HUNGER)) return FloatingText.HUNGER
         val critical = dmg.isFeatured(Damage.Feature.CRITICAL)
         val pure = dmg.isFeatured(Damage.Feature.PURE)
@@ -318,15 +320,6 @@ abstract class Char : Actor() {
             Damage.Type.NORMAL -> FloatingText.PHYS_DMG
             else -> FloatingText.NO_ICON
         }
-    }
-
-    private fun elementIcon(element: Damage.Element): Int = when (element) {
-        Damage.Element.Fire -> FloatingText.ELEM_FIRE
-        Damage.Element.Poison -> FloatingText.ELEM_POISON
-        Damage.Element.Ice -> FloatingText.ELEM_ICE
-        Damage.Element.Light -> FloatingText.ELEM_LIGHT
-        Damage.Element.Shadow -> FloatingText.ELEM_SHADOW
-        Damage.Element.Holy -> FloatingText.ELEM_HOLY
     }
 
     fun addResistances(element: Damage.Element, r: Float) {

@@ -1,5 +1,7 @@
 package com.egoal.darkestpixeldungeon.effects
 
+import com.egoal.darkestpixeldungeon.actors.Damage
+
 object DamagePalette {
 
     // main damage
@@ -9,16 +11,20 @@ object DamagePalette {
     const val CRIT = 0xcc0000
     const val PURE_CRIT = 0xffffff
 
-    // elements
+    // elements (matched to the dominant fill colour of the resistance icons)
     const val FIRE = 0xffaa33
-    const val ICE = 0x5674b9
-    const val POISON = 0x993399
-    const val SHADOW = 0xffffff
-    const val LIGHT = 0x2ce8f5
+    const val ICE = 0xdee8ff
+    const val POISON = 0x50ff60
+    const val SHADOW = 0x575757
+    const val LIGHT = 0xdee8ff
     const val HOLY = 0xffff00
 
+    // debuff / damage-over-time
+    const val BLEEDING = 0xcc0000
+    const val OOZE = 0x008056
+
     // special sources
-    const val HUNGER = 0xff0000
+    const val HUNGER = 0xf2e4da
 
     // positive
     const val HEALING = 0x00ff00
@@ -32,14 +38,19 @@ object DamagePalette {
         FloatingText.MAGIC_DMG -> MAGICAL
         FloatingText.CRIT -> CRIT
         FloatingText.CRIT_NO_ARMOR -> PURE_CRIT
-        FloatingText.ELEM_FIRE -> FIRE
-        FloatingText.ELEM_ICE -> ICE
-        FloatingText.ELEM_POISON -> POISON
-        FloatingText.ELEM_SHADOW -> SHADOW
-        FloatingText.ELEM_LIGHT -> LIGHT
-        FloatingText.ELEM_HOLY -> HOLY
+        FloatingText.BLEEDING -> BLEEDING
+        FloatingText.OOZE -> OOZE
         FloatingText.HUNGER -> HUNGER
         FloatingText.HEALING -> HEALING
         else -> DEFAULT
+    }
+
+    fun colorFor(element: Damage.Element): Int = when (element) {
+        Damage.Element.Fire -> FIRE
+        Damage.Element.Poison -> POISON
+        Damage.Element.Ice -> ICE
+        Damage.Element.Light -> LIGHT
+        Damage.Element.Shadow -> SHADOW
+        Damage.Element.Holy -> HOLY
     }
 }

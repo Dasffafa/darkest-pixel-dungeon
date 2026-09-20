@@ -44,20 +44,27 @@ import kotlin.math.roundToInt
  */
 class FloatingText : Component() {
 
-    /** One "icon + number" segment of the line. */
-    data class Entry(val text: String, val color: Int, val icon: Int, val value: Int)
+    data class Entry(
+            val text: String,
+            val color: Int,
+            val icon: Int,
+            val value: Int,
+            val status: Boolean = false,
+            val elementIcon: Boolean = false)
 
     private class Part(val block: RenderedTextBlock, val icon: Image?)
 
     private val parts = ArrayList<Part>()
 
     private var scale = 1f
-    private var timeLeft = 0f
+    private var timeLeft = LIFESPAN
     private var key = -1
 
     override fun update() {
         super.update()
-        if (timeLeft > 0f) {
+        // >= (not >) so a text nudged to exactly 0 by push() still expires
+        // instead of freezing on screen forever.
+        if (timeLeft >= 0f) {
             timeLeft -= Game.elapsed
             if (timeLeft <= 0f) {
                 kill()
@@ -126,19 +133,14 @@ class FloatingText : Component() {
         val wordScale = 1f / camZoom
 
         for (entry in entries) {
-            if (entry.value <= 0) continue
+            if (!entry.status && entry.value <= 0) continue
 
             val block = RenderedTextBlock(fontPx)
             block.zoom(wordScale)
             block.text(entry.text)
             block.hardlight(entry.color)
 
-            var icon: Image? = null
-            if (entry.icon != NO_ICON) {
-                icon = Image(Assets.TEXT_ICONS)
-                icon.frame(iconFilm.get(entry.icon))
-                icon.scale.set(factor)
-            }
+            val icon = makeIcon(entry, factor)
 
             add(block)
             if (icon != null) add(icon)
@@ -157,6 +159,20 @@ class FloatingText : Component() {
         )
 
         timeLeft = LIFESPAN
+    }
+
+    private fun makeIcon(entry: Entry, factor: Float): Image? {
+        if (entry.icon == NO_ICON) return null
+
+        val icon = if (entry.elementIcon) {
+            Image(Assets.DPD_CONS_ICONS).apply {
+                frame(ELEM_ICON_SIZE * entry.icon, ELEM_ICON_ROW, ELEM_ICON_SIZE, ELEM_ICON_SIZE)
+            }
+        } else {
+            Image(Assets.TEXT_ICONS).apply { frame(iconFilm.get(entry.icon)) }
+        }
+        icon.scale.set(factor)
+        return icon
     }
 
     companion object {
@@ -189,13 +205,15 @@ class FloatingText : Component() {
         const val PHYS_DMG_NO_ARMOR = 1
         const val MAGIC_DMG = 2
 
-        // elements
-        const val ELEM_FIRE = 6
-        const val ELEM_POISON = 13
-        const val ELEM_ICE = 8
-        const val ELEM_LIGHT = 27
-        const val ELEM_SHADOW = 16
-        const val ELEM_HOLY = 28
+        // elements are drawn from the DPD_CONS_ICONS element row, the same
+        // icons the resistance panel uses; Entry.icon is then the element
+        // ordinal (Damage.Element order) and Entry.elementIcon is true.
+        private const val ELEM_ICON_SIZE = 8
+        private const val ELEM_ICON_ROW = 16
+
+        // debuff / damage-over-time
+        const val BLEEDING = 10
+        const val OOZE = 14
 
         // special sources
         const val HUNGER = 5
@@ -227,7 +245,7 @@ class FloatingText : Component() {
             shakeDuration: Float,
             baseSize: Int
         ) {
-            if (entries.none { it.value > 0 }) return
+            if (entries.none { it.status || it.value > 0 }) return
             Game.runOnRenderThread {
                 val txt = GameScene.status() ?: return@runOnRenderThread
                 txt.reset(x, y, entries, total, baseSize)

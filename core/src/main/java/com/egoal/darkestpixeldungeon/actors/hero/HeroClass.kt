@@ -367,7 +367,7 @@ enum class HeroClass(private val title: String, vararg subclasses: HeroSubClass)
         hero.HT = 1000
         hero.HP = hero.HT
 
-        LongSpear().identify().collect()
+        LongestSpear().identify().upgrade(6).collect()
         Nunchakus().identify().collect()
         MeadWine().identify().collect()
         Kusarigama().identify().upgrade(6).collect()
