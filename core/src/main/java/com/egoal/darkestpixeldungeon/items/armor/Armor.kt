@@ -54,6 +54,10 @@ open class Armor(var tier: Int) : EquipableItem() {
     var glyph: Glyph? = null
     private var seal: BrokenSeal? = null
 
+    override fun onFirstSeen(hero: Hero) {
+        if (!isIdentified) rollRareQuality(hero)
+    }
+
     override fun storeInBundle(bundle: Bundle) {
         super.storeInBundle(bundle)
         bundle.put(UNFAMILIRIARITY, hitsToKnow)

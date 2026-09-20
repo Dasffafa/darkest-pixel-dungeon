@@ -92,6 +92,11 @@ abstract class Weapon : KindOfWeapon() {
         return dmg
     }
 
+    override fun onFirstSeen(hero: Hero) {
+        // missiles carry no level, only melee weapons benefit
+        if (this !is MissileWeapon && !isIdentified) rollRareQuality(hero)
+    }
+
     override fun storeInBundle(bundle: Bundle) {
         super.storeInBundle(bundle)
         bundle.put(UNFAMILIRIARITY, hitsToKnow)

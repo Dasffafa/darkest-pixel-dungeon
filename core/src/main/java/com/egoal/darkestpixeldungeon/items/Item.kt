@@ -46,7 +46,9 @@ import com.watabou.noosa.particles.Emitter
 import com.watabou.utils.Bundlable
 import com.watabou.utils.Bundle
 import com.watabou.utils.Callback
+import com.watabou.utils.Random
 import java.util.*
+import kotlin.math.min
 
 open class Item : Bundlable {
     var defaultAction: String = ""
@@ -78,8 +80,9 @@ open class Item : Bundlable {
     open fun actions(hero: Hero): ArrayList<String> = arrayListOf(AC_DROP, AC_THROW)
 
     open fun doPickUp(hero: Hero): Boolean {
+        val firstSeen = !everSeen
         if (collect(hero.belongings.backpack)) {
-            if (!everSeen) onFirstSeen(hero)
+            if (firstSeen) onFirstSeen(hero)
             everSeen = true
 
             if (!everPicked) onFirstPick(hero)
@@ -99,6 +102,22 @@ open class Item : Bundlable {
     }
 
     open fun onFirstSeen(hero: Hero) {}
+
+    /**
+     * Rare quality boost for unidentified gear: rolls extra levels with the hero's
+     * real-time luck (wealth bonus). The first roll succeeds with
+     * p = min(1, 0.02 + 0.1 * luck); each success grants one level and halves the
+     * chance for the next roll, until a roll fails. [inverted] grants levels down
+     * instead (cursed rings), so that a later uncursing turns the negative level
+     * into a stronger positive one.
+     */
+    fun rollRareQuality(hero: Hero, inverted: Boolean = false) {
+        var p = min(1f, 0.02f + 0.1f * hero.wealthBonus())
+        while (Random.Float() < p) {
+            level(level() + if (inverted) -1 else 1)
+            p /= 2f
+        }
+    }
 
     open fun doDrop(hero: Hero) {
         hero.spendAndNext(TIME_TO_DROP)

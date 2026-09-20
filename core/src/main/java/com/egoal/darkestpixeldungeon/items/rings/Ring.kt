@@ -66,6 +66,11 @@ open abstract class Ring : KindofMisc() {
         buff!!.attachTo(ch)
     }
 
+    override fun onFirstSeen(hero: Hero) {
+        // cursed rings carry negative levels; deepening the curse pays off once uncursed
+        if (!isIdentified) rollRareQuality(hero, inverted = cursed)
+    }
+
     override fun doUnequip(hero: Hero, collect: Boolean, single: Boolean): Boolean {
         return if (super.doUnequip(hero, collect, single)) {
             hero.remove(buff!!)

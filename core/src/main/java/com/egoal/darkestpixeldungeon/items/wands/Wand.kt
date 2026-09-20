@@ -75,6 +75,10 @@ abstract class Wand(val isMissile: Boolean) : Item() {
     override val isIdentified: Boolean
         get() = super.isIdentified && curChargeKnown
 
+    override fun onFirstSeen(hero: Hero) {
+        if (!isIdentified) rollRareQuality(hero)
+    }
+
     init {
         defaultAction = AC_ZAP
         usesTargeting = true
