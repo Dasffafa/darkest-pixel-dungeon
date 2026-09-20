@@ -8,7 +8,6 @@ import com.egoal.darkestpixeldungeon.actors.Damage
 import com.egoal.darkestpixeldungeon.actors.buffs.Bleeding
 import com.egoal.darkestpixeldungeon.actors.buffs.Buff
 import com.egoal.darkestpixeldungeon.actors.buffs.Cripple
-import com.egoal.darkestpixeldungeon.actors.buffs.Invisibility
 import com.egoal.darkestpixeldungeon.actors.hero.Hero
 import com.egoal.darkestpixeldungeon.actors.hero.HeroAction
 import com.egoal.darkestpixeldungeon.effects.Chains
@@ -34,8 +33,6 @@ class Kusarigama : MeleeWeapon() {
     private var meleeSoundToggle = false
 
     init {
-        image = ItemSpriteSheet.KUSARIGAMA
-
         tier = 4
 
         defaultAction = AC_SWITCH
@@ -45,7 +42,7 @@ class Kusarigama : MeleeWeapon() {
 
     override fun min(lvl: Int): Int = formDamage(4 + lvl)
 
-    override fun max(lvl: Int): Int = formDamage(22 + 4 * lvl)
+    override fun max(lvl: Int): Int = formDamage(20 + 5 * lvl)
 
     private fun formDamage(dmg: Int): Int = round(dmg * formDamageFactor()).toInt()
 
@@ -62,12 +59,15 @@ class Kusarigama : MeleeWeapon() {
                     form = if (form == MELEE) RANGED else MELEE
                     applyForm()
                 }
+                updateQuickslot()
                 GLog.i(M.L(this, if (form == RANGED) "to_ranged" else "to_melee"))
             }
         }
     }
 
     private fun applyForm() {
+        image = if (form == RANGED) ItemSpriteSheet.KUSARIGAMA_RANGED else ItemSpriteSheet.KUSARIGAMA
+
         if (form == RANGED) {
             RCH = 3
             DLY = 1.5f
@@ -105,15 +105,19 @@ class Kusarigama : MeleeWeapon() {
         form = MELEE
         applyForm()
         attacker.busy()
-        attacker.spend(attacker.attackDelay())
 
         val onDragDone = Callback {
             Actor.addDelayed(Pushing(defender, defender.pos, newPos, Callback {
                 defender.pos = newPos
                 Dungeon.level.press(newPos, defender)
-                Buff.prolong(defender, Cripple::class.java, 4f)
-                followUp(attacker, defender)
+                Buff.prolong(defender, Cripple::class.java, 3f)
             }), -1f)
+
+            // The hero's turn is still suspended on this aborted attack action.
+            // Releasing it lets the actor thread run the queued Pushing; once the
+            // enemy has been dragged in, the attack action is re-run against it
+            // and lands the follow-up melee hit (which pays for the turn).
+            attacker.next()
         }
         throwChain(attacker, defender.pos, onDragDone)
 
@@ -128,17 +132,6 @@ class Kusarigama : MeleeWeapon() {
             parent.add(Chains(attacker.pos, target, onDone))
         else
             onDone?.call()
-    }
-
-    private fun followUp(attacker: Hero, defender: Char) {
-        attacker.enemy = defender
-        if (defender.isAlive && attacker.canAttack(defender)) {
-            Invisibility.dispel()
-            attacker.sprite.attack(defender.pos)
-        } else {
-            attacker.spendAndNext(0f)
-            attacker.ready()
-        }
     }
 
     private fun block(attacker: Hero) {
@@ -210,7 +203,7 @@ class Kusarigama : MeleeWeapon() {
         private const val RANGED = 1
 
         private const val SWEET_SPOT_DAMAGE = 1.33f
-        private const val MELEE_DAMAGE = 0.66f
+        private const val MELEE_DAMAGE = 0.50f
 
         private const val AC_SWITCH = "switch"
         private const val FORM = "form"

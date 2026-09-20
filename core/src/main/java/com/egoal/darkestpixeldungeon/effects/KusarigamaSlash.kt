@@ -20,11 +20,12 @@ class KusarigamaSlash : MovieClip(), MovieClip.Listener {
         kill()
     }
 
-    fun reset(targetCenter: PointF, attackAngle: Float) {
+    // angleDeg is in degrees, matching Visual.angle; the sprite faces the attack direction
+    fun reset(targetCenter: PointF, angleDeg: Float) {
         revive()
         x = targetCenter.x - origin.x
         y = targetCenter.y - origin.y
-        angle = attackAngle
+        angle = angleDeg
         play(anim)
     }
 
@@ -36,9 +37,11 @@ class KusarigamaSlash : MovieClip(), MovieClip.Listener {
 
             val from = attacker.sprite.center()
             val to = defender.sprite.center()
+            // PointF.angle gives radians, while Visual.angle expects degrees
             val attackAngle = PointF.angle(from, to)
+            val attackAngleDeg = Math.toDegrees(attackAngle.toDouble()).toFloat()
 
-            slash.reset(to, attackAngle)
+            slash.reset(to, attackAngleDeg)
 
             // Tangent to the arc: perpendicular to the line from attacker to defender
             val tangent = attackAngle + (Math.PI / 2).toFloat()
