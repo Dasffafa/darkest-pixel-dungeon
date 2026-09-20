@@ -13,6 +13,8 @@ class TorsoOfTheElder : Artifact() {
         levelCap = 10
     }
 
+    override fun canCleanseSilently(): Boolean = false
+
     override fun desc(): String {
         return super.desc() + "\n\n" + M.L(this, "desc_hint")
     }

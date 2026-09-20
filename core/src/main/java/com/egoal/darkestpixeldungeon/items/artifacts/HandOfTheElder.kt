@@ -39,6 +39,8 @@ class HandOfTheElder : Artifact() {
 
     private val rings = mutableListOf<Class<out Ring>>()
 
+    override fun canCleanseSilently(): Boolean = false
+
     override fun actions(hero: Hero): ArrayList<String> {
         val actions = super.actions(hero)
         if (isEquipped(hero)) {

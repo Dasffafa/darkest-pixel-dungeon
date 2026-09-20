@@ -55,6 +55,8 @@ class EyeballOfTheElder : Artifact() {
 
     override fun status(): String? = null // dont show info.
 
+    override fun canCleanseSilently(): Boolean = false
+
     override fun passiveBuff(): ArtifactBuff = HisEyes()
 
     private fun requireExp(): Int = level() * level() + 2

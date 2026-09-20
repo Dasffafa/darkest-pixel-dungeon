@@ -30,6 +30,8 @@ import com.egoal.darkestpixeldungeon.actors.hero.Hero
 import com.egoal.darkestpixeldungeon.actors.hero.perks.Knowledgeable
 import com.egoal.darkestpixeldungeon.effects.Speck
 import com.egoal.darkestpixeldungeon.items.bags.Bag
+import com.egoal.darkestpixeldungeon.items.armor.Armor
+import com.egoal.darkestpixeldungeon.items.weapon.Weapon
 import com.egoal.darkestpixeldungeon.items.weapon.missiles.Boomerang
 import com.egoal.darkestpixeldungeon.items.weapon.missiles.MissileWeapon
 import com.egoal.darkestpixeldungeon.mechanics.Ballistica
@@ -82,6 +84,9 @@ open class Item : Bundlable {
     open fun doPickUp(hero: Hero): Boolean {
         val firstSeen = !everSeen
         if (collect(hero.belongings.backpack)) {
+            // silent cleanse has top priority: before the quality roll and Knowledgeable
+            if (!everPicked) trySilentCleanse(hero)
+
             if (firstSeen) onFirstSeen(hero)
             everSeen = true
 
@@ -117,6 +122,26 @@ open class Item : Bundlable {
             level(level() + if (inverted) -1 else 1)
             p /= 2f
         }
+    }
+
+    /** Whether this item may be silently cleansed on first pickup; the Elder artifacts opt out. */
+    protected open fun canCleanseSilently(): Boolean = true
+
+    /**
+     * Silent curse cleansing on first pickup: a fully unidentified cursed item
+     * (both level and curse unknown) has a 2% * luck chance to be cleansed in
+     * secret, staying unidentified. Runs before the first-seen quality roll
+     * and before Knowledgeable.
+     */
+    protected open fun trySilentCleanse(hero: Hero) {
+        if (!cursed || levelKnown || cursedKnown || !canCleanseSilently()) return
+        if (Random.Float() >= 0.02f * hero.wealthBonus()) return
+
+        when (this) {
+            is Weapon -> clearCurseInscription()
+            is Armor -> if (hasCurseGlyph()) inscribe(null)
+        }
+        cursed = false
     }
 
     open fun doDrop(hero: Hero) {
