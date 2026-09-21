@@ -60,6 +60,7 @@ import com.egoal.darkestpixeldungeon.levels.features.Chasm
 import com.egoal.darkestpixeldungeon.levels.features.Door
 import com.egoal.darkestpixeldungeon.levels.features.HighGrass
 import com.egoal.darkestpixeldungeon.levels.features.Luminary
+import com.egoal.darkestpixeldungeon.levels.traps.PrizeTrap
 import com.egoal.darkestpixeldungeon.levels.traps.Trap
 import com.egoal.darkestpixeldungeon.mechanics.ShadowCaster
 import com.egoal.darkestpixeldungeon.messages.Messages
@@ -116,6 +117,10 @@ abstract class Level : Bundlable {
     // limited drops whose wealth-dependent roll is deferred to the moment the
     // hero first sees them; filled by createStationaryItems(), consumed by createItems().
     val pendingLimitedDrops = ArrayList<Heap.PendingKind>()
+
+    // prize traps: one is placed statically by RegularLevel; further traps may
+    // be converted into prize traps with the hero's real-time luck, up to the cap.
+    var prizeTrapCount = 0
 
     // visuals is added each time the scene is created,
     // so, no need to keep track on them in the bundle
@@ -296,6 +301,9 @@ abstract class Level : Bundlable {
             val trap = p as Trap
             traps.put(trap.pos, trap)
         }
+        if (bundle.contains(PRIZE_TRAP_COUNT)) {
+            prizeTrapCount = bundle.getInt(PRIZE_TRAP_COUNT)
+        }
 
         collection = bundle.getCollection(CUSTOM_TILES)
         for (p in collection) {
@@ -331,6 +339,7 @@ abstract class Level : Bundlable {
         bundle.put(HEAPS, heaps.values())
         bundle.put(PLANTS, plants.values())
         bundle.put(TRAPS, traps.values())
+        bundle.put(PRIZE_TRAP_COUNT, prizeTrapCount)
         bundle.put(CUSTOM_TILES, customTiles)
         bundle.put(MOBS, mobs)
         bundle.put(BLOBS, blobs.values)
@@ -801,10 +810,41 @@ abstract class Level : Bundlable {
         GameScene.updateMap(pos)
     }
 
+    /** Whether another trap may secretly become a prize trap, judged with the hero's real-time luck. */
+    fun rollPrizeTrapUpgrade(): Boolean {
+        if (prizeTrapCount >= MAX_PRIZE_TRAPS || Dungeon.isHeroNull) return false
+        if (Random.Float() >= 0.2f + 0.05f * Dungeon.hero.wealthBonus()) return false
+
+        ++prizeTrapCount
+        return true
+    }
+
+    /** Replaces a trap with a prize trap in place, preserving visibility; the sprite is reused. */
+    fun convertTrapToPrize(trap: Trap): PrizeTrap {
+        val prize = PrizeTrap()
+        prize.pos = trap.pos
+        prize.visible = trap.visible
+        traps.put(trap.pos, prize)
+        if (trap.hasSprite) {
+            prize.sprite = trap.sprite
+            prize.sprite.reset(prize)
+            prize.sprite.visible = prize.visible
+        } else {
+            GameScene.add(prize)
+        }
+        return prize
+    }
+
     fun discover(cell: Int) {
         set(cell, Terrain.discover(map[cell]))
         val trap = traps.get(cell)
-        trap?.reveal()
+        if (trap != null) {
+            // a hidden trap may secretly be treasure: judge with the hero's real-time luck
+            if (!trap.visible && trap.active && trap !is PrizeTrap && rollPrizeTrapUpgrade())
+                convertTrapToPrize(trap).reveal()
+            else
+                trap.reveal()
+        }
         GameScene.updateMap(cell)
     }
 
@@ -975,6 +1015,17 @@ abstract class Level : Bundlable {
                     if (heaps.get(heap.pos) === heap) {
                         heap.seen = true
                         heap.checkItemsSeen(Dungeon.hero)
+                    }
+                }
+            }
+
+            for (trap in traps.values()) {
+                if (fieldOfView[trap.pos] || visited[trap.pos]) {
+                    if (!trap.seen) {
+                        trap.seen = true
+                        // a visible trap is judged before its first view: it may secretly be treasure
+                        if (trap.visible && trap.active && trap !is PrizeTrap && rollPrizeTrapUpgrade())
+                            convertTrapToPrize(trap)
                     }
                 }
             }
@@ -1220,6 +1271,8 @@ abstract class Level : Bundlable {
         private const val HEAPS = "heaps"
         private const val PLANTS = "plants"
         private const val TRAPS = "traps"
+        private const val PRIZE_TRAP_COUNT = "prize_trap_count"
+        const val MAX_PRIZE_TRAPS = 5
         private const val CUSTOM_TILES = "customTiles"
         private const val MOBS = "mobs"
         private const val BLOBS = "blobs"

@@ -447,11 +447,10 @@ abstract class RegularLevel : Level() {
         val validCells = (1 until length).filter { map[it] == Terrain.EMPTY && findMobAt(it) == null }.shuffled()
         val traps = min(nTraps(), (validCells.size * 0.15).toInt())
 
-        // todo:
-        // bonus from wealth
-        var nPrize = 1
-        val bonus = Dungeon.hero.wealthBonus()
-        while (Random.Float() < .2f + bonus * 0.05f) if (++nPrize >= 5) break
+        // one prize trap is placed statically; further traps may secretly turn into
+        // prize traps later, judged with the hero's real-time luck (see Level.rollPrizeTrapUpgrade)
+        val nPrize = 1
+        prizeTrapCount = 1
 
         val trapsToSpawn = List(min(traps + nPrize, validCells.size)) {
             if (it < traps)
