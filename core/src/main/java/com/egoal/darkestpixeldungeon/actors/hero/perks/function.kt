@@ -33,21 +33,30 @@ class BrewEnhancedPotion : Perk() {
     }
 
     override fun image(): Int = PerkImageSheet.BREW_ENHANCED
-    private var nextProb = 0.333f
+    private var nextProb = -1f
 
-    fun affectPotion(p: Potion) {
+    private fun baseStep(hero: Hero = Dungeon.hero): Float {
+        val wealth = if (!Dungeon.isHeroNull) hero.wealthBonus() else 0
+        return (0.333f * (1f + 0.2f * wealth)).coerceAtLeast(0.01f)
+    }
+
+    fun affectPotion(p: Potion, hero: Hero = Dungeon.hero) {
+        val step = baseStep(hero)
+        if (nextProb < 0f) nextProb = step
+
         if (p.canBeReinforced()) {
             if (com.watabou.utils.Random.Float() < nextProb) {
                 p.reinforce()
-                nextProb = 0.333f
+                nextProb = step
 
                 Game.runOnRenderThread {
                     GameScene.effect(Flare(7, 32f).color(0xffccdd, true).show(
-                            Dungeon.hero.sprite.parent, DungeonTilemap.tileCenterToWorld(Dungeon.hero.pos), 2f))
+                            hero.sprite.parent, DungeonTilemap.tileCenterToWorld(hero.pos), 2f))
                 }
+                return
             }
         }
-        nextProb += 0.333f
+        nextProb += step
     }
 
     override fun storeInBundle(bundle: Bundle) {
@@ -57,7 +66,7 @@ class BrewEnhancedPotion : Perk() {
 
     override fun restoreFromBundle(bundle: Bundle) {
         super.restoreFromBundle(bundle)
-        nextProb = bundle.getFloat("nextprob")
+        nextProb = if (bundle.contains("nextprob")) bundle.getFloat("nextprob") else -1f
     }
 }
 
@@ -179,13 +188,18 @@ class GreedyMidas : Perk() {
 
     override fun image(): Int = PerkImageSheet.GREEDY_MIDAS
 
-    fun procGold(gold: Gold) = gold.apply {
+    fun procGold(gold: Gold, hero: Hero = Dungeon.hero) = gold.apply {
+        val wealth = if (!Dungeon.isHeroNull) hero.wealthBonus() else 0
+        val bestProb = (0.001f + 0.0033f * wealth).coerceAtLeast(0f)
+        val highProb = (0.33f + 0.0333f * wealth).coerceAtLeast(0f)
+
         val p = com.watabou.utils.Random.Float()
-        val q = gold.quantity() * when {
-            p < 0.33f -> 4.33f
-            p < 0.001f -> 10f
+        val multiplier = when {
+            p < bestProb -> 10f
+            p < bestProb + highProb -> 4.33f
             else -> 1f
         }
+        val q = gold.quantity() * multiplier
         quantity(round(q).toInt())
     }
 }
@@ -203,19 +217,23 @@ class Keen : Perk(3) {
 class Knowledgeable : Perk(3) {
     override fun image(): Int = PerkImageSheet.KNOWLEDGE
 
-    fun affectItem(item: Item) {
+    fun affectItem(item: Item, hero: Hero = Dungeon.hero) {
         if (item.isIdentified) return
 
-        if (com.watabou.utils.Random.Float() < identifyChance()) {
+        val chance = identifyChance(hero)
+        if (com.watabou.utils.Random.Float() < chance) {
             item.identify()
             GLog.w(M.L(this, "identity"))
-        } else if (!item.cursedKnown && com.watabou.utils.Random.Float() < identifyChance()) {
+        } else if (!item.cursedKnown && com.watabou.utils.Random.Float() < chance) {
             item.cursedKnown = true
             GLog.w(M.L(this, "know-curse"))
         }
     }
 
-    private fun identifyChance(): Float = 0.05f + 0.2f * level
+    private fun identifyChance(hero: Hero = Dungeon.hero): Float {
+        val wealth = if (!Dungeon.isHeroNull) hero.wealthBonus() else 0
+        return ((0.05f + 0.2f * level) * (1f + 0.2f * wealth)).coerceIn(0f, 1f)
+    }
 }
 
 class LevelPerception : Perk() {

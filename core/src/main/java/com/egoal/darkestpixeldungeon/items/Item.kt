@@ -103,7 +103,7 @@ open class Item : Bundlable {
     }
 
     protected open fun onFirstPick(hero: Hero) {
-        hero.heroPerk.get(Knowledgeable::class.java)?.affectItem(this)
+        hero.heroPerk.get(Knowledgeable::class.java)?.affectItem(this, hero)
     }
 
     open fun onFirstSeen(hero: Hero) {}
