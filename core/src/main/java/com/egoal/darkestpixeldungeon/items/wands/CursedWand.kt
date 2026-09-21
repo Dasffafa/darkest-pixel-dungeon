@@ -140,7 +140,7 @@ object CursedWand {
                                 break
                             }
                         } while (pos == -1)
-                        if (pos == -1 || Dungeon.bossLevel()) {
+                        if (pos == -1 || Dungeon.isBossAlive()) {
                             GLog.w(Messages.get(ScrollOfTeleportation::class.java, "no_tele"))
                         } else {
                             ch.pos = pos
@@ -277,7 +277,7 @@ object CursedWand {
             }
 
             //inter-level teleportation
-            2 -> if (Dungeon.depth > 1 && !Dungeon.bossLevel()) {
+            2 -> if (Dungeon.depth > 1 && !Dungeon.isBossAlive()) {
 
                 //each depth has 1 more weight than the previous depth.
                 val depths = FloatArray(Dungeon.depth - 1)

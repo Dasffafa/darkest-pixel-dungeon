@@ -304,6 +304,9 @@ object Dungeon {
 
     fun bossLevel(depth: Int = Dungeon.depth): Boolean = depth in listOf(5, 10, 15, 20, 25)
 
+    fun isBossAlive(depth: Int = Dungeon.depth): Boolean =
+        bossLevel(depth) && (depth != Dungeon.depth || !::level.isInitialized || !level.bossDefeated)
+
     fun switchLevel(level: Level, spawnPos: Int) {
         Dungeon.level = level
 

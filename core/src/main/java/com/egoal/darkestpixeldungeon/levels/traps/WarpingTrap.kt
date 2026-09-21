@@ -52,7 +52,7 @@ class WarpingTrap : Trap() {
         CellEmitter.get(pos).start(Speck.factory(Speck.LIGHT), 0.2f, 3)
         Sample.INSTANCE.play(Assets.SND_TELEPORT)
 
-        if (Dungeon.depth <= 1 || Dungeon.bossLevel()) return
+        if (Dungeon.depth <= 1 || Dungeon.isBossAlive()) return
 
         //each depth has 1 more weight than the previous depth.
         val depths = (1 until Dungeon.depth).map { it.toFloat() }.toFloatArray()

@@ -73,6 +73,9 @@ class HallsBossLevel : Level() {
         stairs = bundle.getInt(STAIRS)
         enteredArena = bundle.getBoolean(ENTERED)
         keyDropped = bundle.getBoolean(DROPPED)
+        if (keyDropped) {
+            bossDefeated = true
+        }
     }
 
     override fun setupSize() {
@@ -149,12 +152,13 @@ class HallsBossLevel : Level() {
     }
 
     override fun randomRespawnCell(): Int {
-        if (entrance == -1) return entrance
-        var cell = entrance + PathFinder.NEIGHBOURS8[Random.Int(8)]
-        while (!Level.passable[cell]) {
-            cell = entrance + PathFinder.NEIGHBOURS8[Random.Int(8)]
-        }
-        return cell
+        val base = if (entrance != -1) entrance else stairs
+        if (base <= 0) return base
+        val valid = PathFinder.NEIGHBOURS8.map { it + base }.filter { Level.passable[it] }
+        val unoccupied = valid.filter { Actor.findChar(it) == null }
+        if (unoccupied.isNotEmpty()) return unoccupied.random()
+        if (valid.isNotEmpty()) return valid.random()
+        return base
     }
 
     override fun press(cell: Int, hero: Char?) {
@@ -206,6 +210,7 @@ class HallsBossLevel : Level() {
     override fun drop(item: Item, cell: Int): Heap {
         if (!keyDropped && item is SkeletonKey) {
             keyDropped = true
+            bossDefeated = true
             unseal()
 
             entrance = stairs

@@ -94,7 +94,7 @@ class LloydsBeacon : Artifact() {
                             } while (pos == -1)
 
 
-                            if (pos == -1 || Dungeon.bossLevel()) {
+                            if (pos == -1 || Dungeon.isBossAlive()) {
 
                                 GLog.w(Messages.get(ScrollOfTeleportation::class.java, "no_tele"))
 
@@ -172,7 +172,7 @@ class LloydsBeacon : Artifact() {
 
         if (action === AC_SET || action === AC_RETURN) {
 
-            if (Dungeon.bossLevel()) {
+            if (Dungeon.isBossAlive()) {
                 hero.spend(LloydsBeacon.TIME_TO_USE)
                 GLog.w(Messages.get(this, "preventing"))
                 return

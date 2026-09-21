@@ -51,7 +51,7 @@ class ScrollOfTeleportation : Scroll() {
 
         setKnown()
 
-        if (Dungeon.bossLevel()) {
+        if (Dungeon.isBossAlive()) {
             GLog.w(Messages.get(this, "no_tele"))
             return
         }
@@ -69,7 +69,7 @@ class ScrollOfTeleportation : Scroll() {
     companion object {
 
         fun teleportHero(hero: Hero) {
-            if (Dungeon.bossLevel()) {
+            if (Dungeon.isBossAlive()) {
                 GLog.w(M.L(ScrollOfTeleportation::class.java, "no_tele"))
                 return
             }

@@ -98,6 +98,7 @@ abstract class Level : Bundlable {
 
     //when a boss level has become locked.
     var locked = false
+    open var bossDefeated = false
 
     // The actor thread spawns/kills mobs while the render thread iterates them
     // (field-of-view, sprite visibility). A concurrent set gives weakly
@@ -280,6 +281,9 @@ abstract class Level : Bundlable {
         exit = bundle.getInt(EXIT)
 
         locked = bundle.getBoolean(LOCKED)
+        if (bundle.contains(BOSS_DEFEATED)) {
+            bossDefeated = bundle.getBoolean(BOSS_DEFEATED)
+        }
 
         weakFloorCreated = false
 
@@ -336,6 +340,7 @@ abstract class Level : Bundlable {
         bundle.put(ENTRANCE, entrance)
         bundle.put(EXIT, exit)
         bundle.put(LOCKED, locked)
+        bundle.put(BOSS_DEFEATED, bossDefeated)
         bundle.put(HEAPS, heaps.values())
         bundle.put(PLANTS, plants.values())
         bundle.put(TRAPS, traps.values())
@@ -1268,6 +1273,7 @@ abstract class Level : Bundlable {
         private const val ENTRANCE = "entrance"
         private const val EXIT = "exit"
         private const val LOCKED = "locked"
+        private const val BOSS_DEFEATED = "boss_defeated"
         private const val HEAPS = "heaps"
         private const val PLANTS = "plants"
         private const val TRAPS = "traps"

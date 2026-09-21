@@ -153,11 +153,11 @@ class CavesBossLevel : Level() {
     }
 
     override fun randomRespawnCell(): Int {
-        var cell = entrance + PathFinder.NEIGHBOURS8[Random.Int(8)]
-        while (!Level.passable[cell]) {
-            cell = entrance + PathFinder.NEIGHBOURS8[Random.Int(8)]
-        }
-        return cell
+        val valid = PathFinder.NEIGHBOURS8.map { it + entrance }.filter { Level.passable[it] }
+        val unoccupied = valid.filter { Actor.findChar(it) == null }
+        if (unoccupied.isNotEmpty()) return unoccupied.random()
+        if (valid.isNotEmpty()) return valid.random()
+        return entrance
     }
 
     override fun press(cell: Int, hero: Char?) {
@@ -194,6 +194,7 @@ class CavesBossLevel : Level() {
         if (!keyDropped && item is SkeletonKey) {
 
             keyDropped = true
+            bossDefeated = true
             unseal()
 
             // open
@@ -225,6 +226,9 @@ class CavesBossLevel : Level() {
         super.restoreFromBundle(bundle)
         enteredArena = bundle.getBoolean(ENTERED)
         keyDropped = bundle.getBoolean(DROPPED)
+        if (keyDropped) {
+            bossDefeated = true
+        }
     }
 
 

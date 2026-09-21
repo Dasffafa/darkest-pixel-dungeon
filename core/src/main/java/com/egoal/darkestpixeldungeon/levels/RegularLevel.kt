@@ -157,6 +157,27 @@ abstract class RegularLevel : Level() {
         while (diggers.size < total)
             diggers.add(Random.chances(NormalDiggers).newInstance())
 
+        // bonus rooms judged by the hero's real-time luck: each of the two slots opens
+        // with 10% per wealth bonus level (expected increment 0.2 * luck, at most 2),
+        // drawn from the shared pool of 20% secret rooms and 80% special rooms.
+        if (!Dungeon.bossLevel() && !Dungeon.isHeroNull) {
+            val secretChances = HashMap(SecretDiggers)
+            val luck = Dungeon.hero.wealthBonus()
+            for (i in 1..MAX_BONUS_ROOMS) {
+                if (Random.Float() >= 0.1f * luck) continue
+
+                if (Random.Float() < SECRET_BONUS_CHANCE) {
+                    val cls = Random.chances(secretChances) ?: continue
+                    secretChances[cls] = 0f // unique.
+                    diggers.add(cls.newInstance())
+                } else {
+                    val cls = Random.chances(probs) ?: continue
+                    probs[cls] = 0f // unique.
+                    diggers.add(cls.newInstance())
+                }
+            }
+        }
+
         return diggers
     }
 
@@ -542,6 +563,12 @@ abstract class RegularLevel : Level() {
 
         /** Share of tombstones whose inscription has worn away to nothing. */
         private const val WORN_TOMB_CHANCE = 1f / 3f
+
+        /** At most this many extra secret/special rooms luck may add to a floor. */
+        private const val MAX_BONUS_ROOMS = 2
+
+        /** Each extra room is a secret room with this chance, a special room otherwise. */
+        private const val SECRET_BONUS_CHANCE = 0.2f
 
         val SpecialDiggers: Map<Class<out Digger>, Float> = mapOf(
                 ArmoryDigger::class.java to 0.5f,

@@ -4,6 +4,8 @@ import com.egoal.darkestpixeldungeon.*
 import com.egoal.darkestpixeldungeon.actors.Actor
 import com.egoal.darkestpixeldungeon.actors.mobs.Bestiary
 import com.egoal.darkestpixeldungeon.items.Heap
+import com.egoal.darkestpixeldungeon.items.Item
+import com.egoal.darkestpixeldungeon.items.keys.SkeletonKey
 import com.egoal.darkestpixeldungeon.levels.diggers.DigResult
 import com.egoal.darkestpixeldungeon.levels.diggers.Digger
 import com.egoal.darkestpixeldungeon.levels.diggers.LevelDigger
@@ -18,7 +20,6 @@ import com.watabou.utils.Random
 class SewerBossLevel : SewerLevel() {
 
     private var bossAppeared = false
-    private var bossDefeated = false
     private var stairs = 0 // place holder for entrance
 
     override fun trackMusic(): String = if (bossAppeared && !bossDefeated) Assets.TRACK_BOSS_LOOP else super.trackMusic()
@@ -77,7 +78,24 @@ class SewerBossLevel : SewerLevel() {
         return true
     }
 
-    override fun randomRespawnCell(): Int = pointToCell(spaces.find { it.type == DigResult.Type.Entrance }!!.rect.random())
+    override fun randomRespawnCell(): Int {
+        val entranceSpace = spaces.find { it.type == DigResult.Type.Entrance }
+        if (entranceSpace != null) {
+            val valid = (0 until 20).map { pointToCell(entranceSpace.rect.random()) }
+                .filter { passable[it] }
+            val unoccupied = valid.filter { Actor.findChar(it) == null }
+            if (unoccupied.isNotEmpty()) return unoccupied.random()
+            if (valid.isNotEmpty()) return valid.random()
+        }
+        return entrance
+    }
+
+    override fun drop(item: Item, cell: Int): Heap {
+        if (item is SkeletonKey) {
+            bossDefeated = true
+        }
+        return super.drop(item, cell)
+    }
 
     override fun createMobs() {
         val mob = Bestiary.mob(Dungeon.depth).apply {
@@ -142,7 +160,9 @@ class SewerBossLevel : SewerLevel() {
         super.restoreFromBundle(bundle)
         stairs = bundle.getInt(STAIRS)
         bossAppeared = bundle.getBoolean(BOSS_APPEARED)
-        bossDefeated = bundle.getBoolean(BOSS_DEFEATED)
+        if (bundle.contains(BOSS_DEFEATED)) {
+            bossDefeated = bundle.getBoolean(BOSS_DEFEATED) || bossDefeated
+        }
     }
 
     companion object {

@@ -47,7 +47,7 @@ class Displacing : Inscription.Curse(3) {
                 }
             } while (newPos == -1)
 
-            if (newPos != -1 && !Dungeon.bossLevel()) {
+            if (newPos != -1 && !Dungeon.isBossAlive()) {
 
                 if (Dungeon.visible[defender.pos]) {
                     CellEmitter.get(defender.pos).start(Speck.factory(Speck.LIGHT),
