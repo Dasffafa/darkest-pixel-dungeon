@@ -295,6 +295,16 @@ class Hero : Char() {
         return min(10, n)
     }
 
+    /** armed by a lucky strike: the next weapon damage roll takes its maximum */
+    var isDoingLuckyAttack = false
+
+    /** Lucky strike: roll 0.8888% once per wealth bonus level. and can be naturally produced. */
+    fun rollLuckyStrike(): Boolean {
+        val n = wealthBonus() + 1
+        for (i in 0 until n) if (Random.Float() < 0.00889f) return true
+        return false
+    }
+
     // followers
     fun holdFollowers(level: Level) {
         followers.clear()
@@ -451,6 +461,11 @@ class Hero : Char() {
     override fun giveDamage(enemy: Char): Damage {
         var dmg = Damage(0, this, enemy)
 
+        // lucky strike: roll 1% once per wealth bonus level; a lucky attack always
+        // hits, crits and rolls the damage dice at maximum.
+        val luckyStrike = rollLuckyStrike()
+        if (luckyStrike) isDoingLuckyAttack = true
+
         // weapon
         val bonus = Ring.getBonus(this, RingOfForce.Force::class.java)
 
@@ -467,8 +482,12 @@ class Hero : Char() {
         } else {
             // bare hand
             dmg.value = if (bonus != 0) RingOfForce.damageRoll(Dungeon.hero)
+            else if (isDoingLuckyAttack) Math.max(STR() - 8, 1)
             else Random.NormalIntRange(1, Math.max(STR() - 8, 1))
         }
+        isDoingLuckyAttack = false
+
+        if (luckyStrike) dmg.addFeature(Damage.Feature.ACCURATE)
 
         // helmet
         belongings.helmet?.procGivenDamage(dmg)
@@ -476,7 +495,7 @@ class Hero : Char() {
         heroPerk.get(BaredAngry::class.java)?.procGivenDamage(dmg, this)
 
         // critical
-        if (!dmg.isFeatured(Damage.Feature.CRITICAL) && Random.Float() < criticalChance()) {
+        if (!dmg.isFeatured(Damage.Feature.CRITICAL) && (luckyStrike || Random.Float() < criticalChance())) {
             val ratio = if (heroClass == HeroClass.EXILE) 1.75f else 1.5f
 
             dmg.value = (dmg.value * ratio).toInt()

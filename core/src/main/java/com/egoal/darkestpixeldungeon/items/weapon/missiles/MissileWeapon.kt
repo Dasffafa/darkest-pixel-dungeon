@@ -13,7 +13,6 @@ import com.egoal.darkestpixeldungeon.actors.hero.HeroClass
 import com.egoal.darkestpixeldungeon.actors.hero.HeroSubClass
 import com.egoal.darkestpixeldungeon.actors.hero.perks.ExplodeBrokenShot
 import com.egoal.darkestpixeldungeon.actors.hero.perks.RangedShot
-import com.egoal.darkestpixeldungeon.items.EquipableItem
 import com.egoal.darkestpixeldungeon.items.Item
 import com.egoal.darkestpixeldungeon.items.rings.Ring
 import com.egoal.darkestpixeldungeon.items.rings.RingOfSharpshooting
@@ -133,7 +132,7 @@ abstract class MissileWeapon(val tier: Int, protected val stick: Boolean = false
     }
 
     override fun giveDamage(hero: Hero, target: Char): Damage {
-        var value = Random.NormalIntRange(min(), max())
+        var value = if (hero.isDoingLuckyAttack) max() else Random.NormalIntRange(min(), max())
 
         // extra str
         val strc = strCorrection(hero)

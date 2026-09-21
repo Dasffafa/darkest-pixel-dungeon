@@ -76,7 +76,8 @@ abstract class KindOfWeapon : EquipableItem() {
     open fun canSurpriseAttack(): Boolean = true
 
     // damage attach to normal attack, called in give damage
-    open fun giveDamage(owner: Hero, target: Char): Damage = Damage(Random.NormalIntRange(min(), max()), owner, target)
+    open fun giveDamage(owner: Hero, target: Char): Damage =
+            Damage(if (owner.isDoingLuckyAttack) max() else Random.NormalIntRange(min(), max()), owner, target)
 
     open fun accuracyFactor(hero: Hero, target: Char): Float = 1f
 
