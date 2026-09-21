@@ -25,6 +25,7 @@ import com.watabou.utils.Log
 import com.egoal.darkestpixeldungeon.actors.Actor
 import com.egoal.darkestpixeldungeon.actors.Char
 import com.egoal.darkestpixeldungeon.actors.Resident
+import com.egoal.darkestpixeldungeon.actors.blobs.SacrificialFire
 import com.egoal.darkestpixeldungeon.actors.buffs.Amok
 import com.egoal.darkestpixeldungeon.actors.buffs.Awareness
 import com.egoal.darkestpixeldungeon.actors.buffs.MindVision
@@ -322,6 +323,10 @@ object Dungeon {
         // add into level.mobs, then into actor.
         hero.restoreFollowers(level, pos)
         Actor.init()
+
+        // the sacrificial fire's mark belongs to the fire that bestowed it; it always
+        // fades when the hero leaves that floor, no matter what the destination holds.
+        hero.buff(SacrificialFire.Marked::class.java)?.detach()
 
         val respawner = level.respawner()
         if (respawner != null) {
