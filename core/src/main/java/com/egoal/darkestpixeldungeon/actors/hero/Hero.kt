@@ -1339,7 +1339,7 @@ class Hero : Char() {
                 if (Dungeon.visible[p]) {
                     if (intentional) sprite.parent?.addToBack(CheckedCell(p))
 
-                    if (Level.secret[p] && (intentional || Random.Float() < level)) {
+                    if (Level.secret[p] && (intentional || passiveDetects(p, level))) {
                         GameScene.discoverTile(p, Dungeon.level.map[p])
                         Dungeon.level.discover(p)
 
@@ -1369,6 +1369,19 @@ class Hero : Char() {
         }
 
         return smthFound
+    }
+
+    private fun passiveDetects(p: Int, level: Float): Boolean {
+        if (Random.Float() < level) return true
+
+        if (Dungeon.level.map[p] != Terrain.SECRET_DOOR) return false
+
+        val extra = wealthBonus() / 2
+        for (i in 0 until extra) {
+            if (Random.Float() < level) return true
+        }
+
+        return false
     }
 
     fun resurrect(resetLevel: Int) {
