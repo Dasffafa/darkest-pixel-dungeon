@@ -500,13 +500,21 @@ public class GameScene extends PixelScene {
     }
     if (isMoveKey(key.code)) {
       if (key.pressed) {
-        heldMoveKey = key.code;
-        Dungeon.INSTANCE.getHero().setContinuousMoving(true);
-      } else if (heldMoveKey == key.code) {
-        heldMoveKey = -1;
-        Dungeon.INSTANCE.getHero().stopContinuousMoving();
+        if (pressedMoveKey != key.code) {
+          pressedMoveKey = key.code;
+          heldMoveKey = key.code;
+          Dungeon.INSTANCE.getHero().setContinuousMoving(true);
+        } else {
+          return true;
+        }
+      } else {
+        if (pressedMoveKey == key.code) {
+          pressedMoveKey = -1;
+          heldMoveKey = -1;
+          Dungeon.INSTANCE.getHero().stopContinuousMoving();
+        }
+        return true;
       }
-      if (!key.pressed) return true;
     }
     if (!key.pressed) return false;
 
@@ -663,7 +671,8 @@ public class GameScene extends PixelScene {
       Camera.main.scroll.x = Math.max(0, Math.min(maxX, Camera.main.scroll.x + heldPanX * 4));
       Camera.main.scroll.y = Math.max(0, Math.min(maxY, Camera.main.scroll.y + heldPanY * 4));
     }
-    if (heldMoveKey == -1 || !Dungeon.INSTANCE.getHero().getReady() ||
+    if (heldMoveKey == -1 || !Dungeon.INSTANCE.getHero().getContinuousMoving() ||
+            !Dungeon.INSTANCE.getHero().getReady() ||
             Dungeon.INSTANCE.getHero().visibleEnemies() > 0 || cellSelector.listener != defaultCellListener) {
       if (Dungeon.INSTANCE.getHero().visibleEnemies() > 0) {
         heldMoveKey = -1;
@@ -723,6 +732,12 @@ public class GameScene extends PixelScene {
   /** Set before an asynchronous window handoff so input cannot slip through. */
   private final AtomicBoolean windowPending = new AtomicBoolean(false);
   private int heldMoveKey = -1;
+  /**
+   * Physically held movement key, cleared only on key-up. Lets us tell a fresh
+   * press apart from OS auto-repeat so a held key cannot re-arm continuous
+   * movement that was stopped by an interaction.
+   */
+  private int pressedMoveKey = -1;
   private int heldPanX;
   private int heldPanY;
 
