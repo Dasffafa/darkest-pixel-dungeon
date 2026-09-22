@@ -25,9 +25,9 @@ import com.egoal.darkestpixeldungeon.actors.Damage
 import com.egoal.darkestpixeldungeon.actors.hero.Hero
 import com.egoal.darkestpixeldungeon.items.weapon.Inscription
 import com.egoal.darkestpixeldungeon.items.weapon.Weapon
-import com.egoal.darkestpixeldungeon.sprites.ItemSprite.Glowing
 import com.watabou.utils.Random
 import kotlin.math.max
+import kotlin.math.round
 
 class Lucky : Inscription(4) {
     private var chanceFix = 0f // no need to store.
@@ -39,7 +39,7 @@ class Lucky : Inscription(4) {
         val ratio = (baseChance + chanceFix).coerceIn(0f, 1f)
 
         if (Random.Float() < ratio) {
-            damage.value *= 2
+            damage.value = round(damage.value * 2.5).toInt()
             chanceFix = 0f
         } else {
             damage.value = 0
