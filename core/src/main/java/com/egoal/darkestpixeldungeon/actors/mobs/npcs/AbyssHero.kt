@@ -136,8 +136,7 @@ class AbyssHero(var level: Int = 0, friendly: Boolean = false) : NPC() {
     }
 
     private fun affect(ch: Char) {
-        val v = Buff.prolong(ch, Vulnerable::class.java, 3f)
-        v.ratio = max(v.ratio, 1.25f)
+        Vulnerable.add(ch, 1.25f, Damage.Type.NORMAL, 3f)
     }
 
     override fun viewDistance(): Int = 8 // not affected by time

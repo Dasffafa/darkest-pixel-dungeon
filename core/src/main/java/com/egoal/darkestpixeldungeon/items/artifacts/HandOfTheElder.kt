@@ -187,7 +187,7 @@ class HandOfTheElder : Artifact() {
                     val buffcls = RingsToBuffs[ringcls] ?: Cripple::class.java
 
                     when (buffcls) {
-                        Vulnerable::class.java -> Buff.prolong(c, Vulnerable::class.java, duration).ratio = 1.5f
+                        Vulnerable::class.java -> Vulnerable.add(c, 1.5f, Damage.Type.NORMAL, duration)
                         Charm.Attacher::class.java -> Charm.Attacher(Item.curUser.id(), duration.toInt()).attachTo(c)
                         else -> Buff.prolong(c, buffcls, duration)
                     }

@@ -129,10 +129,7 @@ class EyeballOfTheElder : Artifact() {
 
         for (e in Dungeon.hero.visibleEnemyList()) {
             if (e.isAlive) {
-                Buff.prolong(e, Vulnerable::class.java, 5.1f + level()).apply {
-                    ratio = if (cursed) 1.5f else 1.3f
-                    dmgType = Damage.Type.MAGICAL
-                }
+                Vulnerable.add(e, if (cursed) 1.5f else 1.3f, Damage.Type.MAGICAL, 5.1f + level())
                 e.sprite.emitter().burst(Speck.factory(Speck.LIGHT), 3)
             }
         }
@@ -384,10 +381,7 @@ class EyeballOfTheElder : Artifact() {
 
                 for (e in Dungeon.hero.visibleEnemyList()) {
                     if (e.isAlive) {
-                        Buff.prolong(e, Vulnerable::class.java, 1.1f).apply {
-                            ratio = if (cursed) 1.4f else 1.25f
-                            dmgType = Damage.Type.MAGICAL
-                        }
+                        Vulnerable.add(e, if (cursed) 1.4f else 1.25f, Damage.Type.MAGICAL, 1.1f)
                         e.sprite.emitter().burst(Speck.factory(Speck.LIGHT), 3)
                     }
                 }
