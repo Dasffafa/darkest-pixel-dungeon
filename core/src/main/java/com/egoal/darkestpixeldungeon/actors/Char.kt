@@ -327,6 +327,14 @@ abstract class Char : Actor() {
         elementalResistance[element.ordinal] = r
     }
 
+    open fun elementalResistance(element: Damage.Element): Float {
+        var res = elementalResistance[element.ordinal]
+        buff(ElementBroken::class.java)?.let {
+            res -= it.resistanceReduction(element)
+        }
+        return res
+    }
+
     protected open fun resistDamage(dmg: Damage): Damage {
         if (immunizedBuffs().any { it == dmg.from.javaClass }) {
             dmg.value = 0
@@ -338,7 +346,7 @@ abstract class Char : Actor() {
             dmg.value -= round(dmg.value * magicalResistance()).toInt()
 
         // elemental resistance
-        dmg.add_value -= round(dmg.add_value * elementalResistance[dmg.element.ordinal]).toInt()
+        dmg.add_value -= round(dmg.add_value * elementalResistance(dmg.element)).toInt()
 
         dmg.value = max(0, dmg.value)
         dmg.add_value = max(0, dmg.add_value)
