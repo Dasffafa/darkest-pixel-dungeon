@@ -75,6 +75,10 @@ abstract class WndDialogue(image: Image?, text: String, what: String, vararg opt
 
     abstract fun onSelect(idx: Int)
 
+    override fun onEnterPressed() {
+        if (optionButtons.isEmpty()) hide()
+    }
+
     override fun onSignal(key: Keys.Key): Boolean {
         if (key.pressed && optionButtons.isNotEmpty()) {
             when (key.code) {

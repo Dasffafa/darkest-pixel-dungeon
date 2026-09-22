@@ -27,6 +27,11 @@ import com.egoal.darkestpixeldungeon.ui.Window;
 
 public class WndMessage extends Window {
 
+  @Override
+  public void onEnterPressed() {
+    hide();
+  }
+
   private static final int WIDTH_P = 120;
   private static final int WIDTH_L = 144;
   private static final int MARGIN = 4;
