@@ -5,6 +5,8 @@ import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.actors.Actor
 import com.egoal.darkestpixeldungeon.actors.Char
 import com.egoal.darkestpixeldungeon.actors.Damage
+import com.egoal.darkestpixeldungeon.actors.blobs.Blob
+import com.egoal.darkestpixeldungeon.actors.blobs.WhiteFog
 import com.egoal.darkestpixeldungeon.actors.buffs.*
 import com.egoal.darkestpixeldungeon.actors.hero.Hero
 import com.egoal.darkestpixeldungeon.effects.MagicMissile
@@ -184,11 +186,19 @@ class HandOfTheElder : Artifact() {
                 Buff.prolong(c, Roots::class.java, duration)
 
                 for (ringcls in rings) {
+                    if (ringcls == RingOfArcane::class.java) {
+                        GameScene.add(Blob.seed(c.pos, duration.toInt(), WhiteFog::class.java))
+                        continue
+                    }
+
                     val buffcls = RingsToBuffs[ringcls] ?: Cripple::class.java
 
                     when (buffcls) {
                         Vulnerable::class.java -> Vulnerable.add(c, 1.5f, Damage.Type.NORMAL, duration)
                         Charm.Attacher::class.java -> Charm.Attacher(Item.curUser.id(), duration.toInt()).attachTo(c)
+                        Terror::class.java -> Buff.prolong(c, Terror::class.java, duration).objectid = Item.curUser.id()
+                        Cripple::class.java -> Buff.prolong(c, Cripple::class.java, duration * 2f)
+                        Vertigo::class.java -> Buff.prolong(c, Vertigo::class.java, duration * 2f)
                         else -> Buff.prolong(c, buffcls, duration)
                     }
                 }
@@ -221,13 +231,13 @@ class HandOfTheElder : Artifact() {
         private const val MAX_RINGS_TO_WEAR = 5
 
         private val RingsToBuffs = mapOf<Class<out Ring>, Class<out FlavourBuff>>(
-                RingOfAccuracy::class.java to Unbalance::class.java,
+                RingOfAccuracy::class.java to Shock::class.java,
                 RingOfCritical::class.java to Weakness::class.java,
                 RingOfResistance::class.java to Chill::class.java,
-                RingOfEvasion::class.java to Shock::class.java,
+                RingOfEvasion::class.java to Unbalance::class.java,
                 RingOfForce::class.java to Amok::class.java, 
                 RingOfFuror::class.java to Slow::class.java,
-                RingOfHaste::class.java to Slow::class.java,
+                RingOfHaste::class.java to Cripple::class.java,
                 RingOfMight::class.java to Weakness::class.java, 
                 RingOfSharpshooting::class.java to Blindness::class.java,
                 RingOfHealth::class.java to Vertigo::class.java,
