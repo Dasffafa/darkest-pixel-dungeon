@@ -215,6 +215,7 @@ abstract class Char : Actor() {
         }
 
         if (dmg.from is Char && isCharmedBy(dmg.from as Char)) Buff.detach(this, Charm::class.java)
+        Terror.recover(this)
 
         // immunities, resistance
         if (!dmg.isFeatured(Damage.Feature.PURE)) resistDamage(dmg)

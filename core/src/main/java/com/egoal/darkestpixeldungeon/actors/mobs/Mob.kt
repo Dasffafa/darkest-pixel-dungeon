@@ -569,8 +569,6 @@ abstract class Mob : Char() {
     }
 
     override fun takeDamage(dmg: Damage): Int {
-        Terror.recover(this)
-
         if (state === SLEEPING)
             state = WANDERING
         if (state !== HUNTING)
