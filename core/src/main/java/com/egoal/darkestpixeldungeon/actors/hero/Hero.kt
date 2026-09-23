@@ -489,6 +489,14 @@ class Hero : Char() {
 
         if (luckyStrike) dmg.addFeature(Damage.Feature.ACCURATE)
 
+        // blood rage: extra dark elemental damage, added before the helmet proc
+        // so it is amplified by the mask. It is reduced by the target's shadow
+        // resistance rather than ignored, unlike a pure segment.
+        buff(BloodRage::class.java)?.let {
+            val bonus = it.bonus()
+            if (bonus > 0) dmg.setAdditionalDamage(Damage.Element.Shadow, bonus)
+        }
+
         // helmet
         belongings.helmet?.procGivenDamage(dmg)
 
@@ -741,28 +749,44 @@ class Hero : Char() {
             val isSurpriseAttack = dmg.from is Char && !Dungeon.visible[(dmg.from as Char).pos] && hpLost > 0
             val isCritical = dmg.isFeatured(Damage.Feature.CRITICAL) && hpLost > 0
 
+            // Mask of Madness wearers ignore the HP-ratio scaling of the crit/
+            // ambush pressure and instead gain Blood Rage on very high damage.
+            val masked = belongings.helmet is MaskOfMadness
+
             // very high damage warning: the first hit in a 100-turn window that
             // takes more than 40% of max HP adds a little mental damage (not
             // stacked with the crit/ambush toll) and a line.
-            val isVeryHighDamage = dmgToken > 0 && HT > 0 && dmgToken * 5 > HT * 2 && closeCallCooldown <= 0f
+            val isVeryHighDamage = !masked && dmgToken > 0 && HT > 0 && dmgToken * 5 > HT * 2 && closeCallCooldown <= 0f
             if (isVeryHighDamage) {
                 closeCallCooldown = 100f
                 tag = HeroLines.HIGH_DAMAGE + "_" + Random.IntRange(1, 3)
                 if (!isSurpriseAttack && !isCritical) value += Random.Float(1f, 5f)
             }
 
-            if (isSurpriseAttack) maySay(0.2f, HeroLines.WHAT)
-            if (isCritical) maySay(0.2f, HeroLines.DAMN)
+            if (masked && dmgToken > 0 && HT > 0 && dmgToken * 5 > HT * 2) {
+                val rage = round(dmgToken / 5f).toInt()
+                if (rage > 0) {
+                    Buff.prolong(this, BloodRage::class.java, 10f).setValue(rage)
+                }
+            }
 
             // crit/ambush pressure grows with the damage's share of max HP,
             // switching to a quadratic curve past 20% (100% HT ~= 30 expected),
             // and is capped by that share. Shield-absorbed damage does not count.
-            if ((isSurpriseAttack || isCritical) && dmg.from is Mob && HT > 0) {
+            // Mask wearers always take the plain, unscaled pressure.
+            var critAmbush = 0f
+            if (isSurpriseAttack) critAmbush += Random.Float(1f, 7f)
+            if (isCritical) critAmbush += Random.Float(2f, 8f)
+            if (!masked && critAmbush > 0f && dmg.from is Mob && HT > 0) {
                 val p = hpLost * 100f / HT
                 val expected = if (p <= 20f) min(5f, p)
                 else 0.000917f * p * p + 0.2025f * p + 0.583f
-                value += min(max(expected + Random.Float(-8f, 8f), 0f), p)
+                critAmbush = min(max(expected + Random.Float(-8f, 8f), 0f), p)
             }
+            value += critAmbush
+
+            if (isSurpriseAttack) maySay(0.2f, HeroLines.WHAT)
+            if (isCritical) maySay(0.2f, HeroLines.DAMN)
 
             if (dmgToken > 0 && HP < HT / 4 && dmg.from is Mob && !heroPerk.has(Fearless::class.java)) {
                 value += Random.Float(1f, 5f)
