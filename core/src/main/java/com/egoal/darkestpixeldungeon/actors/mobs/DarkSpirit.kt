@@ -329,7 +329,7 @@ class DarkSpirit : Mob() {
         /**
          * The hero died. This run is over, so the spirit this save was holding goes back
          * to the pool, and the death itself (if it qualifies) is prepared as a new record.
-         * The record's epitaph is filled in later by [CommitDeath].
+         * The epitaph is not part of the record; it travels through [SpiritServer.uploadEpitaph].
          */
         fun PrepareDeath(regeneration: Float? = null, critChance: Float? = null): SpiritRecord? {
             val records = loadPool()
@@ -341,10 +341,8 @@ class DarkSpirit : Mob() {
         }
 
         /** Finalizes a death prepared by [PrepareDeath]: stores it locally and uploads it. */
-        fun CommitDeath(record: SpiritRecord?, epitaph: String) {
+        fun CommitDeath(record: SpiritRecord?) {
             if (record == null) return
-
-            record.epitaph = epitaph
 
             val records = loadPool()
             records.add(record)
@@ -443,7 +441,6 @@ class DarkSpirit : Mob() {
                     weapon = carriedWeapon(hero),
                     regeneration = regeneration ?: hero.regenerateSpeed(),
                     critChance = critChance ?: hero.criticalChance(),
-                    epitaph = "",
                     uuid = java.util.UUID.randomUUID().toString())
         }
 
@@ -545,7 +542,10 @@ class DarkSpirit : Mob() {
             val perk = bundle.get(PERK) as? Perk ?: return null
 
             val uuid = if (bundle.contains(UUID)) bundle.getString(UUID) else {
-                val fingerprint = "${bundle.getString(USERNAME)}_${bundle.getInt(DEPTH)}_${bundle.getInt(LEVEL)}_${bundle.getString(EPITAPH)}"
+                // legacy saves may still carry the retired epitaph field; keep it in the
+                // fingerprint so their derived uuid does not change
+                val legacyEpitaph = if (bundle.contains(EPITAPH)) bundle.getString(EPITAPH) else ""
+                val fingerprint = "${bundle.getString(USERNAME)}_${bundle.getInt(DEPTH)}_${bundle.getInt(LEVEL)}_$legacyEpitaph"
                 java.util.UUID.nameUUIDFromBytes(fingerprint.toByteArray(Charsets.UTF_8)).toString()
             }
 
@@ -560,7 +560,6 @@ class DarkSpirit : Mob() {
                     weapon = bundle.get(WEAPON) as? Weapon,
                     regeneration = if (bundle.contains(REGENERATION)) bundle.getFloat(REGENERATION) else 0f,
                     critChance = if (bundle.contains(CRIT_CHANCE)) bundle.getFloat(CRIT_CHANCE) else 0f,
-                    epitaph = if (bundle.contains(EPITAPH)) bundle.getString(EPITAPH) else "",
                     uuid = uuid)
         }
 
@@ -575,7 +574,6 @@ class DarkSpirit : Mob() {
             bundle.put(CRIT_CHANCE, record.critChance)
             bundle.put(ARMOR, record.armor)
             bundle.put(WEAPON, record.weapon)
-            bundle.put(EPITAPH, record.epitaph)
             record.heroClass.storeInBundle(bundle)
         }
 
@@ -613,7 +611,7 @@ class DarkSpirit : Mob() {
                     record.heldBy = NO_SLOT
 
                     // Deduplicate against existing records
-                    if (records.any { it.uuid == record.uuid || (it.userName == record.userName && it.depth == record.depth && it.level == record.level && it.epitaph == record.epitaph) }) {
+                    if (records.any { it.uuid == record.uuid || (it.userName == record.userName && it.depth == record.depth && it.level == record.level) }) {
                         continue
                     }
 
@@ -643,5 +641,4 @@ class SpiritRecord(
         var weapon: Weapon?,
         var regeneration: Float = 0f,
         var critChance: Float = 0f,
-        var epitaph: String = "",
         var uuid: String = java.util.UUID.randomUUID().toString())

@@ -1655,7 +1655,7 @@ class Hero : Char() {
             val default = Rankings.deathDescription(src?.javaClass)
             InputDialog.GetStringWithResult(Epitaphs.deathTitle(), default) { accepted, text ->
                 val epitaph = if (accepted) text.ifBlank { default } else default
-                DarkSpirit.CommitDeath(spiritRecord, epitaph)
+                DarkSpirit.CommitDeath(spiritRecord)
                 Epitaphs.addOwn(epitaphUser, epitaph)
             }
         }

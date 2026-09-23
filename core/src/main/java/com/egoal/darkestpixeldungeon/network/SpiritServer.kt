@@ -39,29 +39,34 @@ object SpiritServer {
         get() = isConfigured && !DarkestPixelDungeon.spiritSyncDecided()
 
     fun setConsent(granted: Boolean) {
-        DarkestPixelDungeon.uploadSpirits(granted)
-        DarkestPixelDungeon.downloadSpirits(granted)
+        DarkestPixelDungeon.spiritSync(granted)
+        DarkestPixelDungeon.epitaphSync(granted)
         DarkestPixelDungeon.spiritSyncDecided(true)
     }
 
     fun onStartup() {
-        if (startupDone) return
-        if (!isConfigured || !DarkestPixelDungeon.downloadSpirits()) return
+        if (startupDone || !isConfigured) return
+
+        val syncSpirits = DarkestPixelDungeon.spiritSync()
+        val syncEpitaphs = DarkestPixelDungeon.epitaphSync()
+        if (!syncSpirits && !syncEpitaphs) return
+
         startupDone = true
-        downloadSpirits { success ->
-            if (!success) startupDone = false
+        if (syncSpirits) {
+            downloadSpirits { success ->
+                if (!success) startupDone = false
+            }
         }
-        downloadEpitaphs()
+        if (syncEpitaphs) downloadEpitaphs()
     }
 
     fun upload(record: SpiritRecord) {
-        if (!DarkestPixelDungeon.uploadSpirits() || !isConfigured) return
+        if (!DarkestPixelDungeon.spiritSync() || !isConfigured) return
 
         val body = DarkSpirit.EncodeRecord(record)
         background {
             val resp = request("POST", "$baseUrl/api/v1/spirits", body)
-            val rejected = handleUploadResult(resp, record.userName, record.epitaph)
-            if (rejected) {
+            if (isRejected(resp)) {
                 Gdx.app?.postRunnable {
                     DarkSpirit.RemoveRecordByUuid(record.uuid)
                 }
@@ -70,7 +75,7 @@ object SpiritServer {
     }
 
     fun uploadEpitaph(userName: String, text: String) {
-        if (!DarkestPixelDungeon.uploadSpirits() || !isConfigured) return
+        if (!DarkestPixelDungeon.epitaphSync() || !isConfigured) return
         if (text.isBlank()) return
 
         val body = buildJsonObject {
@@ -85,7 +90,7 @@ object SpiritServer {
     }
 
     fun uploadVictory(userName: String, speech: String) {
-        if (!DarkestPixelDungeon.uploadSpirits() || !isConfigured) return
+        if (!DarkestPixelDungeon.epitaphSync() || !isConfigured) return
 
         val body = buildJsonObject {
             put("username", userName)
@@ -137,7 +142,7 @@ object SpiritServer {
         }
     }
 
-    private fun handleUploadResult(resp: Response, userName: String, text: String): Boolean {
+    private fun isRejected(resp: Response): Boolean {
         val body = resp.data?.toString(Charsets.UTF_8) ?: return false
         val reason = try {
             val obj = Json.parseToJsonElement(body) as? JsonObject
@@ -145,14 +150,17 @@ object SpiritServer {
         } catch (e: Exception) {
             null
         }
-        if (reason == "rejected") {
-            Gdx.app?.postRunnable {
-                DarkestPixelDungeon.epitaphNotice(Epitaphs.rejectedNotice(userName, text))
-                Epitaphs.removeOwn(text)
-            }
-            return true
+        return reason == "rejected"
+    }
+
+    private fun handleUploadResult(resp: Response, userName: String, text: String): Boolean {
+        if (!isRejected(resp)) return false
+
+        Gdx.app?.postRunnable {
+            DarkestPixelDungeon.epitaphNotice(Epitaphs.rejectedNotice(userName, text))
+            Epitaphs.removeOwn(text)
         }
-        return false
+        return true
     }
 
     private fun background(block: () -> Unit) {

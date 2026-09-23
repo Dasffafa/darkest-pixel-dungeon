@@ -484,20 +484,27 @@ public class DarkestPixelDungeon extends Game {
     return id;
   }
 
-  public static void uploadSpirits(boolean value) {
-    Preferences.INSTANCE.put(Preferences.KEY_SPIRIT_UPLOAD, value);
+  // 红灵与墓志铭同步原由 spirit_upload + spirit_download 两键共同控制;
+  // 新键缺失时回退旧值, 老玩家的选择不会丢失.
+  private static boolean legacySpiritConsent() {
+    return Preferences.INSTANCE.getBoolean(Preferences.KEY_SPIRIT_UPLOAD, false)
+            && Preferences.INSTANCE.getBoolean(Preferences.KEY_SPIRIT_DOWNLOAD, false);
   }
 
-  public static boolean uploadSpirits() {
-    return Preferences.INSTANCE.getBoolean(Preferences.KEY_SPIRIT_UPLOAD, false);
+  public static void spiritSync(boolean value) {
+    Preferences.INSTANCE.put(Preferences.KEY_SPIRIT_SYNC, value);
   }
 
-  public static void downloadSpirits(boolean value) {
-    Preferences.INSTANCE.put(Preferences.KEY_SPIRIT_DOWNLOAD, value);
+  public static boolean spiritSync() {
+    return Preferences.INSTANCE.getBoolean(Preferences.KEY_SPIRIT_SYNC, legacySpiritConsent());
   }
 
-  public static boolean downloadSpirits() {
-    return Preferences.INSTANCE.getBoolean(Preferences.KEY_SPIRIT_DOWNLOAD, false);
+  public static void epitaphSync(boolean value) {
+    Preferences.INSTANCE.put(Preferences.KEY_EPITAPH_SYNC, value);
+  }
+
+  public static boolean epitaphSync() {
+    return Preferences.INSTANCE.getBoolean(Preferences.KEY_EPITAPH_SYNC, legacySpiritConsent());
   }
 
   public static void specialStyleText(boolean value) {

@@ -54,6 +54,8 @@ enum Preferences {
   public static final String KEY_DEVICE_ID = "device_id";
   public static final String KEY_SPIRIT_UPLOAD = "spirit_upload";
   public static final String KEY_SPIRIT_DOWNLOAD = "spirit_download";
+  public static final String KEY_SPIRIT_SYNC = "spirit_sync";
+  public static final String KEY_EPITAPH_SYNC = "epitaph_sync";
   public static final String KEY_SPIRIT_DECIDED = "spirit_decided";
   public static final String KEY_SPIRIT_SERVER_URL = "spirit_server_url";
   public static final String KEY_EPITAPH_NOTICE = "epitaph_notice";
