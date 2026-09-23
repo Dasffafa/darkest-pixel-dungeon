@@ -714,7 +714,12 @@ class Hero : Char() {
             GLog.n(M.L(this, "almost_dead"))
         }
 
+        val hpBefore = HP
         val dmgToken = super.takeDamage(dmg)
+        // Actual HP lost, i.e. the damage left after the existing shield absorbed
+        // its part. Shield-absorbed damage must not count towards the max-HP-scaled
+        // mental pressure of ambushes and crits.
+        val hpLost = (hpBefore - HP).coerceAtLeast(0)
         if (dmg.from is Hunger && HP <= HT / 4) {
             interrupt()
             resting = false
@@ -732,14 +737,19 @@ class Hero : Char() {
 
             // extra mental damage
             var value = 0f
-            if (dmg.from is Char && !Dungeon.visible[(dmg.from as Char).pos]) { // attack from nowhere
+            if (dmg.from is Char && !Dungeon.visible[(dmg.from as Char).pos] && hpLost > 0) { // attack from nowhere
                 value += Random.Float(1f, 7f)
                 maySay(0.2f, HeroLines.WHAT)
             }
-            if (dmg.isFeatured(Damage.Feature.CRITICAL) && dmgToken > 0) {
+            if (dmg.isFeatured(Damage.Feature.CRITICAL) && hpLost > 0) {
                 value += Random.Float(2f, 8f)
                 maySay(0.2f, HeroLines.DAMN)
             }
+
+            // ambush/crit pressure cannot exceed the damage actually dealt to HP
+            // as a percentage of max HP; shield-absorbed damage does not count
+            if (value > 0f && dmg.from is Mob && HT > 0)
+                value = min(value, hpLost * 100f / HT)
 
             if (dmgToken > 0 && HP < HT / 4 && dmg.from is Mob && !heroPerk.has(Fearless::class.java)) {
                 value += Random.Float(1f, 5f)
