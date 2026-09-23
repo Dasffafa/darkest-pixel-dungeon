@@ -48,6 +48,7 @@ import com.egoal.darkestpixeldungeon.Dungeon;
 import com.egoal.darkestpixeldungeon.FogOfWar;
 import com.egoal.darkestpixeldungeon.effects.BannerSprites;
 import com.egoal.darkestpixeldungeon.effects.BlobEmitter;
+import com.egoal.darkestpixeldungeon.effects.CircleArc;
 import com.egoal.darkestpixeldungeon.effects.EmoIcon;
 import com.egoal.darkestpixeldungeon.effects.Flare;
 import com.egoal.darkestpixeldungeon.effects.FloatingText;
@@ -134,6 +135,8 @@ public class GameScene extends PixelScene {
   private GameLog log;
 
   private BusyIndicator busy;
+
+  private CircleArc counter;
 
   private static CellSelector cellSelector;
 
@@ -344,6 +347,11 @@ public class GameScene extends PixelScene {
     busy.x = 1;
     busy.y = pane.bottom() + 1;
     add(busy);
+
+    counter = new CircleArc(18, 4.25f);
+    counter.camera = uiCamera;
+    counter.color(0x808080, true);
+    counter.show(this, busy.center(), 0f);
 
     switch (InterlevelScene.Companion.getMode()) {
       case RESURRECT:
@@ -809,6 +817,8 @@ public class GameScene extends PixelScene {
     }
 
     cellSelector.enable(Dungeon.INSTANCE.getHero().getReady());
+
+    counter.setSweep((1f - Actor.Companion.getNow() % 1f) % 1f);
   }
 
   public Thread actorThread() {
