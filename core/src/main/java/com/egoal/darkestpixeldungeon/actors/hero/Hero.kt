@@ -737,19 +737,32 @@ class Hero : Char() {
 
             // extra mental damage
             var value = 0f
-            if (dmg.from is Char && !Dungeon.visible[(dmg.from as Char).pos] && hpLost > 0) { // attack from nowhere
-                value += Random.Float(1f, 7f)
-                maySay(0.2f, HeroLines.WHAT)
-            }
-            if (dmg.isFeatured(Damage.Feature.CRITICAL) && hpLost > 0) {
-                value += Random.Float(2f, 8f)
-                maySay(0.2f, HeroLines.DAMN)
+
+            val isSurpriseAttack = dmg.from is Char && !Dungeon.visible[(dmg.from as Char).pos] && hpLost > 0
+            val isCritical = dmg.isFeatured(Damage.Feature.CRITICAL) && hpLost > 0
+
+            // very high damage warning: the first hit in a 100-turn window that
+            // takes more than 40% of max HP adds a little mental damage (not
+            // stacked with the crit/ambush toll) and a line.
+            val isVeryHighDamage = dmgToken > 0 && HT > 0 && dmgToken * 5 > HT * 2 && closeCallCooldown <= 0f
+            if (isVeryHighDamage) {
+                closeCallCooldown = 100f
+                tag = HeroLines.HIGH_DAMAGE + "_" + Random.IntRange(1, 3)
+                if (!isSurpriseAttack && !isCritical) value += Random.Float(1f, 5f)
             }
 
-            // ambush/crit pressure cannot exceed the damage actually dealt to HP
-            // as a percentage of max HP; shield-absorbed damage does not count
-            if (value > 0f && dmg.from is Mob && HT > 0)
-                value = min(value, hpLost * 100f / HT)
+            if (isSurpriseAttack) maySay(0.2f, HeroLines.WHAT)
+            if (isCritical) maySay(0.2f, HeroLines.DAMN)
+
+            // crit/ambush pressure grows with the damage's share of max HP,
+            // switching to a quadratic curve past 20% (100% HT ~= 30 expected),
+            // and is capped by that share. Shield-absorbed damage does not count.
+            if ((isSurpriseAttack || isCritical) && dmg.from is Mob && HT > 0) {
+                val p = hpLost * 100f / HT
+                val expected = if (p <= 20f) min(5f, p)
+                else 0.000917f * p * p + 0.2025f * p + 0.583f
+                value += min(max(expected + Random.Float(-8f, 8f), 0f), p)
+            }
 
             if (dmgToken > 0 && HP < HT / 4 && dmg.from is Mob && !heroPerk.has(Fearless::class.java)) {
                 value += Random.Float(1f, 5f)
@@ -760,7 +773,7 @@ class Hero : Char() {
             if (tag != null) sayShort(tag!!)
 
             // todo: this is fragile
-            val mentaldmg = Damage(min(round(value).toInt(), 15), dmg.from, dmg.to).type(Damage.Type.MENTAL)
+            val mentaldmg = Damage(round(value).toInt(), dmg.from, dmg.to).type(Damage.Type.MENTAL)
             drunk?.procTakenDamage(mentaldmg)
             takeMentalDamage(mentaldmg)
         }
@@ -829,6 +842,11 @@ class Hero : Char() {
     // auto-search runs on the actor thread (with a fresh FOV) instead of the
     // render thread.
     private var pendingStepSearch = false
+
+    // Turns remaining before a very-high-damage warning may trigger again. The
+    // first hit in each 100-turn window that takes more than 40% of max HP
+    // gives the warning.
+    private var closeCallCooldown = 0f
 
     fun stopContinuousMoving() {
         continuousMoving = false
@@ -941,6 +959,8 @@ class Hero : Char() {
 
     override fun act(): Boolean {
         super.act()
+
+        if (closeCallCooldown > 0f) closeCallCooldown -= 1f
 
         // Field-of-view/fog refresh belongs on the actor thread. It used to run
         // from onMotionComplete (render thread), racing with actor mutations of
@@ -1634,6 +1654,7 @@ class Hero : Char() {
         private const val USER_NAME = "username"
         private const val POH_DRUNK = "poh_drunk"
         private const val ARCANE_FACTOR = "arcane_factor"
+        private const val CLOSE_CALL_CD = "close-call-cd"
     }
 
     // store
@@ -1666,6 +1687,8 @@ class Hero : Char() {
         bundle.put(POH_DRUNK, pohDrunk)
 
         bundle.put(ARCANE_FACTOR, arcaneFactor)
+
+        bundle.put(CLOSE_CALL_CD, closeCallCooldown)
 
         bundle.put(CHALLENGES, challenges.map { it.toString() }.toTypedArray())
 
@@ -1701,6 +1724,8 @@ class Hero : Char() {
         pohDrunk = bundle.getInt(POH_DRUNK)
         arcaneFactor = bundle.getFloat(ARCANE_FACTOR)
         if (arcaneFactor < 0.1f) arcaneFactor = 1f // compatible
+
+        closeCallCooldown = bundle.getFloat(CLOSE_CALL_CD)
 
         spawnedPerks.clear()
         if (bundle.contains(SPAWNED_PERKS))
