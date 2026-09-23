@@ -60,6 +60,7 @@ enum Preferences {
   public static final String KEY_MORE_SLOTS = "more_slots";
   public static final String KEY_AUTO_PICKUP_STACKED = "auto_pickup_stacked";
   public static final String KEY_AUTO_PICKUP_DOOR = "auto_pickup_door";
+  public static final String KEY_SPECIAL_STYLE = "special_style_text";
 
   private com.badlogic.gdx.Preferences prefs;
 

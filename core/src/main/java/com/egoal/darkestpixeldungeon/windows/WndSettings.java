@@ -31,6 +31,7 @@ import com.egoal.darkestpixeldungeon.scenes.GameScene;
 import com.egoal.darkestpixeldungeon.scenes.PixelScene;
 import com.egoal.darkestpixeldungeon.ui.CheckBox;
 import com.egoal.darkestpixeldungeon.ui.Toolbar;
+import com.watabou.noosa.ColorBlock;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.Group;
 import com.watabou.noosa.RenderedText;
@@ -152,7 +153,7 @@ public class WndSettings extends WndTabbed {
         }
       };
       chkStacked.setRect(0, autoPickupDesc.y + autoPickupDesc.baseLine() +
-              GAP_SML, WIDTH, BTN_HEIGHT);
+              GAP_SML, WIDTH / 2 - 1, BTN_HEIGHT);
       chkStacked.checked(DarkestPixelDungeon.autoPickupStacked());
       add(chkStacked);
 
@@ -164,23 +165,38 @@ public class WndSettings extends WndTabbed {
           DarkestPixelDungeon.autoPickupOnDoor(checked());
         }
       };
-      chkOnDoor.setRect(0, chkStacked.bottom() + GAP_SML, WIDTH, BTN_HEIGHT);
+      chkOnDoor.setRect(WIDTH / 2 + 1, chkStacked.top(), WIDTH / 2 - 1, BTN_HEIGHT);
       chkOnDoor.checked(DarkestPixelDungeon.autoPickupOnDoor());
       add(chkOnDoor);
 
-      CheckBox chkSpiritSync = new CheckBox(Messages.get(this,
-              "spirit_sync")) {
+      ColorBlock divider = new ColorBlock(WIDTH, 1f, 0xff222222);
+      divider.x = 0;
+      divider.y = chkStacked.bottom() + GAP_SML;
+      add(divider);
+
+      CheckBox chkSpecialStyle = new CheckBox(Messages.get(this,
+              "special_style_text")) {
         @Override
         public void onClick() {
           super.onClick();
-          DarkestPixelDungeon.uploadSpirits(checked());
-          DarkestPixelDungeon.downloadSpirits(checked());
-          DarkestPixelDungeon.spiritSyncDecided(true);
+          DarkestPixelDungeon.switchNoFade((Class<? extends PixelScene>)
+                  DarkestPixelDungeon.scene().getClass(), new Game
+                  .SceneChangeCallback() {
+            @Override
+            public void beforeCreate() {
+              DarkestPixelDungeon.specialStyleText(checked());
+            }
+
+            @Override
+            public void afterCreate() {
+              Game.scene().add(new WndSettings());
+            }
+          });
         }
       };
-      chkSpiritSync.setRect(0, chkOnDoor.bottom() + GAP_SML, WIDTH, BTN_HEIGHT);
-      chkSpiritSync.checked(DarkestPixelDungeon.uploadSpirits() && DarkestPixelDungeon.downloadSpirits());
-      add(chkSpiritSync);
+      chkSpecialStyle.setRect(0, divider.y + GAP_SML, WIDTH, BTN_HEIGHT);
+      chkSpecialStyle.checked(DarkestPixelDungeon.specialStyleText());
+      add(chkSpecialStyle);
     }
   }
 

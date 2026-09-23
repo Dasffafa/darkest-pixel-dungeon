@@ -500,6 +500,14 @@ public class DarkestPixelDungeon extends Game {
     return Preferences.INSTANCE.getBoolean(Preferences.KEY_SPIRIT_DOWNLOAD, false);
   }
 
+  public static void specialStyleText(boolean value) {
+    Preferences.INSTANCE.put(Preferences.KEY_SPECIAL_STYLE, value);
+  }
+
+  public static boolean specialStyleText() {
+    return Preferences.INSTANCE.getBoolean(Preferences.KEY_SPECIAL_STYLE, true);
+  }
+
   public static void spiritSyncDecided(boolean value) {
     Preferences.INSTANCE.put(Preferences.KEY_SPIRIT_DECIDED, value);
   }

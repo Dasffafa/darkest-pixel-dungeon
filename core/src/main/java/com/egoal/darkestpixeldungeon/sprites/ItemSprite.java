@@ -30,6 +30,7 @@ import com.egoal.darkestpixeldungeon.Dungeon;
 import com.egoal.darkestpixeldungeon.effects.Speck;
 import com.egoal.darkestpixeldungeon.items.Heap;
 import com.egoal.darkestpixeldungeon.items.Item;
+import com.egoal.darkestpixeldungeon.messages.MessageVariants;
 import com.egoal.darkestpixeldungeon.levels.Terrain;
 import com.egoal.darkestpixeldungeon.scenes.GameScene;
 import com.watabou.gltextures.TextureCache;
@@ -47,7 +48,7 @@ public class ItemSprite extends MovieClip {
 
   private static final float DROP_INTERVAL = 0.4f;
 
-  protected static TextureFilm film;
+  protected TextureFilm film;
 
   public Heap heap;
 
@@ -65,21 +66,17 @@ public class ItemSprite extends MovieClip {
   }
 
   public ItemSprite(Item item) {
-    super(Assets.DPD_ITEMS);
+    super(MessageVariants.itemsSheet());
 
-    if (film == null) {
-      film = new TextureFilm(texture, SIZE, SIZE);
-    }
+    film = new TextureFilm(texture, SIZE, SIZE);
 
     view(item);
   }
 
   public ItemSprite(int image, Glowing glowing) {
-    super(Assets.DPD_ITEMS);
+    super(MessageVariants.itemsSheet());
 
-    if (film == null) {
-      film = new TextureFilm(texture, SIZE, SIZE);
-    }
+    film = new TextureFilm(texture, SIZE, SIZE);
 
     view(image, glowing);
   }

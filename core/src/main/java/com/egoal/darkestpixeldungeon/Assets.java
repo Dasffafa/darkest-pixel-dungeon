@@ -155,6 +155,7 @@ public class Assets {
     public static final String BOSSHP = MISCS + "boss_hp.png";
     public static final String DPD_ICONS = MISCS + "icons.png";
     public static final String DPD_ITEMS = MISCS + "items.png";
+    public static final String DPD_ITEMS_CHINESE = MISCS + "items_chinese_style.png";
     public static final String DPD_BANNERS = MISCS + "dpd-banners.png";
     public static final String DPD_CONS_ICONS = MISCS + "consumable_icons.png";
     public static final String DPD_AVATARS = MISCS + "avatars.png";

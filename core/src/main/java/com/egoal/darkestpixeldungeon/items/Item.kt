@@ -36,6 +36,7 @@ import com.egoal.darkestpixeldungeon.items.weapon.missiles.Boomerang
 import com.egoal.darkestpixeldungeon.items.weapon.missiles.MissileWeapon
 import com.egoal.darkestpixeldungeon.mechanics.Ballistica
 import com.egoal.darkestpixeldungeon.messages.M
+import com.egoal.darkestpixeldungeon.messages.MessageVariants
 import com.egoal.darkestpixeldungeon.messages.Messages
 import com.egoal.darkestpixeldungeon.scenes.CellSelector
 import com.egoal.darkestpixeldungeon.scenes.GameScene
@@ -352,11 +353,12 @@ open class Item : Bundlable {
         return name
     }
 
-    open fun name(): String = name
+    // 风格变体优先; 无变体时沿用构造时/子类赋值的 name
+    open fun name(): String = Messages.getVariant(this, "name") ?: name
 
-    fun trueName(): String = name
+    fun trueName(): String = Messages.getVariant(this, "name") ?: name
 
-    open fun image(): Int = image
+    open fun image(): Int = MessageVariants.spriteFor(this) ?: image
 
     open fun glowing(): ItemSprite.Glowing? = null
 

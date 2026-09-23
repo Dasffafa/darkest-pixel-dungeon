@@ -112,22 +112,13 @@ public class Messages {
   }
 
   public static String get(Class c, String k, Object... args) {
-    String key;
-    if (c != null) {
-      key = c.getName().replace("com.egoal.darkestpixeldungeon.", "");
-      key += "." + k;
-    } else
-      key = k;
-
-    String normalizedKey = key.toLowerCase(Locale.ENGLISH);
-    String variantKey = getVariant(normalizedKey);
+    String normalizedKey = normalizedKey(c, k);
 
     // A variant is preferred, while the original key remains the fallback.
-    if (variantKey != null && strings.containsKey(variantKey)) {
-      if (args.length > 0)
-        return format(strings.get(variantKey), args);
-      else return strings.get(variantKey);
-    } else if (strings.containsKey(normalizedKey)) {
+    String variant = lookupVariant(normalizedKey, args);
+    if (variant != null) return variant;
+
+    if (strings.containsKey(normalizedKey)) {
       if (args.length > 0)
         return format(strings.get(normalizedKey), args);
       else return strings.get(normalizedKey);
@@ -140,22 +131,44 @@ public class Messages {
       if (c != null && c.getSuperclass() != null) {
         return get(c.getSuperclass(), k, args);
       } else {
-        // Missing variants are optional and should not produce noisy diagnostics.
-        if (variantKey == null || variantKey.equals(normalizedKey)) {
-          Log.d("dpd", "missing string (" + lang.getNativeName() + "): " + key);
-        }
-        return key; // missed string.
+        Log.d("dpd", "missing string (" + lang.getNativeName() + "): " + key(c, k));
+        return key(c, k); // missed string.
       }
     }
   }
 
   /**
-   * Returns the key to try before the ordinary key. Add game-wide state
-   * conditions here when a localized variant should be selected.
-   * Returning the original key (the default) preserves existing behaviour.
+   * The variant text of this key under the currently active styles, or null when
+   * no active style supplies one. Ordinary lookups should use get(), which
+   * prefers the variant and falls back to the plain key; this is for callers
+   * that must tell the two apart, e.g. items whose name is assigned at runtime.
    */
-  public static String getVariant(String key) {
-    return key;
+  public static String getVariant(Object o, String k, Object... args) {
+    return getVariant(o.getClass(), k, args);
+  }
+
+  public static String getVariant(Class c, String k, Object... args) {
+    return lookupVariant(normalizedKey(c, k), args);
+  }
+
+  private static String key(Class c, String k) {
+    if (c == null) return k;
+    return c.getName().replace("com.egoal.darkestpixeldungeon.", "") + "." + k;
+  }
+
+  private static String normalizedKey(Class c, String k) {
+    return key(c, k).toLowerCase(Locale.ENGLISH);
+  }
+
+  private static String lookupVariant(String normalizedKey, Object... args) {
+    for (String variantKey : MessageVariants.variantKeys(normalizedKey)) {
+      if (strings.containsKey(variantKey)) {
+        if (args.length > 0)
+          return format(strings.get(variantKey), args);
+        else return strings.get(variantKey);
+      }
+    }
+    return null;
   }
 
 

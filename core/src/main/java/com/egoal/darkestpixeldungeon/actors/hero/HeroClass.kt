@@ -407,6 +407,10 @@ enum class HeroClass(private val title: String, vararg subclasses: HeroSubClass)
     companion object {
         private const val CLASS = "class"
 
+        private val CHINESE_HEROES = setOf(EXILE)
+
+        fun isChineseHero(hero: Hero): Boolean = CHINESE_HEROES.contains(hero.heroClass)
+
         fun RestoreFromBundle(bundle: Bundle): HeroClass {
             val value = bundle.getString(CLASS)
             return if (value.isNotEmpty()) valueOf(value) else ROGUE
