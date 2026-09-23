@@ -607,6 +607,12 @@ abstract class Char : Actor() {
 
             dmg = defender.defenseProc(dmg)
 
+            // a hit reduced to zero by mitigation cannot be a critical: clear the
+            // flag here (the unified settlement point) so crit visuals, sounds
+            // and secondary effects never trigger on a 0-damage hit.
+            if (dmg.value + dmg.add_value <= 0)
+                dmg.removeFeature(Damage.Feature.CRITICAL)
+
             // sound
             if (visibleFight && !TimekeepersHourglass.IsTimeStopped()) {
                 if (dmg.type == Damage.Type.NORMAL && dmg.isFeatured(Damage.Feature.CRITICAL) && dmg.value > 0)

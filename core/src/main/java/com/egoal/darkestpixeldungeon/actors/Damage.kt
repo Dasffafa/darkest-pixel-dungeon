@@ -75,6 +75,11 @@ class Damage(var value: Int, var from: Any, var to: Any) {
         return this
     }
 
+    fun removeFeature(f: Int): Damage {
+        feature = feature and f.inv()
+        return this
+    }
+
     fun isFeatured(f: Int): Boolean {
         return feature and f != 0
     }
