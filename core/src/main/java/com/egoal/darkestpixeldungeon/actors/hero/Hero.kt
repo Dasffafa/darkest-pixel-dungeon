@@ -781,7 +781,7 @@ class Hero : Char() {
                 val p = hpLost * 100f / HT
                 val expected = if (p <= 20f) min(5f, p)
                 else 0.000917f * p * p + 0.2025f * p + 0.583f
-                critAmbush = min(max(expected + Random.Float(-8f, 8f), 0f), p)
+                critAmbush = min(max(expected + Random.Float(-5f, 5f), 0f), p)
             }
             value += critAmbush
 
