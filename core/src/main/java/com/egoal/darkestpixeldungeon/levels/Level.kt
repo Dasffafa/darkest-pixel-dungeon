@@ -290,7 +290,9 @@ abstract class Level : Bundlable {
         var collection = bundle.getCollection(HEAPS)
         for (h in collection) {
             val heap = h as Heap
-            if (!heap.empty())
+            // unresolved pending heaps are legitimately empty; keep them so their reserved
+            // contents can still be rolled when the hero first sees them
+            if (!heap.empty() || heap.isPending)
                 heaps.put(heap.pos, heap)
         }
 
@@ -538,24 +540,21 @@ abstract class Level : Bundlable {
 
     @JvmOverloads
     fun findPrizeItem(match: Class<out Item>? = null): Item? {
-        if (itemsToSpawn.size == 0)
+        // special rooms must never take the key limited drops (upgrade scrolls, strength
+        // potions) -- those have to stay somewhere the player can actually find them.
+        val eligible = itemsToSpawn.filter { !isProtectedDrop(it) }
+        if (eligible.isEmpty())
             return null
 
-        if (match == null) {
-            val item = Random.element(itemsToSpawn)
-            itemsToSpawn.remove(item)
-            return item
-        }
+        val item = if (match == null) Random.element(eligible)
+        else eligible.firstOrNull { match.isInstance(it) } ?: return null
 
-        for (item in itemsToSpawn) {
-            if (match.isInstance(item)) {
-                itemsToSpawn.remove(item)
-                return item
-            }
-        }
-
-        return null
+        itemsToSpawn.remove(item)
+        return item
     }
+
+    private fun isProtectedDrop(item: Item): Boolean =
+            item is ScrollOfUpgrade || item is PotionOfStrength || item is PotionOfMight
 
     fun invalidateLightMap() {
         lightMapDirty = true
