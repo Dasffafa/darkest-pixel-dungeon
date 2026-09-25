@@ -216,8 +216,10 @@ class Hero : Char() {
     private fun baseRegeneration(): Float {
         var reg = regeneration
 
+        // the healing glyph goes inert while starving, so it neither regenerates the
+        // hero nor inflates the starvation damage that scales off this rate
         val glp = belongings.armor?.glyph
-        if (glp is Healing)
+        if (glp is Healing && buff(Hunger::class.java)!!.hunger() < Hunger.STARVING)
             reg += glp.speed(belongings.armor!!)
 
         // heart

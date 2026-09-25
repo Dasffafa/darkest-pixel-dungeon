@@ -4,6 +4,7 @@ import com.egoal.darkestpixeldungeon.actors.Char
 import com.egoal.darkestpixeldungeon.actors.Damage
 import com.egoal.darkestpixeldungeon.actors.buffs.ArmorExpose
 import com.egoal.darkestpixeldungeon.actors.buffs.Buff
+import com.egoal.darkestpixeldungeon.actors.buffs.Hunger
 import com.egoal.darkestpixeldungeon.actors.hero.Hero
 import com.egoal.darkestpixeldungeon.items.armor.Armor
 import com.egoal.darkestpixeldungeon.sprites.ItemSprite
@@ -46,16 +47,18 @@ class Peaceful : Armor.Glyph() {
         }
 
         override fun act(): Boolean {
-            if (broken <= 0f && armor != null) {
+            // the glyph also goes inert while the wearer is starving, so it does not
+            // inflate starvation damage (which scales off the regeneration rate)
+            val starving = (target as? Hero)?.buff(Hunger::class.java)?.hunger()?.let { it >= Hunger.STARVING } == true
+            if (broken > 0f) {
+                broken -= TICK
+            } else if (armor != null && !starving) {
                 dreg += 0.5f + armor!!.level() * 0.5f
                 if(dreg>=1f){
                     val dr = floor(dreg).toInt()
                     dreg -= dr
                     target.HP = min(target.HT, target.HP +dr)
                 }
-
-            } else {
-                broken -= TICK
             }
 
             spend(TICK)
