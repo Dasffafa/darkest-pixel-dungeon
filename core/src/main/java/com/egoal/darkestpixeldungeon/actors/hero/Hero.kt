@@ -251,7 +251,7 @@ class Hero : Char() {
         factor *= heroPerk.get(WandCharger::class.java)?.factor() ?: 1f
         belongings.helmet?.let {
             if (it is WizardHat)
-                factor = if (it.cursed) 0.9f else 1.15f
+                factor *= if (it.cursed) 0.9f else 1.15f
         }
         val bonus = Ring.getBonus(this, RingOfArcane.Arcane::class.java)
         factor *= 1.06f.pow(bonus)
