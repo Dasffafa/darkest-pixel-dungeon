@@ -202,6 +202,18 @@ class Hero : Char() {
 
         if (buff(Berserk::class.java)?.berserking() == true) return 0f
 
+        var reg = baseRegeneration()
+
+        if (hlvl >= Hunger.HUNGRY && heroClass != HeroClass.SORCERESS && reg > 0f) reg *= 0.5f
+
+        return reg
+    }
+
+    // the rate the hero would regenerate at while fed. hunger damage scales off this,
+    // so it deliberately skips the starving/berserk gating applied by regenerateSpeed().
+    fun fedRegeneration(): Float = max(0f, baseRegeneration())
+
+    private fun baseRegeneration(): Float {
         var reg = regeneration
 
         val glp = belongings.armor?.glyph
@@ -230,8 +242,6 @@ class Hero : Char() {
             if (it is HeaddressRegeneration)
                 reg += if (it.cursed) -0.1f else (0.05f + reg * 0.2f)
         }
-
-        if (hlvl >= Hunger.HUNGRY && heroClass != HeroClass.SORCERESS && reg > 0f) reg *= 0.5f
 
         return reg
     }

@@ -71,54 +71,78 @@ class Hunger : Buff(), Hero.Doom {
             val hero = target as Hero
 
             if (isStarving) {
-                val dhp = if (hero.heroPerk.get(RavenousAppetite::class.java) != null) target.HT / 50f
-                else target.HT / 75f
+                // hunger costs 1/4 of the hero's fed regeneration rate per turn. every STEP
+                // turns the built-up damage pops once: a pop is always worth at least 1, and the
+                // integer part pops while the fraction is carried over to the next pop.
+                var dhp = HUNGER_DAMAGE_PER_TURN * STEP * hero.fedRegeneration()
+                if (hero.heroPerk.get(RavenousAppetite::class.java) != null) dhp *= 1.5f
                 partialDamage += dhp
 
-                if (partialDamage > 1) {
-                    target.takeDamage(Damage(partialDamage.toInt(), this, target)
-                            .type(Damage.Type.MAGICAL)
-                            .addFeature(Damage.Feature.PURE or Damage.Feature.HUNGER))
-                    if (target.isAlive) {
-                        target.takeDamage(Damage(Random.Int(0, partialDamage.toInt() + 1), this, target)
-                                .type(Damage.Type.MENTAL).addFeature(Damage.Feature.PURE))
-                        if (Random.Float() < 0.2f)
-                            (target as Hero).sayShort(HeroLines.WHY_NOT_EAT)
+                val dmg = if (partialDamage < 1f) {
+                    partialDamage = 0f
+                    1
+                } else {
+                    val i = partialDamage.toInt()
+                    partialDamage -= i.toFloat()
+                    i
+                }
 
-                        // 
-                        if (dmgTokenInTotal < 100) {
-                            dmgTokenInTotal += partialDamage.toInt()
-                            if (dmgTokenInTotal >= 100 && !hero.heroPerk.has(Dieting::class.java)) {
-                                val diet = Dieting()
-                                hero.heroPerk.add(diet)
-                                PerkGain.Show(hero, diet)
-                                GLog.w(M.L(this, "dieting"))
+                target.takeDamage(Damage(dmg, this, target)
+                        .type(Damage.Type.MAGICAL)
+                        .addFeature(Damage.Feature.PURE or Damage.Feature.HUNGER))
+                if (target.isAlive) {
+                    target.takeDamage(Damage(Random.Int(0, dmg + 1), this, target)
+                            .type(Damage.Type.MENTAL).addFeature(Damage.Feature.PURE))
+                    if (Random.Float() < 0.2f)
+                        (target as Hero).sayShort(HeroLines.WHY_NOT_EAT)
+
+                    // 
+                    if (dmgTokenInTotal < 180) {
+                        dmgTokenInTotal += dmg
+                        if (dmgTokenInTotal >= 100 && !hero.heroPerk.has(Dieting::class.java)) {
+                            val diet = Dieting()
+                            hero.heroPerk.add(diet)
+                            PerkGain.Show(hero, diet)
+                            GLog.w(M.L(this, "dieting"))
+                        }
+                        if (dmgTokenInTotal >= 180) {
+                            hero.heroPerk.get(Dieting::class.java)?.let {
+                                if (it.level < 2) {
+                                    hero.heroPerk.add(it)
+                                    PerkGain.Show(hero, it)
+                                    GLog.w(M.L(this, "dieting2"))
+                                }
                             }
                         }
                     }
-                    partialDamage -= partialDamage.toInt().toFloat()
                 }
 
             } else {
 
-                val newLevel = level + HUNGER_PER_STEP
-                var statusUpdated = false
-                if (newLevel >= STARVING) {
+                // level 2 dieting: the hunger has a chance to hold this step
+                val diet = hero.heroPerk.get(Dieting::class.java)
+                val holdHunger = diet != null && diet.level >= 2 && Random.Float() < 0.2f
 
-                    GLog.n(Messages.get(this, "onstarving"))
-                    hero.resting = false
-                    target.takeDamage(Damage(1, this, target).type(Damage.Type
-                            .MAGICAL).addFeature(Damage.Feature.PURE or Damage.Feature.HUNGER))
-                    statusUpdated = true
+                if (!holdHunger) {
+                    val newLevel = level + HUNGER_PER_STEP
+                    var statusUpdated = false
+                    if (newLevel >= STARVING) {
 
-                } else if (newLevel >= HUNGRY && level < HUNGRY) {
-                    GLog.w(Messages.get(this, "onhungry"))
-                    statusUpdated = true
-                }
-                level = newLevel
+                        GLog.n(Messages.get(this, "onstarving"))
+                        hero.resting = false
+                        target.takeDamage(Damage(1, this, target).type(Damage.Type
+                                .MAGICAL).addFeature(Damage.Feature.PURE or Damage.Feature.HUNGER))
+                        statusUpdated = true
 
-                if (statusUpdated) {
-                    BuffIndicator.refreshHero()
+                    } else if (newLevel >= HUNGRY && level < HUNGRY) {
+                        GLog.w(Messages.get(this, "onhungry"))
+                        statusUpdated = true
+                    }
+                    level = newLevel
+
+                    if (statusUpdated) {
+                        BuffIndicator.refreshHero()
+                    }
                 }
             }
 
@@ -195,6 +219,9 @@ class Hunger : Buff(), Hero.Doom {
     companion object {
         private const val STEP = 10f
         private const val HUNGER_PER_STEP = 11f
+
+        // starving damage per turn, as a fraction of the hero's fed regeneration rate
+        private const val HUNGER_DAMAGE_PER_TURN = 0.25f
 
         const val HUNGRY = 350f
         const val STARVING = 500f

@@ -71,8 +71,10 @@ class BrewEnhancedPotion : Perk() {
 }
 
 // see Hunger
-class Dieting : Perk() {
+class Dieting : Perk(2) {
     override fun image(): Int = PerkImageSheet.DIETING
+
+    override fun description(): String = M.L(this, if (level >= 2) "desc2" else "desc")
 }
 
 // note: this perk can be negative level, i havnt abstract this, but it works for now.
