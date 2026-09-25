@@ -360,7 +360,11 @@ class Heap : Bundlable {
 
             for (item in items.toTypedArray()) {
 
-                if (item is Potion) {
+                // the key limited drops endure a blast, like upgraded/unique items do
+                if (item is ScrollOfUpgrade || item is PotionOfStrength || item is PotionOfMight) {
+                    continue
+
+                } else if (item is Potion) {
                     items.remove(item)
                     item.shatter(pos)
 
