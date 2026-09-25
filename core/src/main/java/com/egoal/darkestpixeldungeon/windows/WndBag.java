@@ -43,6 +43,7 @@ import com.egoal.darkestpixeldungeon.items.bags.WandHolster;
 import com.egoal.darkestpixeldungeon.items.food.Blandfruit;
 import com.egoal.darkestpixeldungeon.items.food.Food;
 import com.egoal.darkestpixeldungeon.items.food.MysteryMeat;
+import com.egoal.darkestpixeldungeon.items.food.Wine;
 import com.egoal.darkestpixeldungeon.items.potions.Potion;
 import com.egoal.darkestpixeldungeon.items.rings.Ring;
 import com.egoal.darkestpixeldungeon.items.scrolls.Scroll;
@@ -587,6 +588,7 @@ public class WndBag extends WndTabbed {
             case ALCHEMY:
                 return item instanceof Plant.Seed || item instanceof MysteryMeat || item instanceof FishBone ||
                         item.getClass() == Food.class ||
+                        item instanceof Wine ||
                         item instanceof Honeypot.ShatteredPot ||
                         (item instanceof Blandfruit && ((Blandfruit) item).getPotionAttrib() == null);
 //          case SMEARABLE:
