@@ -36,7 +36,9 @@ public class DarkestPixelDungeon extends Game {
   private static final long STALL_THRESHOLD = 10000L;
   private static final long SUSPEND_THRESHOLD = 3000L;
 
-  private static final String FONT_LATIN_CLASSIC = "pixelfont.ttf";
+  // the latin classic font also points at the fusion pixel face: pixelfont.ttf
+  // is rendered with a tighter advance and its digits and symbols overlap
+  private static final String FONT_LATIN_CLASSIC = "fonts/fusion_pixel_12px_zh_hans.ttf";
   private static final String FONT_LATIN_SMOOTH = "font.ttf";
   private static final String FONT_CJK_CLASSIC = "fonts/fusion_pixel_12px_zh_hans.ttf";
   private static final String FONT_CJK_SMOOTH = "droid_sans.ttf";
