@@ -469,7 +469,7 @@ object Badges {
         if (Dungeon.IsChallenged()) return
 
         if (!Dungeon.isHeroNull && Dungeon.hero.isAlive &&
-                !local.contains(Badge.ALL_RINGS_IDENTIFIED) && Catalog.Ring.allSeen()) {
+                !global.contains(Badge.ALL_RINGS_IDENTIFIED) && Catalog.Ring.allSeen()) {
 
             val badge = Badge.ALL_RINGS_IDENTIFIED
             local.add(badge)
@@ -483,7 +483,7 @@ object Badges {
         if (Dungeon.IsChallenged()) return
 
         if (!Dungeon.isHeroNull && Dungeon.hero.isAlive &&
-                !local.contains(Badge.ALL_ARTIFACTS_IDENTIFIED) && Catalog.ARTIFACT.allSeen()) {
+                !global.contains(Badge.ALL_ARTIFACTS_IDENTIFIED) && Catalog.ARTIFACT.allSeen()) {
             val badge = Badge.ALL_ARTIFACTS_IDENTIFIED
             local.add(badge)
             displayBadge(badge)
