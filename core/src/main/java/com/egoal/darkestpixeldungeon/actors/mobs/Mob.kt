@@ -31,6 +31,7 @@ import com.egoal.darkestpixeldungeon.actors.hero.perks.Assassin
 import com.egoal.darkestpixeldungeon.actors.mobs.abilities.Ability
 import com.egoal.darkestpixeldungeon.effects.Surprise
 import com.egoal.darkestpixeldungeon.effects.Wound
+import com.egoal.darkestpixeldungeon.items.Catalog
 import com.egoal.darkestpixeldungeon.items.Generator
 import com.egoal.darkestpixeldungeon.items.Item
 import com.egoal.darkestpixeldungeon.items.artifacts.MasterThievesArmband
@@ -619,6 +620,8 @@ abstract class Mob : Char() {
         for (a in abilities) justDie = a.onDying(this) && justDie
 
         if (justDie) {
+            Catalog.SetSeen(this)
+
             if (Dungeon.hero.lvl <= Config.MaxLevel + 2) {
                 val chance = Config.LootChance * 1.15f.pow(Dungeon.hero.wealthBonus()) *
                         (if (properties.contains(Property.ELITE)) 2f else 1f)

@@ -73,10 +73,9 @@ abstract class Shield : MeleeWeapon() {
             if (dmg.isFeatured(Damage.Feature.RANGED))
                 value += round(value / 5f).toInt()
 
+            // magical and pure damage never reach here, see Char.ProcessAttackDamage
             if (dmg.type == Damage.Type.NORMAL)
                 dmg.value -= value
-            else if (dmg.type == Damage.Type.MAGICAL)
-                dmg.value -= value * 2 / 3
         }
 
         return dmg

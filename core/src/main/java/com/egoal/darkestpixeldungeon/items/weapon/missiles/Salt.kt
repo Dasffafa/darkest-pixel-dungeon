@@ -16,6 +16,8 @@ open class Salt(n: Int = 1) : MissileWeapon(1) {
 
     override fun breakChance(): Float = 1f // always
 
+    override fun baseBreakChance(): Float = 1f
+
     override fun miss(cell: Int) {
         // do nothing, it just, disappear...
         CellEmitter.get(cell).burst(Speck.factory(Speck.STEAM), 6)
@@ -39,6 +41,8 @@ class RefinedSalt(n: Int = 1) : MissileWeapon(3) {
     }
 
     override fun breakChance(): Float = 1f
+
+    override fun baseBreakChance(): Float = 1f
 
     override fun miss(cell: Int) {
         CellEmitter.get(cell).burst(Speck.factory(Speck.STEAM), 6)

@@ -72,7 +72,16 @@ public class Messages {
           "com.egoal.darkestpixeldungeon.messages.scenes.scenes",
           "com.egoal.darkestpixeldungeon.messages.ui.ui",
           "com.egoal.darkestpixeldungeon.messages.windows.windows",
-          "com.egoal.darkestpixeldungeon.messages.misc.misc"
+          "com.egoal.darkestpixeldungeon.messages.misc.misc",
+          "com.egoal.darkestpixeldungeon.messages.catalog.catalog_mobs",
+          "com.egoal.darkestpixeldungeon.messages.catalog.catalog_items",
+          "com.egoal.darkestpixeldungeon.messages.catalog.catalog_rings",
+          "com.egoal.darkestpixeldungeon.messages.catalog.catalog_artifacts",
+          "com.egoal.darkestpixeldungeon.messages.catalog.catalog_potions",
+          "com.egoal.darkestpixeldungeon.messages.catalog.catalog_scrolls",
+          "com.egoal.darkestpixeldungeon.messages.catalog.catalog_weapons",
+          "com.egoal.darkestpixeldungeon.messages.catalog.catalog_armors",
+          "com.egoal.darkestpixeldungeon.messages.catalog.catalog_perks"
   };
 
   static {
@@ -105,6 +114,17 @@ public class Messages {
 
   public static String get(String key, Object... args) {
     return get(null, key, args);
+  }
+
+  /**
+   * Whether the given class (or one of its superclasses) defines the key.
+   * Useful for optional texts such as catalog entries that fall back to
+   * a sibling key when absent.
+   */
+  public static boolean has(Class c, String k) {
+    if (c == null) return false;
+    if (strings.containsKey(normalizedKey(c, k))) return true;
+    return c.getSuperclass() != null && has(c.getSuperclass(), k);
   }
 
   public static String get(Object o, String k, Object... args) {

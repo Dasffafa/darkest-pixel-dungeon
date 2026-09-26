@@ -6,7 +6,6 @@ import com.egoal.darkestpixeldungeon.items.keys.GoldenKey
 import com.egoal.darkestpixeldungeon.items.keys.IronKey
 import com.egoal.darkestpixeldungeon.items.keys.SkeletonKey
 import com.egoal.darkestpixeldungeon.messages.M
-import com.egoal.darkestpixeldungeon.scenes.GameScene
 import com.egoal.darkestpixeldungeon.scenes.PixelScene
 import com.egoal.darkestpixeldungeon.ui.*
 import com.watabou.noosa.BitmapText
@@ -16,7 +15,6 @@ import com.watabou.noosa.ui.Component
 
 class WndJournal : Window() {
     private val btnTitle: RedButton
-    private val btnCatalogues: RedButton
     private val list: ScrollPane
 
     init {
@@ -24,21 +22,10 @@ class WndJournal : Window() {
 
         btnTitle = RedButton(M.L(this, "title"), 9).apply {
             textColor(TITLE_COLOR)
-            setRect(0f, 0f, WIDTH / 2f - 1, reqHeight())
+            setRect(0f, 0f, WIDTH, reqHeight())
         }
         PixelScene.align(btnTitle)
         add(btnTitle)
-
-        btnCatalogues = object : RedButton(M.L(WndCatalogs::class.java, "title"), 9) {
-            override fun onClick() {
-                hide()
-                GameScene.show { WndCatalogs() }
-            }
-        }.apply {
-            setRect(WIDTH / 2f + 1, 0f, WIDTH / 2f - 1, reqHeight())
-        }
-        PixelScene.align(btnCatalogues)
-        add(btnCatalogues)
 
 //        list = ScrollPane(Component())
         val content = Component()

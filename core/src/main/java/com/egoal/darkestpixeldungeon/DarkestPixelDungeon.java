@@ -242,6 +242,14 @@ public class DarkestPixelDungeon extends Game {
     return Boolean.getBoolean("dpd.debug") || Preferences.INSTANCE.getBoolean(Preferences.KEY_DEBUG, false);
   }
 
+  public static void catalogSpoilerWarning(boolean value) {
+    Preferences.INSTANCE.put(Preferences.KEY_CATALOG_SPOILER_WARNING, value);
+  }
+
+  public static boolean catalogSpoilerWarning() {
+    return Preferences.INSTANCE.getBoolean(Preferences.KEY_CATALOG_SPOILER_WARNING, true);
+  }
+
   public static void changeListChecked(boolean value) {
     Preferences.INSTANCE.put(Preferences.KEY_CHANGE_LIST_CHECKED, value);
   }

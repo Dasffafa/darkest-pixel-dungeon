@@ -1,5 +1,6 @@
 package com.egoal.darkestpixeldungeon.actors.hero.perks
 
+import com.egoal.darkestpixeldungeon.items.Catalog
 import com.watabou.utils.Bundlable
 import com.watabou.utils.Bundle
 
@@ -11,6 +12,9 @@ class HeroPerk : Bundlable {
     fun has(cls: Class<out Perk>): Boolean = get(cls) != null
 
     fun add(perk: Perk): Boolean {
+        // the perk catalog unlocks an entry the moment the hero gets the perk
+        Catalog.SetSeen(perk.javaClass)
+
         val similar = perks.find { perk.javaClass == it.javaClass }
 
         return if (similar != null) {

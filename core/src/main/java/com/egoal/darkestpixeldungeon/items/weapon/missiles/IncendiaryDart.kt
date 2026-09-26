@@ -52,6 +52,8 @@ class IncendiaryDart(number: Int = 1) : MissileWeapon(2, stick = true) {
 
     override fun breakChance(): Float = 1f
 
+    override fun baseBreakChance(): Float = 1f
+
     override fun proc(damage: Damage): Damage {
         Buff.affect(damage.to as Char, Burning::class.java).reignite(damage.to as Char)
         return super.proc(damage)

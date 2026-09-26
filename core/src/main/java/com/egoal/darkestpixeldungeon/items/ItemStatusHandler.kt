@@ -124,6 +124,10 @@ class ItemStatusHandler<T : Item> {
 
     fun image(item: T): Int = labelImages[label(item)]!!
 
+    /** the whole class -> sprite assignment, for a caller that rolls its own set */
+    fun images(): Map<Class<*>, Int> =
+            itemLabels.entries.associate { (cls, label) -> cls as Class<*> to labelImages[label]!! }
+
     fun label(item: T): String = itemLabels[item.javaClass]!!
 
     fun isKnown(item: T): Boolean = known.contains(item.javaClass)

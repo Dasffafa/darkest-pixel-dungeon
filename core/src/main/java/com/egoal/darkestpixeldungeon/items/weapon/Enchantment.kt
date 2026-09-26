@@ -20,7 +20,7 @@ abstract class Enchantment : Bundlable {
 
     fun desc(): String = selfDesc() + M.L(Enchantment::class.java, "left_time", left.toInt())
 
-    protected open fun selfDesc(): String = M.L(this, "desc")
+    open fun selfDesc(): String = M.L(this, "desc")
 
     abstract fun proc(weapon: Weapon, damage: Damage): Damage
 

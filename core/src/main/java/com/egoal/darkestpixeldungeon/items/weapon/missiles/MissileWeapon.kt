@@ -104,10 +104,17 @@ abstract class MissileWeapon(val tier: Int, protected val stick: Boolean = false
     }
 
     protected open fun breakChance(): Float {
-        var bc = 0.65f - 1.25f.pow(tier) / 6f // base
+        var bc = baseBreakChance()
         if (Dungeon.hero.heroClass == HeroClass.HUNTRESS) bc *= 0.7f
         return bc
     }
+
+    /**
+     * The odds this shot breaks, before the hero's class is taken into account.
+     * The catalog reads this one: it also opens outside a run, and its entries
+     * must not depend on whoever is playing.
+     */
+    open fun baseBreakChance(): Float = 0.65f - 1.25f.pow(tier) / 6f // base
 
     override fun proc(dmg: Damage): Damage {
         val hero = dmg.from as Hero
