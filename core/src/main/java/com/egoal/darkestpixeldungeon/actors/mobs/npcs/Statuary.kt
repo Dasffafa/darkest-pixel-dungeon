@@ -329,6 +329,13 @@ class Statuary : NPC.Unbreakable() {
 
         private val spawnChance = floatArrayOf(1f, 1f, 1f)
 
+        /** catalog variant ids, in display order: one per look the statue can take */
+        val CatalogVariants: List<String> = Type.values().map { it.title }
+
+        /** the statue of a given catalog variant, for the catalog's own display */
+        fun ForVariant(variant: String?): Statuary =
+                Statuary().apply { type = Type.values().firstOrNull { it.title == variant } ?: Type.ANGEL }
+
         private const val NODE = "statuary"
         private const val SPAWN_CHANCE = "spawnchance"
 

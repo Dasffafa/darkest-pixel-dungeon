@@ -31,7 +31,6 @@ import com.egoal.darkestpixeldungeon.scenes.CellSelector
 import com.egoal.darkestpixeldungeon.scenes.GameScene
 import com.egoal.darkestpixeldungeon.sprites.ItemSprite
 import com.egoal.darkestpixeldungeon.windows.WndBag
-import com.egoal.darkestpixeldungeon.windows.WndCatalogs
 import com.watabou.noosa.Camera
 import com.watabou.noosa.Game
 import com.watabou.noosa.Group
@@ -113,11 +112,6 @@ class Toolbar : Component() {
             private var gold: GoldIndicator? = null
             public override fun onClick() {
                 inventory()
-            }
-
-            override fun onLongClick(): Boolean {
-                GameScene.show { WndCatalogs() }
-                return true
             }
 
             override fun createChildren() {

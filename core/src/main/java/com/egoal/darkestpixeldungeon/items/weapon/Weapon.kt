@@ -27,6 +27,7 @@ import com.egoal.darkestpixeldungeon.actors.Damage
 import com.egoal.darkestpixeldungeon.actors.hero.Hero
 import com.egoal.darkestpixeldungeon.actors.hero.perks.EnchantmentExtraDamage
 import com.egoal.darkestpixeldungeon.actors.hero.perks.ExtraStrengthPower
+import com.egoal.darkestpixeldungeon.items.Catalog
 import com.egoal.darkestpixeldungeon.items.Item
 import com.egoal.darkestpixeldungeon.items.KindOfWeapon
 import com.egoal.darkestpixeldungeon.items.rings.Ring
@@ -202,6 +203,10 @@ abstract class Weapon : KindOfWeapon() {
 
     open fun inscribe(insc: Inscription?): Weapon {
         inscription = insc
+
+        // only reveal once the hero knows about it, generation applies curses too
+        if (insc != null && cursedKnown) Catalog.SetSeen(insc.javaClass)
+
         return this
     }
 
@@ -231,12 +236,19 @@ abstract class Weapon : KindOfWeapon() {
         else
             enchantment = type.newInstance().apply { left = duration }
 
+        if (cursedKnown) Catalog.SetSeen(type)
         GLog.w(M.L(Weapon::class.java, "on_enchanted", name(), enchantment!!.name()))
 
         return this
     }
 
     open fun hasEnchant(type: Class<out Enchantment>): Boolean = enchantment?.javaClass == type
+
+    override fun identify(): Item {
+        enchantment?.let { Catalog.SetSeen(it.javaClass) }
+        inscription?.let { Catalog.SetSeen(it.javaClass) }
+        return super.identify()
+    }
 
     override fun glowing(): ItemSprite.Glowing? = enchantment?.glowing()
 

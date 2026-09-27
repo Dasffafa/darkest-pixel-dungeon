@@ -136,7 +136,9 @@ public class BuffIndicator extends Component {
     super();
 
     this.ch = ch;
-    if (ch == Dungeon.INSTANCE.getHero()) {
+    // the indicator is also built outside a run (catalog), where Dungeon.hero
+    // is a lateinit that has been nulled out and getHero() would throw
+    if (!Dungeon.INSTANCE.isHeroNull() && ch == Dungeon.INSTANCE.getHero()) {
       heroInstance = this;
     }
   }

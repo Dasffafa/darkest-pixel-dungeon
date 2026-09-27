@@ -77,5 +77,16 @@ open class Reagent(val drinkable: Boolean) : Item() {
 
     companion object {
         const val AC_DRINK = "DRINK"
+
+        val all: Array<Class<out Reagent>> = arrayOf(
+                ReagentOfCatwalk::class.java,
+                ReagentOfHallucinogenic::class.java,
+                ReagentOfHealing::class.java,
+                ReagentOfPetrifaction::class.java,
+                ReagentOfPrecipitate::class.java,
+                ReagentOfSnakeBite::class.java,
+                ReagentOfSorcery::class.java,
+                ReagentOfSweet::class.java
+        )
     }
 }

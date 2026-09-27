@@ -223,6 +223,8 @@ open class Item : Bundlable {
         items.add(this)
         everSeen = true
 
+        Catalog.SetSeen(javaClass)
+
         if (stackable || this is Boomerang)
             Dungeon.quickslot.replaceSimilar(this)
 

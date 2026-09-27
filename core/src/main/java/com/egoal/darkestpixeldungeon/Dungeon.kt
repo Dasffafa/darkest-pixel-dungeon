@@ -95,6 +95,7 @@ object Dungeon {
 
     val isHeroNull: Boolean get() = !::hero.isInitialized
     val isLevelNull: Boolean get() = !::level.isInitialized
+    val heroOrNull: Hero? get() = if (::hero.isInitialized) hero else null
 
     private fun nullField(fieldName: String) {
         with(javaClass.getDeclaredField(fieldName)) {

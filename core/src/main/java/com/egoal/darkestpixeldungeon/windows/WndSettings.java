@@ -199,6 +199,15 @@ public class WndSettings extends WndTabbed {
       chkSpecialStyle.setRect(0, divider.y + GAP_SML, WIDTH, BTN_HEIGHT);
       chkSpecialStyle.checked(DarkestPixelDungeon.specialStyleText());
       add(chkSpecialStyle);
+
+      ColorBlock divider2 = new ColorBlock(WIDTH, 1f, 0xff222222);
+      divider2.x = 0;
+      divider2.y = chkSpecialStyle.bottom() + GAP_SML;
+      add(divider2);
+
+      CatalogSpoilerOption chkCatalogSpoiler = new CatalogSpoilerOption();
+      chkCatalogSpoiler.setRect(0, divider2.y + GAP_SML, WIDTH, BTN_HEIGHT);
+      add(chkCatalogSpoiler);
     }
   }
 
