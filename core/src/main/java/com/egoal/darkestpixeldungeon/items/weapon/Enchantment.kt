@@ -1,6 +1,9 @@
 package com.egoal.darkestpixeldungeon.items.weapon
 
+import com.egoal.darkestpixeldungeon.actors.Char
 import com.egoal.darkestpixeldungeon.actors.Damage
+import com.egoal.darkestpixeldungeon.actors.buffs.Buff
+import com.egoal.darkestpixeldungeon.actors.buffs.FlavourBuff
 import com.egoal.darkestpixeldungeon.actors.hero.Hero
 import com.egoal.darkestpixeldungeon.effects.SpellSprite
 import com.egoal.darkestpixeldungeon.items.potions.*
@@ -16,6 +19,12 @@ import com.watabou.utils.Bundle
 abstract class Enchantment : Bundlable {
     var left = 0f
 
+    /**
+     * True while this proc is a weapon's repeat trigger (CarvedStaff). The enchantment
+     * duration is not consumed again, and stackable effects extend instead of just capping.
+     */
+    var extraTrigger = false
+
     open fun name(): String = M.L(this, "name")
 
     fun desc(): String = selfDesc() + M.L(Enchantment::class.java, "left_time", left.toInt())
@@ -25,14 +34,24 @@ abstract class Enchantment : Bundlable {
     abstract fun proc(weapon: Weapon, damage: Damage): Damage
 
     protected fun use(weapon: Weapon, amount: Float = 1f) {
+        if (extraTrigger) return
+
         left -= amount
         if (left <= 0f) {
-            weapon.enchantment = null
+            weapon.removeEnchantment(this)
             GLog.w(M.L(Enchantment::class.java, "no_effect", name()))
 
             GameScene.updateItemDisplays = true
         }
     }
+
+    /**
+     * Prolongs a flavour buff normally; the repeat trigger extends it on top of any
+     * duration the first trigger already applied, instead of merely capping it.
+     */
+    protected fun <T : FlavourBuff> extend(target: Char, buffClass: Class<T>, duration: Float): T =
+            if (extraTrigger) Buff.affect(target, buffClass, duration)
+            else Buff.prolong(target, buffClass, duration)
 
     abstract fun glowing(): ItemSprite.Glowing
 
