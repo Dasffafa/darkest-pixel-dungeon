@@ -141,7 +141,7 @@ class CursingTrap : Trap() {
             item.cursed = item.cursedKnown
 
             if (item is Weapon) {
-                if (item.inscription == null) {
+                if (item.inscriptions.size < item.maxInscriptions) {
                     item.inscribe(Inscription.randomNegative())
                 }
             }

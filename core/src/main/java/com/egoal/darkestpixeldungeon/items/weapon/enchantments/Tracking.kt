@@ -12,7 +12,7 @@ class Tracking : Enchantment() {
     override fun proc(weapon: Weapon, damage: Damage): Damage {
         use(weapon, 0.5f)
 
-        Buff.prolong(damage.to as Char, ViewMark::class.java, 5f + weapon.level()).observer = (damage.from as Char).id()
+        extend(damage.to as Char, ViewMark::class.java, 5f + weapon.level()).observer = (damage.from as Char).id()
 
         return damage
     }

@@ -55,7 +55,20 @@ abstract class Weapon : KindOfWeapon() {
 
     private var hitsToKnow = HITS_TO_KNOW
 
-    var inscription: Inscription? = null
+    /** Inscriptions held by this weapon, in the order they were acquired. */
+    val inscriptions: MutableList<Inscription> = ArrayList()
+
+    /** How many inscriptions this weapon can hold at once. */
+    open val maxInscriptions: Int get() = 1
+
+    /** The most recently acquired inscription. Assigning replaces every inscription. */
+    var inscription: Inscription?
+        get() = inscriptions.lastOrNull()
+        set(value) {
+            inscriptions.clear()
+            if (value != null) inscriptions.add(value)
+        }
+
     var enchantment: Enchantment? = null
 
     enum class Imbue(private val damageFactor: Float, private val delayFactor: Float, private val strFix: Int) {
@@ -74,7 +87,7 @@ abstract class Weapon : KindOfWeapon() {
 
     override fun proc(dmg: Damage): Damage {
         var dmg = dmg
-        if (inscription != null) dmg = inscription!!.proc(this, dmg)
+        for (insc in inscriptions) dmg = insc.proc(this, dmg)
         if (enchantment != null) {
             dmg = enchantment!!.proc(this, dmg)
             if (dmg.from is Hero) {
@@ -101,7 +114,7 @@ abstract class Weapon : KindOfWeapon() {
     override fun storeInBundle(bundle: Bundle) {
         super.storeInBundle(bundle)
         bundle.put(UNFAMILIRIARITY, hitsToKnow)
-        bundle.put(INSCRIPTION, inscription)
+        bundle.put(INSCRIPTIONS, inscriptions)
         bundle.put(ENCHANTMENT, enchantment)
         bundle.put(IMBUE, imbue)
     }
@@ -109,7 +122,13 @@ abstract class Weapon : KindOfWeapon() {
     override fun restoreFromBundle(bundle: Bundle) {
         super.restoreFromBundle(bundle)
         hitsToKnow = bundle.getInt(UNFAMILIRIARITY)
-        inscription = bundle.get(INSCRIPTION) as Inscription?
+
+        inscriptions.clear()
+        for (b in bundle.getCollection(INSCRIPTIONS)) (b as? Inscription)?.let { inscriptions.add(it) }
+        // saves from before multi-inscription support carry a single entry
+        if (inscriptions.isEmpty() && bundle.contains(INSCRIPTION))
+            (bundle.get(INSCRIPTION) as? Inscription)?.let { inscriptions.add(it) }
+
         enchantment = bundle.get(ENCHANTMENT) as Enchantment?
         imbue = bundle.getEnum(IMBUE, Imbue::class.java)
     }
@@ -163,18 +182,19 @@ abstract class Weapon : KindOfWeapon() {
     abstract fun STRReq(lvl: Int): Int
 
     open fun upgrade(inscribe: Boolean): Item {
-        if (inscribe && (inscription == null || inscription!!.curse)) {
-            inscribe()
-        } else if (!inscribe && Random.Float() > 0.9f.pow(level())) {
-            inscribe(null)
+        if (inscribe && !hasGoodInscription()) {
+            this.inscribe()
+        } else if (!inscribe && inscriptions.isNotEmpty() && Random.Float() > 0.9f.pow(level())) {
+            inscriptions.removeAt(inscriptions.size - 1)
         }
 
         return super.upgrade()
     }
 
     override fun name(): String {
-        return if (inscription != null && (cursedKnown || !inscription!!.curse)) inscription!!.name(super.name())
-        else super.name()
+        val visible = inscriptions.filter { cursedKnown || !it.curse }
+        return if (visible.isEmpty()) super.name()
+        else visible.fold(super.name()) { acc, insc -> insc.name(acc) }
     }
 
     override fun random(): Item {
@@ -202,30 +222,36 @@ abstract class Weapon : KindOfWeapon() {
     }
 
     open fun inscribe(insc: Inscription?): Weapon {
-        inscription = insc
+        if (insc == null) {
+            inscriptions.clear()
+        } else {
+            // once full, the earliest acquisition makes room for the new one
+            if (inscriptions.size >= maxInscriptions) inscriptions.removeAt(0)
+            inscriptions.add(insc)
 
-        // only reveal once the hero knows about it, generation applies curses too
-        if (insc != null && cursedKnown) Catalog.SetSeen(insc.javaClass)
+            // only reveal once the hero knows about it, generation applies curses too
+            if (cursedKnown) Catalog.SetSeen(insc.javaClass)
+        }
 
         return this
     }
 
     open fun inscribe(): Weapon {
-        val old = inscription?.javaClass
+        val held = inscriptions.map { it.javaClass }
         var new = Inscription.randomPositive()
-        while (new.javaClass == old) new = Inscription.randomPositive()
+        while (new.javaClass in held) new = Inscription.randomPositive()
 
         return inscribe(new)
     }
 
-    open fun isInscribed(type: Class<out Inscription>): Boolean = inscription?.javaClass == type
+    open fun isInscribed(type: Class<out Inscription>): Boolean = inscriptions.any { it.javaClass == type }
 
-    fun hasGoodInscription(): Boolean = inscription?.curse == false
-    open fun hasCurseInscription(): Boolean = inscription?.curse == true
+    fun hasGoodInscription(): Boolean = inscriptions.any { !it.curse }
+    open fun hasCurseInscription(): Boolean = inscriptions.any { it.curse }
 
     open fun clearCurseInscription(): Boolean {
         if (!hasCurseInscription()) return false
-        inscribe(null)
+        inscriptions.removeAll { it.curse }
         return true
     }
 
@@ -246,7 +272,7 @@ abstract class Weapon : KindOfWeapon() {
 
     override fun identify(): Item {
         enchantment?.let { Catalog.SetSeen(it.javaClass) }
-        inscription?.let { Catalog.SetSeen(it.javaClass) }
+        inscriptions.forEach { Catalog.SetSeen(it.javaClass) }
         return super.identify()
     }
 
@@ -257,6 +283,7 @@ abstract class Weapon : KindOfWeapon() {
 
         private const val UNFAMILIRIARITY = "unfamiliarity"
         private const val INSCRIPTION = "inscription"
+        private const val INSCRIPTIONS = "inscriptions"
         private const val ENCHANTMENT = "enchantment"
         private const val IMBUE = "imbue"
     }
