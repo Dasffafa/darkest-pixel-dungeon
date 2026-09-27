@@ -262,6 +262,11 @@ public class WndBag extends WndTabbed {
             row = 1;
         }
 
+        //container itself is the 1st item if it is not the root backpack
+        if(!backpack) {
+            placeItem(container);
+            count--; 
+        }
         // Items in the bag
         // todo: fix the size bug because of golden-claw
         Item goldClaw = null;
