@@ -65,13 +65,6 @@ object CatalogInfo {
         lines.add(M.L(CatalogInfo::class.java, "stat_crit", cfg.CritChance * 100f, cfg.CritRatio))
         lines.add(M.L(CatalogInfo::class.java, "stat_exp", cfg.EXP))
 
-        val res = resistance(mob)
-        if (res.isNotEmpty()) lines.add(M.L(CatalogInfo::class.java, "stat_resist", res))
-
-        // a few mobs scale their stats with the current depth, which is 0 while
-        // no run is loaded
-        if (Dungeon.isHeroNull) lines.add(M.L(CatalogInfo::class.java, "no_run_note"))
-
         return lines.joinToString("\n")
     }
 
