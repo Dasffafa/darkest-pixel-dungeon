@@ -38,7 +38,7 @@ class Chilling : Enchantment() {
         if (Random.Float() < 0.35f) {
             val defender = damage.to as Char
 
-            extend(defender, Chill::class.java, Random.Float(2f, 3f))
+            Buff.prolong(defender, Chill::class.java, Random.Float(2f, 3f))
             Splash.at(defender.sprite.center(), -0x4d2901, 5)
         }
 

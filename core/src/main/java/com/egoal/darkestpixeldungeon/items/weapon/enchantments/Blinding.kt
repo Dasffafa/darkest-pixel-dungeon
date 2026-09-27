@@ -18,7 +18,7 @@ class Blinding : Enchantment() {
         val defender = damage.to as Char
 
         if (Random.Float() < 0.35) {
-            extend(defender, Blindness::class.java, Random.Float(2f, 3f))
+            Buff.prolong(defender, Blindness::class.java, Random.Float(2f, 3f))
             if (defender is Mob) {
                 if (defender.state == defender.HUNTING) defender.state = defender.WANDERING
                 defender.beckon(Dungeon.level.randomDestination())

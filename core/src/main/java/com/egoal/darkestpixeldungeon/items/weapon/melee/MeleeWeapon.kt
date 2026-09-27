@@ -73,11 +73,9 @@ open class MeleeWeapon : Weapon() {
             else -> {}
         }
 
-        for (insc in inscriptions) {
-            if (cursedKnown || !insc.curse) {
-                info += "\n\n" + M.L(Weapon::class.java, "inscribed", insc.name())
-                info += " " + M.L(insc, "desc")
-            }
+        if (inscription != null && (cursedKnown || !inscription!!.curse)) {
+            info += "\n\n" + M.L(Weapon::class.java, "inscribed", inscription!!.name())
+            info += " " + M.L(inscription!!, "desc")
         }
 
         if (enchantment != null) {

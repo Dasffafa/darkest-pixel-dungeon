@@ -59,13 +59,8 @@ class Damage(var value: Int, var from: Any, var to: Any) {
     }
 
     fun setAdditionalDamage(e: Element, value: Int): Damage {
-        // same-element additions stack, so a weapon that triggers an enchantment
-        // twice (CarvedStaff) really adds its elemental damage twice
-        if (add_value > 0 && element == e) add_value += value
-        else {
-            element = e
-            add_value = max(add_value, value)
-        }
+        element = e
+        add_value = max(add_value, value)
         return this
     }
 

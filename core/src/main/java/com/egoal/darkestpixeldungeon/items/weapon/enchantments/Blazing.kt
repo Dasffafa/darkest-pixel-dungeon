@@ -36,10 +36,7 @@ class Blazing : Enchantment() {
         damage.setAdditionalDamage(Damage.Element.Fire, Random.Int(2, damage.value / 5))
 
         val defender = damage.to as Char
-        if (Random.Float() < 0.3f) {
-            val burning = Buff.affect(defender, Burning::class.java)
-            if (extraTrigger) burning.stack(defender) else burning.reignite(defender)
-        }
+        if (Random.Float() < 0.3f) Buff.affect(defender, Burning::class.java).reignite(defender)
 
         return damage
     }
