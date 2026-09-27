@@ -231,20 +231,14 @@ class WndCatalogs : WndTabbed() {
         try {
             when (CurrentTab) {
                 POTIONS_TAB -> when (section) {
-                    0 -> {
-                        Potion.known.forEach { entries.add(Entry.ItemEntry(it)) }
-                        Potion.unknown.forEach { entries.add(Entry.ItemEntry(it)) }
-                    }
-                    1 -> (Potion.known + Potion.unknown).forEach { cls ->
-                        if (cls.newInstance().canBeReinforced())
-                            entries.add(Entry.ItemEntry(cls, reinforced = true))
+                    0 -> entries.addAll(catalogEntries(Catalog.POTION))
+                    1 -> Catalog.POTION.allItems().forEach { key ->
+                        if (Catalog.IsSeen(key) && (key.cls.newInstance() as Potion).canBeReinforced())
+                            entries.add(Entry.ItemEntry(castClass(key.cls), reinforced = true))
                     }
                     else -> Reagent.all.forEach { entries.add(Entry.ItemEntry(it)) }
                 }
-                1 -> {
-                    Scroll.known.forEach { entries.add(Entry.ItemEntry(it)) }
-                    Scroll.unknown.forEach { entries.add(Entry.ItemEntry(it)) }
-                }
+                1 -> entries.addAll(catalogEntries(Catalog.SCROLL))
                 2 -> entries.addAll(catalogEntries(Catalog.Ring))
                 3 -> entries.addAll(catalogEntries(Catalog.ARTIFACT))
                 4 -> entries.addAll(catalogEntries(Catalog.FOOD))
@@ -429,25 +423,28 @@ class WndCatalogs : WndTabbed() {
 
             when {
                 item is Potion -> {
-                    // potions are listed by their appearance; the effect text sits
-                    // behind the catalog's own spoiler gate
-                    revealed = true
+                    // potions are listed by their appearance, revealed only once
+                    // the class has been identified in any run
+                    revealed = Catalog.IsSeen(cls)
                     if (reinforced) item.reinforce()
-                    name = item.trueName() + (item.status() ?: "")
-                    sprite.view(CatalogAppearance.image(cls) ?: item.image(), null)
+                    name = if (revealed) item.trueName() + (item.status() ?: "") else ""
+                    sprite.view(if (revealed) CatalogAppearance.image(cls) ?: item.image()
+                    else ItemSpriteSheet.SOMETHING, null)
                 }
                 item is Scroll -> {
-                    // same for scrolls, their rune is visible from the start
-                    revealed = true
-                    name = item.trueName()
-                    sprite.view(CatalogAppearance.image(cls) ?: item.image(), null)
+                    // same for scrolls, their rune is revealed on identification
+                    revealed = Catalog.IsSeen(cls)
+                    name = if (revealed) item.trueName() else ""
+                    sprite.view(if (revealed) CatalogAppearance.image(cls) ?: item.image()
+                    else ItemSpriteSheet.SOMETHING, null)
                 }
                 item is Ring -> {
-                    // and for rings: the gem is the identifying look, so the tab
-                    // shows every ring by its catalog gem, named and all
-                    revealed = true
-                    name = item.trueName()
-                    sprite.view(CatalogAppearance.image(cls) ?: item.image(), null)
+                    // and for rings: the gem is the identifying look, shown once
+                    // the ring has been identified
+                    revealed = Catalog.IsSeen(cls)
+                    name = if (revealed) item.trueName() else ""
+                    sprite.view(if (revealed) CatalogAppearance.image(cls) ?: item.image()
+                    else ItemSpriteSheet.SOMETHING, null)
                 }
                 item is Wine -> {
                     revealed = Catalog.IsSeen(cls)

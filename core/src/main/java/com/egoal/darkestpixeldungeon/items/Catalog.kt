@@ -8,7 +8,9 @@ import com.egoal.darkestpixeldungeon.items.armor.curses.*
 import com.egoal.darkestpixeldungeon.items.armor.glyphs.*
 import com.egoal.darkestpixeldungeon.items.artifacts.*
 import com.egoal.darkestpixeldungeon.items.food.*
+import com.egoal.darkestpixeldungeon.items.potions.*
 import com.egoal.darkestpixeldungeon.items.rings.*
+import com.egoal.darkestpixeldungeon.items.scrolls.*
 import com.egoal.darkestpixeldungeon.items.specials.Astrolabe
 import com.egoal.darkestpixeldungeon.items.weapon.curses.*
 import com.egoal.darkestpixeldungeon.items.weapon.enchantments.*
@@ -59,6 +61,44 @@ private fun keyOf(mob: Mob): CatalogKey =
         CatalogKey(converted(mob.javaClass), (mob as? Statuary)?.type?.title)
 
 enum class Catalog(private val baseItems: Map<Class<*>, Boolean>) {
+    /**
+     * Potions and scrolls are not catalogued when first held: their look is
+     * randomized per run, so a class only enters the catalog once it has been
+     * identified (see ItemStatusHandler.know).
+     */
+    POTION(linkedMapOf(
+            PotionOfHealing::class.java to false,
+            PotionOfExperience::class.java to false,
+            PotionOfToxicGas::class.java to false,
+            PotionOfLiquidFlame::class.java to false,
+            PotionOfStrength::class.java to false,
+            PotionOfParalyticGas::class.java to false,
+            PotionOfLevitation::class.java to false,
+            PotionOfMindVision::class.java to false,
+            PotionOfPurity::class.java to false,
+            PotionOfInvisibility::class.java to false,
+            PotionOfMight::class.java to false,
+            PotionOfFrost::class.java to false,
+            PotionOfPhysique::class.java to false,
+            PotionOfMagicalFog::class.java to false
+    )),
+
+    SCROLL(linkedMapOf(
+            ScrollOfIdentify::class.java to false,
+            ScrollOfMagicMapping::class.java to false,
+            ScrollOfRecharging::class.java to false,
+            ScrollOfRemoveCurse::class.java to false,
+            ScrollOfTeleportation::class.java to false,
+            ScrollOfUpgrade::class.java to false,
+            ScrollOfRage::class.java to false,
+            ScrollOfTerror::class.java to false,
+            ScrollOfLullaby::class.java to false,
+            ScrollOfPsionicBlast::class.java to false,
+            ScrollOfMirrorImage::class.java to false,
+            ScrollOfCurse::class.java to false,
+            ScrollOfLight::class.java to false
+    )),
+
     Ring(linkedMapOf(
             RingOfArcane::class.java to false,
             RingOfEvasion::class.java to false,

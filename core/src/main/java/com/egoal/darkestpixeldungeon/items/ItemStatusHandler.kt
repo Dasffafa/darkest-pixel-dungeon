@@ -134,12 +134,14 @@ class ItemStatusHandler<T : Item> {
 
     fun know(item: T) {
         known.add(item.javaClass as Class<out T>)
+        Catalog.SetSeen(item.javaClass)
 
         // the last one
         if (known.size == items.size - 1) {
             for (i in items.indices) {
                 if (!known.contains(items[i])) {
                     known.add(items[i])
+                    Catalog.SetSeen(items[i])
                     break
                 }
             }
