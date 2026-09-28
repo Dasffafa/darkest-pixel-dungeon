@@ -144,6 +144,9 @@ public class WndBag extends WndTabbed {
     private Listener listener;
     private Filter filter = null;// compatible for  lambda
 
+    // the bag whose window this is; placed as its own first slot when it is not the root backpack
+    private Bag openedBag;
+
     private WndBag.Mode mode;
     private String title;
 
@@ -180,6 +183,8 @@ public class WndBag extends WndTabbed {
         lastMode = mode;
         lastFilter = filter;
         lastBag = bag;
+
+        openedBag = bag;
 
         nCols = DarkestPixelDungeon.landscape() ? COLS_L : COLS_P;
         // +6+1 equipments and gold
@@ -518,7 +523,11 @@ public class WndBag extends WndTabbed {
         @Override
         public void onClick() {
             // todo: refactor this, the gold can just be a normal item actually
-            if (!(item instanceof Gold) && !lastBag.contains(item) && !item.isEquipped(Dungeon.INSTANCE.getHero())) {
+            // the bag shown in its own window is not contained in itself, so it must bypass
+            // the "is this item still in the bag" guard and be opened as a normal item
+            boolean selfBag = listener == null && item == openedBag;
+            if (!(item instanceof Gold) && !lastBag.contains(item)
+                    && !item.isEquipped(Dungeon.INSTANCE.getHero()) && !selfBag) {
 
                 hide();
 
