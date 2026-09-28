@@ -70,9 +70,9 @@ class ScrollOfUpgrade : InventoryScroll() {
         //...yes this is rather mess
         when (item) {
             is Weapon -> {
-                val enchanted = item.enchantment != null
+                val enchanted = item.enchantments.isNotEmpty()
                 item.upgrade()
-                if (enchanted && item.enchantment == null)
+                if (enchanted && item.enchantments.isEmpty())
                     GLog.w(M.L(Weapon::class.java, "incompatible"))
             }
             is Armor -> {
