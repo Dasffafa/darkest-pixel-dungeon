@@ -51,6 +51,10 @@ public class AboutScene extends PixelScene {
 
   private static final String LNK_DASFFAFA = "github.com/Dasffafa";
 
+  private static final String TTL_ARTISTS = "Artists";
+
+  private static final String TXT_ARTISTS = "可则；神秘黑发女；304MINKUN";
+
   private static final String TTL_SHPX = "Shattered Pixel Dungeon";
 
   private static final String TTL_WATA = "Pixel Dungeon";
@@ -162,6 +166,22 @@ public class AboutScene extends PixelScene {
     };
     add(dashotArea);
 
+    // artists
+    RenderedText artistsTitle = renderText(TTL_ARTISTS, 8);
+    artistsTitle.hardlight(Window.DPD_COLOR);
+    add(artistsTitle);
+    artistsTitle.x = (colWidth - artistsTitle.width()) / 2;
+    artistsTitle.y = dashotArea.y + dashotArea.height() + 12;
+    align(artistsTitle);
+
+    RenderedTextMultiline artistsNames = renderMultiline(TXT_ARTISTS, 8);
+    artistsNames.maxWidth(dpdText.maxWidth());
+    artistsNames.hardlight(Window.DPD_COLOR);
+    add(artistsNames);
+    artistsNames.setPos((colWidth - artistsNames.width()) / 2,
+            artistsTitle.y + artistsTitle.height() + 6);
+    align(artistsNames);
+
     // shattered pixel dungeon
     Image shpx = Icons.SHPX.get();
     if (DarkestPixelDungeon.landscape()) {
@@ -169,7 +189,7 @@ public class AboutScene extends PixelScene {
       shpx.x = colWidth + (colWidth - shpx.width()) / 2;
     } else {
       shpx.x = (colWidth - shpx.width()) / 2;
-      shpx.y = dashotArea.y + dashotArea.height() + 20;
+      shpx.y = artistsNames.bottom() + 20;
     }
     align(shpx);
     add(shpx);
