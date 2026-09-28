@@ -13,8 +13,8 @@ buildscript {
 }
 
 ext {
-    appVersionName = '0.8.0c'
-    appVersionCode = 55
+    appVersionName = '0.8.1a'
+    appVersionCode = 56
 }
 
 allprojects {
