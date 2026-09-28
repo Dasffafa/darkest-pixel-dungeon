@@ -51,6 +51,7 @@ abstract class Trap : Bundlable {
     var visible: Boolean = false
     var active = true
     var seen = false // whether the hero has viewed this trap's cell
+    var pending = false // a reserved hidden trap: judged on first sight, then treasure or gone
 
     fun set(pos: Int): Trap {
         this.pos = pos
@@ -82,7 +83,7 @@ abstract class Trap : Bundlable {
     open fun trigger() {
         if (active) {
             // a hidden trap may secretly be treasure: judge with the hero's real-time luck
-            if (!visible && this !is PrizeTrap && Dungeon.level.rollPrizeTrapUpgrade()) {
+            if (!visible && this !is PrizeTrap && Dungeon.level.rollPrizeTrapUpgrade(pos)) {
                 Dungeon.level.convertTrapToPrize(this).trigger()
                 return
             }
@@ -124,6 +125,9 @@ abstract class Trap : Bundlable {
         if (bundle.contains(SEEN)) {
             seen = bundle.getBoolean(SEEN)
         }
+        if (bundle.contains(PENDING)) {
+            pending = bundle.getBoolean(PENDING)
+        }
     }
 
     override fun storeInBundle(bundle: Bundle) {
@@ -131,6 +135,7 @@ abstract class Trap : Bundlable {
         bundle.put(VISIBLE, visible)
         bundle.put(ACTIVE, active)
         if (seen) bundle.put(SEEN, seen)
+        if (pending) bundle.put(PENDING, pending)
     }
 
     fun desc(): String = M.L(this, "desc")
@@ -140,5 +145,6 @@ abstract class Trap : Bundlable {
         private const val VISIBLE = "visible"
         private const val ACTIVE = "active"
         private const val SEEN = "seen"
+        private const val PENDING = "pending"
     }
 }

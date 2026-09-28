@@ -489,6 +489,23 @@ abstract class RegularLevel : Level() {
             setTrap(trap, cell)
             map[cell] = if (trap.visible) Terrain.TRAP else Terrain.SECRET_TRAP
         }
+
+        // ~5 extra hidden traps are reserved and judged when their cell is first seen:
+        // each either becomes a prize trap or vanishes entirely (see Level.resolvePendingTrap).
+        // skip cells already surrounded by traps so prizes do not pile up inside a trap room.
+        var index = trapsToSpawn.size
+        var spawned = 0
+        val nPending = Random.NormalIntRange(4, 6)
+        while (spawned < nPending && index < validCells.size) {
+            val cell = validCells[index++]
+            if (PathFinder.NEIGHBOURS8.count { this.traps.get(cell + it) != null } >= 3) continue
+
+            val trap = trapClasses[Random.chances(trapChances)].newInstance().hide()
+            trap.pending = true
+            setTrap(trap, cell)
+            map[cell] = Terrain.SECRET_TRAP
+            ++spawned
+        }
     }
 
     protected fun randomSpace(type: DigResult.Type, tries: Int = Int.MAX_VALUE): Space? {
