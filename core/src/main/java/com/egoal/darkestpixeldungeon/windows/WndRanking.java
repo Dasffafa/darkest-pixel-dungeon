@@ -305,7 +305,13 @@ public class WndRanking extends WndTabbed {
         super();
 
         this.content = content;
-        addToBack(content);
+
+        // Plain add() rather than addToBack(): Group.addToBack reads
+        // members.get(0) without checking for an empty list, so calling it as
+        // the very first member throws IndexOutOfBoundsException. ScrollPane
+        // only avoids that because its createChildren() has already added a
+        // TouchController by then.
+        add(content);
 
         width = content.width();
         height = content.height();
