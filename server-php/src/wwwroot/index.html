@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Darkest Pixel Dungeon</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="desktop">
+
+  <div class="window">
+    <div class="titlebar">
+      <span class="title" data-i18n="window_title">Darkest Pixel Dungeon - 官方网站</span>
+      <span class="titlebar-buttons"><button type="button">_</button><button type="button">□</button><button type="button">×</button></span>
+    </div>
+
+    <div class="window-body">
+
+      <div class="menubar">
+        <span data-i18n="menu_file">文件(F)</span>
+        <span data-i18n="menu_edit">编辑(E)</span>
+        <span data-i18n="menu_view">查看(V)</span>
+        <span data-i18n="menu_help">帮助(H)</span>
+        <span class="lang-switch">
+          <a href="#" data-lang="zh">简体中文</a> |
+          <a href="#" data-lang="zh_TW">繁體中文</a> |
+          <a href="#" data-lang="en">English</a>
+        </span>
+      </div>
+
+      <div class="banner">
+        <h1>Darkest Pixel Dungeon</h1>
+        <p class="subtitle" data-i18n="subtitle">黑暗像素地牢</p>
+      </div>
+
+      <hr>
+
+      <div class="marquee">
+        <marquee scrollamount="3" data-i18n="marquee">欢迎来到暗黑像素地牢官方网站！红灵正在地牢中徘徊……</marquee>
+      </div>
+
+      <hr>
+
+      <h2 data-i18n="download_title">下载游戏</h2>
+      <p data-i18n="download_hint">全部版本请前往 GitHub Releases 页面下载。</p>
+      <p class="buttons">
+        <a class="btn" href="https://github.com/Dasffafa/darkest-pixel-dungeon/releases" data-i18n="download_android">Android 版（APK）</a>
+        <a class="btn" href="https://github.com/Dasffafa/darkest-pixel-dungeon/releases" data-i18n="download_windows">Windows 版（.exe）</a>
+        <a class="btn" href="https://github.com/Dasffafa/darkest-pixel-dungeon/releases" data-i18n="download_jar">桌面版（.jar）</a>
+      </p>
+
+      <hr>
+
+      <h2 data-i18n="stats_title">服务器统计</h2>
+      <table class="panel">
+        <tr>
+          <td data-i18n="stats_total">红灵总数</td>
+          <td id="stat-total">--</td>
+        </tr>
+        <tr>
+          <td data-i18n="stats_recent">近 24 小时新增</td>
+          <td id="stat-recent">--</td>
+        </tr>
+        <tr>
+          <td data-i18n="stats_classes">职业分布</td>
+          <td id="stat-classes">--</td>
+        </tr>
+      </table>
+
+      <h2 data-i18n="recent_title">最近的红灵</h2>
+      <table class="panel" id="recent-table">
+        <thead>
+          <tr>
+            <th data-i18n="col_name">角色名</th>
+            <th data-i18n="col_class">职业</th>
+            <th data-i18n="col_level">等级</th>
+            <th data-i18n="col_depth">深度</th>
+            <th data-i18n="col_time">时间</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td colspan="5" id="recent-status" data-i18n="loading">加载中……</td></tr>
+        </tbody>
+      </table>
+
+      <hr>
+
+      <h2 data-i18n="links_title">相关链接</h2>
+      <ul class="links">
+        <li><a href="https://github.com/Dasffafa/darkest-pixel-dungeon">GitHub</a></li>
+        <li><span data-i18n="link_qq">玩家 QQ 群：818725226</span></li>
+        <li><a href="mailto:xixi012.c@gmail.com" data-i18n="link_email">作者邮箱：xixi012.c@gmail.com</a></li>
+      </ul>
+
+      <hr>
+
+      <div class="footer">
+        <p data-i18n="footer_view">本站最佳浏览分辨率 800×600，建议使用 Internet Explorer 5.0 以上浏览器</p>
+        <p>© 2026 Darkest Pixel Dungeon · <span data-i18n="footer_rights">保留所有权利</span></p>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

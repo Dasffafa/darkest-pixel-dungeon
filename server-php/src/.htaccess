@@ -1,0 +1,14 @@
+RewriteEngine On
+RewriteBase /
+
+# API endpoints (served by api/index.php)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^api/ api/index.php [QSA,L]
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^health$ api/index.php [QSA,L]
+
+# Apex homepage -> ICP filing page (subdomain keeps the game site at /)
+RewriteCond %{HTTP_HOST} ^(www\.)?crystaldragons\.top$ [NC]
+RewriteRule ^$ filing/index.html [L]

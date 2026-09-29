@@ -19,8 +19,8 @@ bin/
 .classpath
 .project
 .settings/
-server/
 site/
+server-php/src/api/config.php
 
 # Gradle files
 .gradle/
@@ -53,3 +53,4 @@ core/release
 /雪色bouquet/
 /AGENTS.md
 /android/release/
+/main-site/
