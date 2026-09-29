@@ -525,7 +525,7 @@ public class WndBag extends WndTabbed {
             // todo: refactor this, the gold can just be a normal item actually
             // the bag shown in its own window is not contained in itself, so it must bypass
             // the "is this item still in the bag" guard and be opened as a normal item
-            boolean selfBag = listener == null && item == openedBag;
+            boolean selfBag = (listener == null || mode == Mode.QUICKSLOT) && item == openedBag;
             if (!(item instanceof Gold) && !lastBag.contains(item)
                     && !item.isEquipped(Dungeon.INSTANCE.getHero()) && !selfBag) {
 
@@ -568,7 +568,7 @@ public class WndBag extends WndTabbed {
     public static boolean FilterByMode(Item item, Mode mode) {
         switch (mode) {
             case FOR_SALE:
-                return item.price() > 0 && !(item.isEquipped(Dungeon.INSTANCE.getHero()) && item.getCursed());
+                return item.price() > 0 && !(item.isEquipped(Dungeon.INSTANCE.getHero()) && item.getCursed()) && !(item instanceof Bag);
             case UPGRADEABLE:
                 return item.isUpgradable();
             case UNIDENTIFED:
