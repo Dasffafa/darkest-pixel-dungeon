@@ -172,11 +172,22 @@ abstract class Scroll : Item() {
                 "LINGEL" to ItemSpriteSheet.SCROLL_LINGEL
         )
 
-        private lateinit var handler: ItemStatusHandler<Scroll>
+        private var labelHandler: ItemStatusHandler<Scroll>? = null
+
+        // labels are set up when a run starts. The catalog can be opened from the
+        // title screen, so fall back to a fresh, fully unknown label set.
+        private val handler: ItemStatusHandler<Scroll>
+            get() {
+                if (labelHandler == null) initLabels()
+                return labelHandler!!
+            }
 
         fun initLabels() {
-            handler = ItemStatusHandler(scrolls, runes)
+            labelHandler = ItemStatusHandler(scrolls, runes)
         }
+
+        /** a fresh, complete label set: the catalog rolls its own, never a run's */
+        fun catalogLabels(): ItemStatusHandler<Scroll> = ItemStatusHandler(scrolls, runes)
 
         fun save(bundle: Bundle) {
             handler.save(bundle)
@@ -187,7 +198,7 @@ abstract class Scroll : Item() {
         }
 
         fun restore(bundle: Bundle) {
-            handler = ItemStatusHandler(scrolls, runes, bundle)
+            labelHandler = ItemStatusHandler(scrolls, runes, bundle)
         }
 
         val known: HashSet<Class<out Scroll>>

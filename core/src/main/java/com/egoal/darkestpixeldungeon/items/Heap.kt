@@ -190,8 +190,10 @@ class Heap : Bundlable {
                 epitaphText = null
             }
             type = Type.HEAP
-            sprite!!.link()
-            sprite!!.drop()
+            if (::sprite.isInitialized) {
+                sprite.link()
+                sprite.drop()
+            }
             checkItemsSeen(hero)
         }
     }
@@ -328,8 +330,8 @@ class Heap : Bundlable {
             }
 
             if (empty()) destroy()
-            else if (sprite != null) {
-                sprite!!.view(items.peek())
+            else if (::sprite.isInitialized) {
+                sprite.view(items.peek())
             }
 
         }
@@ -344,8 +346,10 @@ class Heap : Bundlable {
         //breaks open most standard containers, mimics die.
         if (type == Type.MIMIC || type == Type.CHEST || type == Type.SKELETON) {
             type = Type.HEAP
-            sprite!!.link()
-            sprite!!.drop()
+            if (::sprite.isInitialized) {
+                sprite.link()
+                sprite.drop()
+            }
             if (!Dungeon.isLevelNull && Dungeon.visible[pos] && !Dungeon.isHeroNull && Dungeon.hero.isAlive) {
                 checkItemsSeen(Dungeon.hero)
             }
@@ -383,8 +387,8 @@ class Heap : Bundlable {
 
             if (empty()) {
                 destroy()
-            } else if (sprite != null) {
-                sprite!!.view(items.peek())
+            } else if (::sprite.isInitialized) {
+                sprite.view(items.peek())
             }
         }
     }
@@ -422,16 +426,16 @@ class Heap : Bundlable {
         if (frozen) {
             if (empty()) {
                 destroy()
-            } else if (sprite != null) {
-                sprite!!.view(items.peek())
+            } else if (::sprite.isInitialized) {
+                sprite.view(items.peek())
             }
         }
     }
 
     fun destroy() {
         Dungeon.level.heaps.remove(this.pos)
-        if (sprite != null) {
-            sprite!!.kill()
+        if (::sprite.isInitialized) {
+            sprite.kill()
         }
         items.clear()
     }

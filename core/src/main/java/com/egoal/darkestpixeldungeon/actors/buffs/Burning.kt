@@ -158,6 +158,10 @@ class Burning : Buff(), Hero.Doom {
         left = duration(ch)
     }
 
+    fun stack(ch: Char) {
+        left += duration(ch)
+    }
+
     override fun icon(): Int {
         return BuffIndicator.FIRE
     }

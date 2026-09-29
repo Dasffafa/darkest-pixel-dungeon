@@ -161,7 +161,7 @@ class Kusarigama : MeleeWeapon() {
             val defender = d.to as Char
             if (Dungeon.level.distance(attacker.pos, defender.pos) == reachFactor(attacker)) {
                 KusarigamaSlash.slash(attacker, defender)
-                val bleed = d.value / 10
+                val bleed = d.value / 7
                 if (bleed > 0) Buff.affect(defender, Bleeding::class.java).set(bleed)
             }
         }

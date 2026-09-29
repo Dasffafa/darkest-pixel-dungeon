@@ -815,13 +815,18 @@ abstract class Level : Bundlable {
     }
 
     /** Whether another trap may secretly become a prize trap, judged with the hero's real-time luck. */
-    fun rollPrizeTrapUpgrade(): Boolean {
+    fun rollPrizeTrapUpgrade(pos: Int): Boolean {
         if (prizeTrapCount >= MAX_PRIZE_TRAPS || Dungeon.isHeroNull) return false
-        if (Random.Float() >= 0.2f + 0.05f * Dungeon.hero.wealthBonus()) return false
+        // a trap room is dense: do not turn a trap into treasure when it is already surrounded by traps
+        if (PathFinder.NEIGHBOURS8.count { traps.get(pos + it) != null } >= 3) return false
+        if (Random.Float() >= prizeChance()) return false
 
         ++prizeTrapCount
         return true
     }
+
+    /** The hero's real-time luck chance for a hidden trap to secretly hold treasure. */
+    private fun prizeChance(): Float = 0.15f + 0.1f * Dungeon.hero.wealthBonus()
 
     /** Replaces a trap with a prize trap in place, preserving visibility; the sprite is reused. */
     fun convertTrapToPrize(trap: Trap): PrizeTrap {
@@ -839,15 +844,40 @@ abstract class Level : Bundlable {
         return prize
     }
 
+    /** Resolves a pending trap on first sight: the hero's luck decides whether it becomes treasure, otherwise it is gone. */
+    private fun resolvePendingTrap(trap: Trap) {
+        trap.pending = false
+        if (prizeTrapCount < MAX_PRIZE_TRAPS && !Dungeon.isHeroNull && Random.Float() < prizeChance()) {
+            ++prizeTrapCount
+            convertTrapToPrize(trap)
+        } else {
+            vanishTrap(trap)
+        }
+    }
+
+    /** Removes a trap and restores its tile to plain floor. */
+    private fun vanishTrap(trap: Trap) {
+        set(trap.pos, Terrain.EMPTY)
+        if (trap.hasSprite) trap.sprite.kill()
+        GameScene.updateMap(trap.pos)
+    }
+
     fun discover(cell: Int) {
         set(cell, Terrain.discover(map[cell]))
-        val trap = traps.get(cell)
+        var trap = traps.get(cell)
         if (trap != null) {
-            // a hidden trap may secretly be treasure: judge with the hero's real-time luck
-            if (!trap.visible && trap.active && trap !is PrizeTrap && rollPrizeTrapUpgrade())
-                convertTrapToPrize(trap).reveal()
-            else
-                trap.reveal()
+            // a reserved trap is judged the moment it is uncovered, before it is shown
+            if (trap.pending) {
+                resolvePendingTrap(trap)
+                trap = traps.get(cell)
+            }
+            if (trap != null) {
+                // a hidden trap may secretly be treasure: judge with the hero's real-time luck
+                if (!trap.visible && trap.active && trap !is PrizeTrap && rollPrizeTrapUpgrade(cell))
+                    convertTrapToPrize(trap).reveal()
+                else
+                    trap.reveal()
+            }
         }
         GameScene.updateMap(cell)
     }
@@ -1027,9 +1057,13 @@ abstract class Level : Bundlable {
                 if (fieldOfView[trap.pos] || visited[trap.pos]) {
                     if (!trap.seen) {
                         trap.seen = true
-                        // a visible trap is judged before its first view: it may secretly be treasure
-                        if (trap.visible && trap.active && trap !is PrizeTrap && rollPrizeTrapUpgrade())
+                        if (trap.pending) {
+                            // a reserved trap is judged on first sight: treasure, or nothing at all
+                            resolvePendingTrap(trap)
+                        } else if (trap.visible && trap.active && trap !is PrizeTrap && rollPrizeTrapUpgrade(trap.pos)) {
+                            // a visible trap is judged before its first view: it may secretly be treasure
                             convertTrapToPrize(trap)
+                        }
                     }
                 }
             }
@@ -1277,7 +1311,7 @@ abstract class Level : Bundlable {
         private const val PLANTS = "plants"
         private const val TRAPS = "traps"
         private const val PRIZE_TRAP_COUNT = "prize_trap_count"
-        const val MAX_PRIZE_TRAPS = 5
+        const val MAX_PRIZE_TRAPS = 8
         private const val CUSTOM_TILES = "customTiles"
         private const val MOBS = "mobs"
         private const val BLOBS = "blobs"

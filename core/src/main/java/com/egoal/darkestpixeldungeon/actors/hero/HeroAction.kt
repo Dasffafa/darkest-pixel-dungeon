@@ -29,6 +29,7 @@ import com.egoal.darkestpixeldungeon.actors.buffs.Hunger
 import com.egoal.darkestpixeldungeon.actors.buffs.Invisibility
 import com.egoal.darkestpixeldungeon.actors.mobs.Mob
 import com.egoal.darkestpixeldungeon.actors.mobs.npcs.NPC
+import com.egoal.darkestpixeldungeon.items.Catalog
 import com.egoal.darkestpixeldungeon.items.Heap
 import com.egoal.darkestpixeldungeon.items.artifacts.DriedRose
 import com.egoal.darkestpixeldungeon.items.artifacts.TimekeepersHourglass
@@ -173,6 +174,7 @@ abstract class HeroAction(var dst: Int = 0) {
             if (Dungeon.level.adjacent(hero.pos, npc.pos)) {
                 hero.ready()
                 hero.sprite.turnTo(hero.pos, npc.pos)
+                Catalog.SetSeen(npc)
                 return npc.interact()
             }
 

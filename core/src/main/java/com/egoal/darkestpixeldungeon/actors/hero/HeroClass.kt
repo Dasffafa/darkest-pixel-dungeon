@@ -368,6 +368,8 @@ enum class HeroClass(private val title: String, vararg subclasses: HeroSubClass)
         hero.HP = hero.HT
 
         LongestSpear().identify().upgrade(6).collect()
+        CarvedStaff().identify().upgrade(6).collect()
+        Stylus().quantity(6).collect()
         Nunchakus().identify().collect()
         MeadWine().identify().collect()
         Kusarigama().identify().upgrade(6).collect()

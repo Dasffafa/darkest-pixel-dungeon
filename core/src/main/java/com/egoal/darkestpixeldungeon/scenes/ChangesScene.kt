@@ -20,7 +20,8 @@
  */
 package com.egoal.darkestpixeldungeon.scenes
 
-import com.egoal.darkestpixeldungeon.ui.ScrollPane
+import com.egoal.darkestpixeldungeon.ui.changelist.ChangesScrollPane
+import com.egoal.darkestpixeldungeon.ui.changelist.v0_8_X_Changes
 import com.egoal.darkestpixeldungeon.ui.RedButton
 import com.egoal.darkestpixeldungeon.Chrome
 import com.egoal.darkestpixeldungeon.DarkestPixelDungeon
@@ -28,9 +29,12 @@ import com.egoal.darkestpixeldungeon.messages.Messages
 import com.egoal.darkestpixeldungeon.ui.Archs
 import com.egoal.darkestpixeldungeon.ui.ExitButton
 import com.egoal.darkestpixeldungeon.ui.Window
+import com.egoal.darkestpixeldungeon.windows.WndChanges
 import com.egoal.darkestpixeldungeon.windows.WndMessage
 import com.watabou.input.Touchscreen
 import com.watabou.noosa.Camera
+import com.watabou.noosa.Game
+import com.watabou.noosa.Image
 import com.watabou.noosa.ui.Component
 import com.watabou.noosa.TouchArea
 class ChangesScene : PixelScene() {
@@ -63,7 +67,7 @@ class ChangesScene : PixelScene() {
         add(panel)
 
         // add scroll text
-        val list = ScrollPane(Component())
+        val list = ChangesScrollPane(Component())
         add(list)
 
         val content = list.content()
@@ -74,15 +78,12 @@ class ChangesScene : PixelScene() {
         txtWarning.maxWidth(panel.innerWidth().toInt())
         content.add(txtWarning)
 
-        val text = renderMultiline("_" + DarkestPixelDungeon.version + "_\n" + Messages.get(this, "info" + DarkestPixelDungeon.version), 6)
-        text.maxWidth(panel.innerWidth().toInt())
-        content.add(text)
-        text.setPos(txtWarning.left(), txtWarning.bottom() + 8f)
+        // the releases from 0.8.0 on are shown as sections of icon buttons
+        var y = v0_8_X_Changes.addAll(list, panel.innerWidth(), txtWarning.bottom() + 8f)
 
         // add versions' button
         val HSPLIT = "---"
         val oldVersions = arrayOf(
-                "0.8.0a", "0.8.0", HSPLIT,
                 "0.7.2", "0.7.1", "0.7.0", HSPLIT,
                 "0.6.1", "0.6.0.ru", "0.6.0", HSPLIT,
                 "0.5.0", HSPLIT,
@@ -92,27 +93,27 @@ class ChangesScene : PixelScene() {
                 "0.1.3", "0.1.2", "0.1.1", "0.1.0")
 
         run {
-            var y = text.bottom() + 8
+            var btnY = y + 8f
             var x = BTN_GAP
             for (v in oldVersions) {
                 if (v == HSPLIT) {
-                    y += BTN_HEIGHT + BTN_GAP + BTN_GAP * 2
+                    btnY += BTN_HEIGHT + BTN_GAP + BTN_GAP * 2
                     x = BTN_GAP
                     continue
                 }
                 if (x + BTN_WIDTH + BTN_GAP > panel.innerWidth()) {
-                    y += BTN_HEIGHT + BTN_GAP
+                    btnY += BTN_HEIGHT + BTN_GAP
                     x = BTN_GAP
                 }
 
                 val button = createChangeButton(v)
-                button.setRect(x, y, BTN_WIDTH, BTN_HEIGHT)
+                button.setRect(x, btnY, BTN_WIDTH, BTN_HEIGHT)
                 content.add(button)
 
                 x += BTN_WIDTH + BTN_GAP
             }
 
-            content.setSize(panel.innerWidth(), y + BTN_HEIGHT + BTN_GAP)
+            content.setSize(panel.innerWidth(), btnY + BTN_HEIGHT + BTN_GAP)
         }
 
         list.setRect(panel.x + panel.marginLeft(), panel.y + panel.marginTop(), panel.innerWidth(), panel.innerHeight())
@@ -154,6 +155,11 @@ class ChangesScene : PixelScene() {
         private const val BTN_WIDTH = 30f
         private const val BTN_HEIGHT = 15f
         private const val BTN_GAP = 2f
+
+        /** the window of one icon changelist entry */
+        fun showChangeInfo(icon: Image, title: String, text: String) {
+            Game.scene().addToFront(WndChanges(Image(icon), title, text))
+        }
     }
 }
 

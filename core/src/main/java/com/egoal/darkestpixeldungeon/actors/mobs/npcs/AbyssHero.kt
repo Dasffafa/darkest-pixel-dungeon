@@ -64,12 +64,16 @@ class AbyssHero(var level: Int = 0, friendly: Boolean = false) : NPC() {
     }
 
     private fun imitateHeroStatus() {
-        level = Dungeon.hero.lvl / 2 - (3 - Dungeon.depth / 5)
+        // In catalog there is no hero to imitate, should not assume there is always a hero.
+        val hero = Dungeon.heroOrNull
+        val heroLvl = hero?.lvl ?: 1
+
+        level = heroLvl / 2 - (3 - Dungeon.depth / 5)
         level = GameMath.clamp(level, 1, 10)
 
         atkSkill = 10f + level * 2f
-        defSkill = 5f + Dungeon.hero.lvl
-        HT = Math.max(Dungeon.hero.HT / 2, Dungeon.hero.HP)
+        defSkill = 5f + heroLvl
+        HT = Math.max((hero?.HT ?: 20) / 2, hero?.HP ?: 20)
         HP = HT
 
         timeLeft = Float.MAX_VALUE // infinity

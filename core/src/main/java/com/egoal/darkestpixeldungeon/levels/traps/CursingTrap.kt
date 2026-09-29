@@ -84,7 +84,7 @@ class CursingTrap : Trap() {
 
             val weapon = hero.belongings.weapon
             if (weapon is Weapon && !weapon.cursed && weapon !is Boomerang) {
-                if (weapon.enchantment == null)
+                if (weapon.enchantments.isEmpty())
                     priorityCurse.add(weapon)
                 else
                     canCurse.add(weapon)
@@ -141,7 +141,7 @@ class CursingTrap : Trap() {
             item.cursed = item.cursedKnown
 
             if (item is Weapon) {
-                if (item.inscription == null) {
+                if (item.inscriptions.size < item.maxInscriptions) {
                     item.inscribe(Inscription.randomNegative())
                 }
             }

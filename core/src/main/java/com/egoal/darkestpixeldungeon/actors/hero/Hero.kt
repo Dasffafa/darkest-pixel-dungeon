@@ -216,8 +216,10 @@ class Hero : Char() {
     private fun baseRegeneration(): Float {
         var reg = regeneration
 
+        // the healing glyph goes inert while starving, so it neither regenerates the
+        // hero nor inflates the starvation damage that scales off this rate
         val glp = belongings.armor?.glyph
-        if (glp is Healing)
+        if (glp is Healing && buff(Hunger::class.java)!!.hunger() < Hunger.STARVING)
             reg += glp.speed(belongings.armor!!)
 
         // heart
@@ -261,7 +263,7 @@ class Hero : Char() {
         factor *= heroPerk.get(WandCharger::class.java)?.factor() ?: 1f
         belongings.helmet?.let {
             if (it is WizardHat)
-                factor = if (it.cursed) 0.9f else 1.15f
+                factor *= if (it.cursed) 0.9f else 1.15f
         }
         val bonus = Ring.getBonus(this, RingOfArcane.Arcane::class.java)
         factor *= 1.06f.pow(bonus)

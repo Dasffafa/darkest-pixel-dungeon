@@ -296,13 +296,19 @@ open class CharSprite : MovieClip(), Tweener.Listener, MovieClip.Listener {
         emo?.killAndErase()
     }
 
-    fun emitter(): Emitter = GameScene.emitter().apply { pos(this@CharSprite) }
+    // Sprites can be built while no GameScene is active (the catalog runs on the
+    // title screen), where GameScene has no emitter pool to hand out. Hand those
+    // sprites a detached emitter instead of failing: it stays invisible because
+    // a sprite built outside the game is never added to a level.
+    private fun sceneEmitter(): Emitter = GameScene.emitter() ?: Emitter()
 
-    fun centerEmitter(): Emitter = GameScene.emitter().apply { pos(this@CharSprite.center()) }
+    fun emitter(): Emitter = sceneEmitter().apply { pos(this@CharSprite) }
+
+    fun centerEmitter(): Emitter = sceneEmitter().apply { pos(this@CharSprite.center()) }
 
     fun bottomEmitter(): Emitter {
-        val emitter = GameScene.emitter()
-        emitter!!.pos(x, y + height, width, 0f)
+        val emitter = sceneEmitter()
+        emitter.pos(x, y + height, width, 0f)
         return emitter
     }
 

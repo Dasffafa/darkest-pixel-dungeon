@@ -61,7 +61,7 @@ import java.util.HashSet
 object Dungeon {
 
     var initialDepth_ = -1
-    const val VERSION_STRING = "0.8.0c"
+    const val VERSION_STRING = "0.8.1a"
 
     lateinit var hero: Hero
     lateinit var level: Level
@@ -95,6 +95,7 @@ object Dungeon {
 
     val isHeroNull: Boolean get() = !::hero.isInitialized
     val isLevelNull: Boolean get() = !::level.isInitialized
+    val heroOrNull: Hero? get() = if (::hero.isInitialized) hero else null
 
     private fun nullField(fieldName: String) {
         with(javaClass.getDeclaredField(fieldName)) {

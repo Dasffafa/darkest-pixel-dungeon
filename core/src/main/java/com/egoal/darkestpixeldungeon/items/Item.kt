@@ -30,6 +30,9 @@ import com.egoal.darkestpixeldungeon.actors.hero.Hero
 import com.egoal.darkestpixeldungeon.actors.hero.perks.Knowledgeable
 import com.egoal.darkestpixeldungeon.effects.Speck
 import com.egoal.darkestpixeldungeon.items.bags.Bag
+import com.egoal.darkestpixeldungeon.items.potions.Potion
+import com.egoal.darkestpixeldungeon.items.rings.Ring
+import com.egoal.darkestpixeldungeon.items.scrolls.Scroll
 import com.egoal.darkestpixeldungeon.items.armor.Armor
 import com.egoal.darkestpixeldungeon.items.weapon.Weapon
 import com.egoal.darkestpixeldungeon.items.weapon.missiles.Boomerang
@@ -222,6 +225,18 @@ open class Item : Bundlable {
         }
         items.add(this)
         everSeen = true
+
+        // potions, scrolls and rings normally enter the catalog on
+        // identification (see ItemStatusHandler.know); one whose class is
+        // already known when picked up is catalogued right away
+        val catalogued = when (this) {
+            is Potion -> isKnown
+            is Scroll -> isKnown
+            is Ring -> isKnown
+            else -> true
+        }
+        if (catalogued)
+            Catalog.SetSeen(javaClass)
 
         if (stackable || this is Boomerang)
             Dungeon.quickslot.replaceSimilar(this)

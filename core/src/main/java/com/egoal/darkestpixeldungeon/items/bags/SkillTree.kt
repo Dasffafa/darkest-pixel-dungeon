@@ -6,6 +6,8 @@ import com.egoal.darkestpixeldungeon.actors.hero.Belongings
 import com.egoal.darkestpixeldungeon.items.Item
 import com.egoal.darkestpixeldungeon.items.specials.Special
 import com.egoal.darkestpixeldungeon.sprites.ItemSpriteSheet
+import com.egoal.darkestpixeldungeon.actors.hero.Hero
+import java.util.ArrayList
 
 class SkillTree : Bag() {
     init {
@@ -15,6 +17,9 @@ class SkillTree : Bag() {
     }
 
     override fun canHold(item: Item): Boolean = super.canHold(item) && item is Special
+
+    // the skill tree must never leave the pack: Updater resolves it through
+    override fun actions(hero: Hero): ArrayList<String> = ArrayList()
 
     override fun price(): Int = 0
 
