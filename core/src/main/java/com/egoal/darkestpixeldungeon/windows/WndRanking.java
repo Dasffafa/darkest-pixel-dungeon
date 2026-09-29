@@ -42,6 +42,7 @@ import com.egoal.darkestpixeldungeon.ui.RenderedTextMultiline;
 import com.egoal.darkestpixeldungeon.ui.ScrollPane;
 import com.egoal.darkestpixeldungeon.ui.Window;
 import com.watabou.input.ScrollEvent;
+import com.watabou.input.Touchscreen;
 import com.watabou.noosa.Camera;
 import com.watabou.noosa.ColorBlock;
 import com.watabou.noosa.Game;
@@ -289,17 +290,54 @@ public class WndRanking extends WndTabbed {
      * tapped or highlighted.
      *
      * <p>This class therefore registers no TouchArea at all. It only clips via
-     * a Camera and scrolls on wheel events, which leaves the cells' own hot
-     * areas as the sole touch listeners, so tapping, highlighting and the
-     * click sound behave exactly as they would with no container in between.
+     * a Camera and scrolls on wheel and touch-drag events, which leaves the
+     * cells' own hot areas as the sole touch listeners, so tapping,
+     * highlighting and the click sound behave exactly as they would with no
+     * container in between.
      *
-     * <p>Known limitation: with no controller there is nothing to capture a
-     * drag, so touch dragging does not scroll. The wheel covers desktop.
+     * <p>Touch dragging works by listening to Touchscreen.event without ever
+     * consuming a press: a DOWN is passed straight through (return false), so
+     * the cell underneath still highlights and clicks. Touchscreen delivers
+     * every drag frame as dispatch(null) -- see processTouchEvents, where a
+     * moving pointer only updates its Touch and dispatches null -- so the
+     * listener keeps the Touch it saw go down and measures against its
+     * start/current points. Because the cell's own TouchArea receives those
+     * same null frames, it calls onDrag rather than onTouchUp, which is exactly
+     * the behaviour wanted: the cell stays pressed while the finger moves and
+     * no click fires. Only once a real drag has occurred does the UP get
+     * consumed, which suppresses the release-click on a cell the finger
+     * happened to end on.
      */
     private class ScrollableList extends Component implements Signal.Listener<ScrollEvent> {
 
+      /** Finger travel, in screen pixels, before a press becomes a scroll. */
+      private static final float DRAG_SLOP = 8;
+
       private final Component content;
       private final ColorBlock thumb;
+
+      /** The pointer this pane is currently tracking, if any. */
+      private Touchscreen.Touch tracked;
+      private float dragStartY;
+      private float dragStartScroll;
+      private boolean dragged;
+
+      /**
+       * Drag-to-scroll listener for Touchscreen.event.
+       *
+       * <p>A separate class rather than a second interface on ScrollableList
+       * because Signal.Listener is generic: implementing both
+       * Listener&lt;ScrollEvent&gt; and Listener&lt;Touch&gt; on one class is a
+       * compile error ("repeated interface"), since both erase to the same
+       * raw type.
+       */
+      private final Signal.Listener<Touchscreen.Touch> dragListener =
+              new Signal.Listener<Touchscreen.Touch>() {
+        @Override
+        public boolean onSignal(Touchscreen.Touch touch) {
+          return handleTouch(touch);
+        }
+      };
 
       ScrollableList(Component content) {
         super();
@@ -323,6 +361,11 @@ public class WndRanking extends WndTabbed {
 
         ScrollEvent.addScrollListener(this);
 
+        // Registered after the cells have added their own hot areas, so the
+        // stack-mode signal puts this listener in front of them. That ordering
+        // is what lets a DOWN be seen here first and still be passed on.
+        Touchscreen.event.add(dragListener);
+
         thumb = new ColorBlock(2, 1, 0xFF7b8073);
         thumb.am = 0.5f;
         add(thumb);
@@ -331,6 +374,7 @@ public class WndRanking extends WndTabbed {
       @Override
       public void destroy() {
         ScrollEvent.removeScrollListener(this);
+        Touchscreen.event.remove(dragListener);
         Camera.remove(content.camera);
         super.destroy();
       }
@@ -364,6 +408,63 @@ public class WndRanking extends WndTabbed {
       }
 
       /**
+       * Touch handling for drag-to-scroll.
+       *
+       * <p>Returns false for a DOWN on purpose: this listener only observes the
+       * press so the cell's hot area still gets it and the cell highlights and
+       * clicks normally. The press is claimed only afterwards, once the finger
+       * has travelled far enough to count as a drag.
+       */
+      private boolean handleTouch(Touchscreen.Touch touch) {
+        if (!isActive()) {
+          return false;
+        }
+
+        // A null touch is a drag frame for whichever pointer is already down.
+        if (touch == null) {
+          if (tracked == null) {
+            return false;
+          }
+
+          float dy = tracked.current.y - dragStartY;
+          if (!dragged && Math.abs(dy) < DRAG_SLOP) {
+            // Still within the slop: treat as a stationary press so the cell
+            // keeps its normal pressed feedback.
+            return false;
+          }
+          dragged = true;
+
+          // The pane follows the finger, so scrolling up moves the content up.
+          // The scroll offset is computed from the press origin rather than
+          // accumulated per frame, which keeps it exact and free of drift.
+          setScroll(dragStartScroll + dy);
+          return true;
+        }
+
+        if (touch.down) {
+          // Only start tracking a press that landed inside this pane. Touches
+          // elsewhere are left entirely alone (the window's own buttons, the
+          // tab bar, and the close button all keep working).
+          if (tracked == null && containsScreenPoint(touch.current.x, touch.current.y)) {
+            tracked = touch;
+            dragStartY = touch.current.y;
+            dragStartScroll = content.camera.scroll.y;
+            dragged = false;
+          }
+          // Never consume the DOWN, even when tracking: the cell must still
+          // receive it.
+          return false;
+        }
+
+        // A release. Consume it only if this press turned into a scroll, so a
+        // drag ending over a cell does not also open that cell's item window.
+        boolean consume = dragged && tracked == touch;
+        tracked = null;
+        dragged = false;
+        return consume;
+      }
+
+      /**
        * Whether a screen-space point falls inside this pane. Component is not a
        * Visual, so the check is done by converting the point into camera space
        * exactly as Visual.overlapsScreenPoint would.
@@ -379,8 +480,13 @@ public class WndRanking extends WndTabbed {
       }
 
       private void scrollBy(float dy) {
+        setScroll(content.camera.scroll.y + dy);
+      }
+
+      /** Sets the vertical scroll offset, clamped to the content's bounds. */
+      private void setScroll(float sy) {
         Camera c = content.camera;
-        c.scroll.y = Math.max(0, Math.min(c.scroll.y + dy,
+        c.scroll.y = Math.max(0, Math.min(sy,
                 Math.max(0, content.height() - height)));
         thumb.y = y + height * c.scroll.y / content.height();
       }
