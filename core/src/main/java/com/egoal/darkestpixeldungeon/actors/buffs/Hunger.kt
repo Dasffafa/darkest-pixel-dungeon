@@ -96,23 +96,21 @@ class Hunger : Buff(), Hero.Doom {
                     if (Random.Float() < 0.2f)
                         (target as Hero).sayShort(HeroLines.WHY_NOT_EAT)
 
-                    // 
-                    if (dmgTokenInTotal < 180) {
+                    // 2026/9/29 made this change to make sure rogue get lvl 2 of this after taking 80 dmg
+                    val diet = hero.heroPerk.get(Dieting::class.java)
+                    if (diet == null || diet.level < 2) {
                         dmgTokenInTotal += dmg
-                        if (dmgTokenInTotal >= 100 && !hero.heroPerk.has(Dieting::class.java)) {
-                            val diet = Dieting()
+                        if (diet == null && dmgTokenInTotal >= 100) {
+                            val newDiet = Dieting()
+                            hero.heroPerk.add(newDiet)
+                            PerkGain.Show(hero, newDiet)
+                            GLog.w(M.L(this, "dieting"))
+                            dmgTokenInTotal = 0
+                        } else if (diet != null && dmgTokenInTotal >= 80) {
                             hero.heroPerk.add(diet)
                             PerkGain.Show(hero, diet)
-                            GLog.w(M.L(this, "dieting"))
-                        }
-                        if (dmgTokenInTotal >= 180) {
-                            hero.heroPerk.get(Dieting::class.java)?.let {
-                                if (it.level < 2) {
-                                    hero.heroPerk.add(it)
-                                    PerkGain.Show(hero, it)
-                                    GLog.w(M.L(this, "dieting2"))
-                                }
-                            }
+                            GLog.w(M.L(this, "dieting2"))
+                            dmgTokenInTotal = 0
                         }
                     }
                 }
