@@ -155,7 +155,7 @@ class WndCatalogs : WndTabbed() {
         select(CurrentTab)
     }
 
-    private fun titleText(): String = "${M.L(this, "title")} · ${M.L(WndCatalogs::class.java, TABS[CurrentTab])}"
+    private fun titleText(): String = M.L(WndCatalogs::class.java, TABS[CurrentTab])
 
     /**
      * One icon per category, taken from the game's own art. Ten tabs share the
