@@ -16,7 +16,7 @@ import java.net.URL
 
 object SpiritServer {
 
-    const val DEFAULT_BASE_URL = "https://example.com"
+    const val DEFAULT_BASE_URL = "http://dpd.crystaldragons.top"
 
     val baseUrl: String
         get() {
