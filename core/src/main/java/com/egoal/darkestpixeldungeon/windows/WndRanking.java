@@ -41,6 +41,9 @@ import com.egoal.darkestpixeldungeon.ui.RedButton;
 import com.egoal.darkestpixeldungeon.ui.RenderedTextMultiline;
 import com.egoal.darkestpixeldungeon.ui.ScrollPane;
 import com.egoal.darkestpixeldungeon.ui.Window;
+import com.watabou.input.ScrollEvent;
+import com.watabou.input.Touchscreen;
+import com.watabou.noosa.Camera;
 import com.watabou.noosa.ColorBlock;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.Group;
@@ -48,7 +51,12 @@ import com.watabou.noosa.Image;
 import com.watabou.noosa.RenderedText;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.noosa.ui.Button;
+import com.watabou.noosa.ui.Component;
+import com.watabou.utils.Point;
+import com.watabou.utils.PointF;
+import com.watabou.utils.Signal;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Locale;
 
@@ -239,59 +247,344 @@ public class WndRanking extends WndTabbed {
 
   private class ItemsTab extends Group {
 
-    private float pos;
+    /**
+     * Cell size of one quickslot. WIDTH (91) is exactly 4 of these plus the
+     * gaps, so the grid is 4 columns wide by construction -- the width cannot
+     * be traded for more rows.
+     */
+    private static final int COLUMNS = 4;
+    private static final float SLOT = 22;
+    private static final float SLOT_GAP = 1;
+    private static final float QUICKSLOT_TOP_GAP = 6;
 
     public ItemsTab() {
       super();
 
-      Belongings stuff = Dungeon.INSTANCE.getHero().getBelongings();
-      if (stuff.getWeapon() != null) {
-        addItem(stuff.getWeapon());
-      }
-      if (stuff.getArmor() != null) {
-        addItem(stuff.getArmor());
-      }
-      if (stuff.getHelmet() != null)
-        addItem(stuff.getHelmet());
-      if (stuff.getMisc1() != null) {
-        addItem(stuff.getMisc1());
-      }
-      if (stuff.getMisc2() != null) {
-        addItem(stuff.getMisc2());
-      }
-      if (stuff.getMisc3() != null) {
-        addItem(stuff.getMisc3());
-      }
+      // Seed this Group's camera before building the list. The list lays its
+      // content out against camera(), which walks the parent chain up to this
+      // window; WndTabbed builds every page inside WndRanking.createControls()
+      // BEFORE adding them to the window, so at construction time this Group
+      // still has no parent and camera() would return null. BadgesTab handles
+      // the same ordering problem the same way.
+      camera = WndRanking.this.camera;
 
-      // quickslots
-      pos = 0;
-      for (int i = 0; i < QuickSlot.SIZE; i++) {
-        float posx = i % 4 * (22 + 1);
-        float posy = i / 4 * (22 + 1) + 22 * 6 + 6;
-        if (Dungeon.INSTANCE.getQuickslot().getItem(i) != null) {
-          QuickSlotButton slot = new QuickSlotButton(Dungeon.INSTANCE.getQuickslot()
-                  .getItem(i));
+      // The equipped items plus the quickslot grid are taller than the window
+      // for any run that filled more than one row of slots, so the list is
+      // clipped to its own camera. Without that the grid simply drew outside
+      // the content box: the equipment block ends at y = 138 and the window is
+      // only HEIGHT = 182 tall, so a single row of slots (138..160) is all that
+      // fits and every further row spilled over the tab bar.
+      ScrollableList list = new ScrollableList(new Content());
+      add(list);
+      list.setRect(0, 0, WIDTH, HEIGHT);
+    }
 
-          slot.setRect(posx, posy, 22, 22);
+    /**
+     * Scrolls a taller-than-visible content component without stealing input.
+     *
+     * <p>The game's ScrollPane would be the obvious choice, but its
+     * TouchController is registered with Touchscreen.event *after* the
+     * content's buttons, and that signal is stack-mode: add() pushes to the
+     * front and dispatch stops at the first listener returning true. The
+     * controller is also stretched over the whole pane, so it swallowed every
+     * touch and the item cells -- although still drawn -- could never be
+     * tapped or highlighted.
+     *
+     * <p>This class therefore registers no TouchArea at all. It only clips via
+     * a Camera and scrolls on wheel and touch-drag events, which leaves the
+     * cells' own hot areas as the sole touch listeners, so tapping,
+     * highlighting and the click sound behave exactly as they would with no
+     * container in between.
+     *
+     * <p>Touch dragging works by listening to Touchscreen.event without ever
+     * consuming a press: a DOWN is passed straight through (return false), so
+     * the cell underneath still highlights and clicks. Touchscreen delivers
+     * every drag frame as dispatch(null) -- see processTouchEvents, where a
+     * moving pointer only updates its Touch and dispatches null -- so the
+     * listener keeps the Touch it saw go down and measures against its
+     * start/current points. Because the cell's own TouchArea receives those
+     * same null frames, it calls onDrag rather than onTouchUp, which is exactly
+     * the behaviour wanted: the cell stays pressed while the finger moves and
+     * no click fires. Only once a real drag has occurred does the UP get
+     * consumed, which suppresses the release-click on a cell the finger
+     * happened to end on.
+     */
+    private class ScrollableList extends Component implements Signal.Listener<ScrollEvent> {
 
-          add(slot);
+      /** Finger travel, in screen pixels, before a press becomes a scroll. */
+      private static final float DRAG_SLOP = 8;
 
-        } else {
-          ColorBlock bg = new ColorBlock(22, 22, 0x9953564D);
-          bg.x = posx;
-          bg.y = posy;
-          add(bg);
+      private final Component content;
+      private final ColorBlock thumb;
+
+      /** The pointer this pane is currently tracking, if any. */
+      private Touchscreen.Touch tracked;
+      private float dragStartY;
+      private float dragStartScroll;
+      private boolean dragged;
+
+      /**
+       * Drag-to-scroll listener for Touchscreen.event.
+       *
+       * <p>A separate class rather than a second interface on ScrollableList
+       * because Signal.Listener is generic: implementing both
+       * Listener&lt;ScrollEvent&gt; and Listener&lt;Touch&gt; on one class is a
+       * compile error ("repeated interface"), since both erase to the same
+       * raw type.
+       */
+      private final Signal.Listener<Touchscreen.Touch> dragListener =
+              new Signal.Listener<Touchscreen.Touch>() {
+        @Override
+        public boolean onSignal(Touchscreen.Touch touch) {
+          return handleTouch(touch);
         }
-        // pos += 22+1;
+      };
+
+      ScrollableList(Component content) {
+        super();
+
+        this.content = content;
+
+        // Plain add() rather than addToBack(): Group.addToBack reads
+        // members.get(0) without checking for an empty list, so calling it as
+        // the very first member throws IndexOutOfBoundsException. ScrollPane
+        // only avoids that because its createChildren() has already added a
+        // TouchController by then.
+        add(content);
+
+        width = content.width();
+        height = content.height();
+
+        // Own camera, so the content is clipped to the pane's rect rather than
+        // spilling over the tab bar.
+        content.camera = new Camera(0, 0, 1, 1, PixelScene.defaultZoom);
+        Camera.add(content.camera);
+
+        ScrollEvent.addScrollListener(this);
+
+        // Registered after the cells have added their own hot areas, so the
+        // stack-mode signal puts this listener in front of them. That ordering
+        // is what lets a DOWN be seen here first and still be passed on.
+        Touchscreen.event.add(dragListener);
+
+        thumb = new ColorBlock(2, 1, 0xFF7b8073);
+        thumb.am = 0.5f;
+        add(thumb);
+      }
+
+      @Override
+      public void destroy() {
+        ScrollEvent.removeScrollListener(this);
+        Touchscreen.event.remove(dragListener);
+        Camera.remove(content.camera);
+        super.destroy();
+      }
+
+      @Override
+      protected void layout() {
+        content.setPos(0, 0);
+
+        Point p = camera().cameraToScreen(x, y);
+        Camera cs = content.camera;
+        cs.x = p.x;
+        cs.y = p.y;
+        cs.resize((int) width, (int) height);
+
+        boolean scrollable = height < content.height();
+        thumb.visible = scrollable;
+        if (scrollable) {
+          thumb.scale.set(2, height * height / content.height());
+          thumb.x = right() - thumb.width();
+          thumb.y = y + height * content.camera.scroll.y / content.height();
+        }
+      }
+
+      @Override
+      public boolean onSignal(ScrollEvent event) {
+        if (!isActive() || !containsScreenPoint(event.pos.x, event.pos.y)) {
+          return false;
+        }
+        scrollBy(event.amount * 10);
+        return true;
+      }
+
+      /**
+       * Touch handling for drag-to-scroll.
+       *
+       * <p>Returns false for a DOWN on purpose: this listener only observes the
+       * press so the cell's hot area still gets it and the cell highlights and
+       * clicks normally.
+       *
+       * <p>Every other event is passed through too. Swallowing the UP used to
+       * look like the way to stop a drag from clicking the cell it ended on,
+       * but it broke the press feedback: the cell's TouchArea needs that very
+       * event to run onTouchUp and clear its pressed state, so eating it left
+       * the cell stuck at full brightness after the finger left the screen.
+       * Nothing needs to be blocked, because the drag geometry already rules
+       * the click out -- TouchArea only fires onClick when the release still
+       * lands on the cell, and a drag ends DRAG_SLOP or more away from where
+       * it began.
+       *
+       * <p>Units follow ScrollPane.TouchController: screen pixels are divided
+       * by the zoom to become content pixels.
+       */
+      private boolean handleTouch(Touchscreen.Touch touch) {
+        if (!isActive()) {
+          return false;
+        }
+
+        // A null touch is a drag frame for whichever pointer is already down.
+        if (touch == null) {
+          if (tracked == null) {
+            return false;
+          }
+
+          // Same threshold form as ScrollPane: a 2D distance from the press
+          // origin, so a sideways swipe is not mistaken for a stationary press.
+          if (!dragged
+                  && PointF.distance(tracked.current, tracked.start) <= DRAG_SLOP) {
+            // Still within the slop: treat as a stationary press so the cell
+            // keeps its normal pressed feedback.
+            return false;
+          }
+          dragged = true;
+          // Brighten the scrollbar for the duration of the drag, as
+          // ScrollPane.TouchController does.
+          thumb.am = 1f;
+
+          // Standard touch scroll direction: the finger drags the content with
+          // it, so dragging up (current.y below the press origin) increases the
+          // camera scroll offset and reveals the content below. Measured from
+          // the press origin rather than accumulated per frame, so it cannot
+          // drift.
+          float dy = (dragStartY - tracked.current.y) / content.camera.zoom;
+          setScroll(dragStartScroll + dy);
+          return false;
+        }
+
+        if (touch.down) {
+          // Only start tracking a press that landed inside this pane. Touches
+          // elsewhere are left entirely alone (the window's own buttons, the
+          // tab bar, and the close button all keep working).
+          if (tracked == null && containsScreenPoint(touch.current.x, touch.current.y)) {
+            tracked = touch;
+            dragStartY = touch.current.y;
+            dragStartScroll = content.camera.scroll.y;
+            dragged = false;
+          }
+          // Never consume the DOWN: the cell must still receive it.
+          return false;
+        }
+
+        // A release. Passed through like everything else, so the cell that was
+        // pressed runs its onTouchUp and goes back to its normal brightness.
+        tracked = null;
+        if (dragged) {
+          dragged = false;
+          thumb.am = 0.5f;
+        }
+        return false;
+      }
+
+      /**
+       * Whether a screen-space point falls inside this pane. Component is not a
+       * Visual, so the check is done by converting the point into camera space
+       * exactly as Visual.overlapsScreenPoint would.
+       */
+      private boolean containsScreenPoint(float sx, float sy) {
+        Camera c = camera();
+        if (c == null) {
+          return false;
+        }
+        float px = (sx - c.x) / c.zoom + c.scroll.x;
+        float py = (sy - c.y) / c.zoom + c.scroll.y;
+        return px >= x && px < x + width && py >= y && py < y + height;
+      }
+
+      private void scrollBy(float dy) {
+        setScroll(content.camera.scroll.y + dy);
+      }
+
+      /** Sets the vertical scroll offset, clamped to the content's bounds. */
+      private void setScroll(float sy) {
+        Camera c = content.camera;
+        c.scroll.y = Math.max(0, Math.min(sy,
+                Math.max(0, content.height() - height)));
+        thumb.y = y + height * c.scroll.y / content.height();
       }
     }
 
-    private void addItem(Item item) {
-      ItemButton slot = new ItemButton(item);
-      slot.setRect(0, pos, width, ItemButton.HEIGHT);
-      add(slot);
+    /**
+     * Holds the equipped items followed by the quickslots that actually held
+     * something in this run. It extends Component (not Group) so it has a real
+     * width/height of its own for the list to clip and scroll -- Group has no
+     * size at all, and a bare width/height inside a Group would silently
+     * resolve to the enclosing Window's fields instead.
+     */
+    private class Content extends Component {
 
-      pos += slot.height() + 1;
+      private float pos;
+
+      public Content() {
+        super();
+
+        Belongings stuff = Dungeon.INSTANCE.getHero().getBelongings();
+        if (stuff.getWeapon() != null) {
+          addItem(stuff.getWeapon());
+        }
+        if (stuff.getArmor() != null) {
+          addItem(stuff.getArmor());
+        }
+        if (stuff.getHelmet() != null)
+          addItem(stuff.getHelmet());
+        if (stuff.getMisc1() != null) {
+          addItem(stuff.getMisc1());
+        }
+        if (stuff.getMisc2() != null) {
+          addItem(stuff.getMisc2());
+        }
+        if (stuff.getMisc3() != null) {
+          addItem(stuff.getMisc3());
+        }
+
+        // Only quickslots that actually held an item in this run are listed.
+        // Empty slots used to be drawn as bare ColorBlock placeholders in a
+        // grid sized to the full QuickSlot.SIZE capacity, which both wasted
+        // rows and made empty cells look identical to occupied ones.
+        ArrayList<Item> quickItems = new ArrayList<Item>();
+        for (int i = 0; i < QuickSlot.SIZE; i++) {
+          Item item = Dungeon.INSTANCE.getQuickslot().getItem(i);
+          if (item != null) {
+            quickItems.add(item);
+          }
+        }
+        if (quickItems.isEmpty()) {
+          setSize(WIDTH, pos);
+          return;
+        }
+
+        float baseY = pos + QUICKSLOT_TOP_GAP;
+        for (int i = 0; i < quickItems.size(); i++) {
+          float posx = (i % COLUMNS) * (SLOT + SLOT_GAP);
+          float posy = baseY + (i / COLUMNS) * (SLOT + SLOT_GAP);
+
+          // WndRanking's own read-only QuickSlotButton (extends ItemSlot); its
+          // onClick opens WndItem, the item description, like the rows above.
+          QuickSlotButton slot = new QuickSlotButton(quickItems.get(i));
+          slot.setRect(posx, posy, SLOT, SLOT);
+          add(slot);
+        }
+
+        setSize(WIDTH, baseY + ((quickItems.size() - 1) / COLUMNS + 1) * (SLOT + SLOT_GAP));
+      }
+
+      private void addItem(Item item) {
+        ItemButton slot = new ItemButton(item);
+        slot.setRect(0, pos, WIDTH, ItemButton.HEIGHT);
+        add(slot);
+
+        pos += slot.height() + 1;
+      }
     }
   }
 
