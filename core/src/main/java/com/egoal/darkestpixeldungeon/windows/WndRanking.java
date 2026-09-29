@@ -53,6 +53,7 @@ import com.watabou.noosa.audio.Sample;
 import com.watabou.noosa.ui.Button;
 import com.watabou.noosa.ui.Component;
 import com.watabou.utils.Point;
+import com.watabou.utils.PointF;
 import com.watabou.utils.Signal;
 
 import java.util.ArrayList;
@@ -412,8 +413,20 @@ public class WndRanking extends WndTabbed {
        *
        * <p>Returns false for a DOWN on purpose: this listener only observes the
        * press so the cell's hot area still gets it and the cell highlights and
-       * clicks normally. The press is claimed only afterwards, once the finger
-       * has travelled far enough to count as a drag.
+       * clicks normally.
+       *
+       * <p>Every other event is passed through too. Swallowing the UP used to
+       * look like the way to stop a drag from clicking the cell it ended on,
+       * but it broke the press feedback: the cell's TouchArea needs that very
+       * event to run onTouchUp and clear its pressed state, so eating it left
+       * the cell stuck at full brightness after the finger left the screen.
+       * Nothing needs to be blocked, because the drag geometry already rules
+       * the click out -- TouchArea only fires onClick when the release still
+       * lands on the cell, and a drag ends DRAG_SLOP or more away from where
+       * it began.
+       *
+       * <p>Units follow ScrollPane.TouchController: screen pixels are divided
+       * by the zoom to become content pixels.
        */
       private boolean handleTouch(Touchscreen.Touch touch) {
         if (!isActive()) {
@@ -426,19 +439,27 @@ public class WndRanking extends WndTabbed {
             return false;
           }
 
-          float dy = tracked.current.y - dragStartY;
-          if (!dragged && Math.abs(dy) < DRAG_SLOP) {
+          // Same threshold form as ScrollPane: a 2D distance from the press
+          // origin, so a sideways swipe is not mistaken for a stationary press.
+          if (!dragged
+                  && PointF.distance(tracked.current, tracked.start) <= DRAG_SLOP) {
             // Still within the slop: treat as a stationary press so the cell
             // keeps its normal pressed feedback.
             return false;
           }
           dragged = true;
+          // Brighten the scrollbar for the duration of the drag, as
+          // ScrollPane.TouchController does.
+          thumb.am = 1f;
 
-          // The pane follows the finger, so scrolling up moves the content up.
-          // The scroll offset is computed from the press origin rather than
-          // accumulated per frame, which keeps it exact and free of drift.
+          // Standard touch scroll direction: the finger drags the content with
+          // it, so dragging up (current.y below the press origin) increases the
+          // camera scroll offset and reveals the content below. Measured from
+          // the press origin rather than accumulated per frame, so it cannot
+          // drift.
+          float dy = (dragStartY - tracked.current.y) / content.camera.zoom;
           setScroll(dragStartScroll + dy);
-          return true;
+          return false;
         }
 
         if (touch.down) {
@@ -451,17 +472,18 @@ public class WndRanking extends WndTabbed {
             dragStartScroll = content.camera.scroll.y;
             dragged = false;
           }
-          // Never consume the DOWN, even when tracking: the cell must still
-          // receive it.
+          // Never consume the DOWN: the cell must still receive it.
           return false;
         }
 
-        // A release. Consume it only if this press turned into a scroll, so a
-        // drag ending over a cell does not also open that cell's item window.
-        boolean consume = dragged && tracked == touch;
+        // A release. Passed through like everything else, so the cell that was
+        // pressed runs its onTouchUp and goes back to its normal brightness.
         tracked = null;
-        dragged = false;
-        return consume;
+        if (dragged) {
+          dragged = false;
+          thumb.am = 0.5f;
+        }
+        return false;
       }
 
       /**
