@@ -41,6 +41,8 @@ import com.egoal.darkestpixeldungeon.ui.RedButton;
 import com.egoal.darkestpixeldungeon.ui.RenderedTextMultiline;
 import com.egoal.darkestpixeldungeon.ui.ScrollPane;
 import com.egoal.darkestpixeldungeon.ui.Window;
+import com.watabou.input.ScrollEvent;
+import com.watabou.noosa.Camera;
 import com.watabou.noosa.ColorBlock;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.Group;
@@ -48,7 +50,11 @@ import com.watabou.noosa.Image;
 import com.watabou.noosa.RenderedText;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.noosa.ui.Button;
+import com.watabou.noosa.ui.Component;
+import com.watabou.utils.Point;
+import com.watabou.utils.Signal;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Locale;
 
@@ -239,59 +245,212 @@ public class WndRanking extends WndTabbed {
 
   private class ItemsTab extends Group {
 
-    private float pos;
+    /**
+     * Cell size of one quickslot. WIDTH (91) is exactly 4 of these plus the
+     * gaps, so the grid is 4 columns wide by construction -- the width cannot
+     * be traded for more rows.
+     */
+    private static final int COLUMNS = 4;
+    private static final float SLOT = 22;
+    private static final float SLOT_GAP = 1;
+    private static final float QUICKSLOT_TOP_GAP = 6;
 
     public ItemsTab() {
       super();
 
-      Belongings stuff = Dungeon.INSTANCE.getHero().getBelongings();
-      if (stuff.getWeapon() != null) {
-        addItem(stuff.getWeapon());
-      }
-      if (stuff.getArmor() != null) {
-        addItem(stuff.getArmor());
-      }
-      if (stuff.getHelmet() != null)
-        addItem(stuff.getHelmet());
-      if (stuff.getMisc1() != null) {
-        addItem(stuff.getMisc1());
-      }
-      if (stuff.getMisc2() != null) {
-        addItem(stuff.getMisc2());
-      }
-      if (stuff.getMisc3() != null) {
-        addItem(stuff.getMisc3());
+      // Seed this Group's camera before building the list. The list lays its
+      // content out against camera(), which walks the parent chain up to this
+      // window; WndTabbed builds every page inside WndRanking.createControls()
+      // BEFORE adding them to the window, so at construction time this Group
+      // still has no parent and camera() would return null. BadgesTab handles
+      // the same ordering problem the same way.
+      camera = WndRanking.this.camera;
+
+      // The equipped items plus the quickslot grid are taller than the window
+      // for any run that filled more than one row of slots, so the list is
+      // clipped to its own camera. Without that the grid simply drew outside
+      // the content box: the equipment block ends at y = 138 and the window is
+      // only HEIGHT = 182 tall, so a single row of slots (138..160) is all that
+      // fits and every further row spilled over the tab bar.
+      ScrollableList list = new ScrollableList(new Content());
+      add(list);
+      list.setRect(0, 0, WIDTH, HEIGHT);
+    }
+
+    /**
+     * Scrolls a taller-than-visible content component without stealing input.
+     *
+     * <p>The game's ScrollPane would be the obvious choice, but its
+     * TouchController is registered with Touchscreen.event *after* the
+     * content's buttons, and that signal is stack-mode: add() pushes to the
+     * front and dispatch stops at the first listener returning true. The
+     * controller is also stretched over the whole pane, so it swallowed every
+     * touch and the item cells -- although still drawn -- could never be
+     * tapped or highlighted.
+     *
+     * <p>This class therefore registers no TouchArea at all. It only clips via
+     * a Camera and scrolls on wheel events, which leaves the cells' own hot
+     * areas as the sole touch listeners, so tapping, highlighting and the
+     * click sound behave exactly as they would with no container in between.
+     *
+     * <p>Known limitation: with no controller there is nothing to capture a
+     * drag, so touch dragging does not scroll. The wheel covers desktop.
+     */
+    private class ScrollableList extends Component implements Signal.Listener<ScrollEvent> {
+
+      private final Component content;
+      private final ColorBlock thumb;
+
+      ScrollableList(Component content) {
+        super();
+
+        this.content = content;
+        addToBack(content);
+
+        width = content.width();
+        height = content.height();
+
+        // Own camera, so the content is clipped to the pane's rect rather than
+        // spilling over the tab bar.
+        content.camera = new Camera(0, 0, 1, 1, PixelScene.defaultZoom);
+        Camera.add(content.camera);
+
+        ScrollEvent.addScrollListener(this);
+
+        thumb = new ColorBlock(2, 1, 0xFF7b8073);
+        thumb.am = 0.5f;
+        add(thumb);
       }
 
-      // quickslots
-      pos = 0;
-      for (int i = 0; i < QuickSlot.SIZE; i++) {
-        float posx = i % 4 * (22 + 1);
-        float posy = i / 4 * (22 + 1) + 22 * 6 + 6;
-        if (Dungeon.INSTANCE.getQuickslot().getItem(i) != null) {
-          QuickSlotButton slot = new QuickSlotButton(Dungeon.INSTANCE.getQuickslot()
-                  .getItem(i));
+      @Override
+      public void destroy() {
+        ScrollEvent.removeScrollListener(this);
+        Camera.remove(content.camera);
+        super.destroy();
+      }
 
-          slot.setRect(posx, posy, 22, 22);
+      @Override
+      protected void layout() {
+        content.setPos(0, 0);
 
-          add(slot);
+        Point p = camera().cameraToScreen(x, y);
+        Camera cs = content.camera;
+        cs.x = p.x;
+        cs.y = p.y;
+        cs.resize((int) width, (int) height);
 
-        } else {
-          ColorBlock bg = new ColorBlock(22, 22, 0x9953564D);
-          bg.x = posx;
-          bg.y = posy;
-          add(bg);
+        boolean scrollable = height < content.height();
+        thumb.visible = scrollable;
+        if (scrollable) {
+          thumb.scale.set(2, height * height / content.height());
+          thumb.x = right() - thumb.width();
+          thumb.y = y + height * content.camera.scroll.y / content.height();
         }
-        // pos += 22+1;
+      }
+
+      @Override
+      public boolean onSignal(ScrollEvent event) {
+        if (!isActive() || !containsScreenPoint(event.pos.x, event.pos.y)) {
+          return false;
+        }
+        scrollBy(event.amount * 10);
+        return true;
+      }
+
+      /**
+       * Whether a screen-space point falls inside this pane. Component is not a
+       * Visual, so the check is done by converting the point into camera space
+       * exactly as Visual.overlapsScreenPoint would.
+       */
+      private boolean containsScreenPoint(float sx, float sy) {
+        Camera c = camera();
+        if (c == null) {
+          return false;
+        }
+        float px = (sx - c.x) / c.zoom + c.scroll.x;
+        float py = (sy - c.y) / c.zoom + c.scroll.y;
+        return px >= x && px < x + width && py >= y && py < y + height;
+      }
+
+      private void scrollBy(float dy) {
+        Camera c = content.camera;
+        c.scroll.y = Math.max(0, Math.min(c.scroll.y + dy,
+                Math.max(0, content.height() - height)));
+        thumb.y = y + height * c.scroll.y / content.height();
       }
     }
 
-    private void addItem(Item item) {
-      ItemButton slot = new ItemButton(item);
-      slot.setRect(0, pos, width, ItemButton.HEIGHT);
-      add(slot);
+    /**
+     * Holds the equipped items followed by the quickslots that actually held
+     * something in this run. It extends Component (not Group) so it has a real
+     * width/height of its own for the list to clip and scroll -- Group has no
+     * size at all, and a bare width/height inside a Group would silently
+     * resolve to the enclosing Window's fields instead.
+     */
+    private class Content extends Component {
 
-      pos += slot.height() + 1;
+      private float pos;
+
+      public Content() {
+        super();
+
+        Belongings stuff = Dungeon.INSTANCE.getHero().getBelongings();
+        if (stuff.getWeapon() != null) {
+          addItem(stuff.getWeapon());
+        }
+        if (stuff.getArmor() != null) {
+          addItem(stuff.getArmor());
+        }
+        if (stuff.getHelmet() != null)
+          addItem(stuff.getHelmet());
+        if (stuff.getMisc1() != null) {
+          addItem(stuff.getMisc1());
+        }
+        if (stuff.getMisc2() != null) {
+          addItem(stuff.getMisc2());
+        }
+        if (stuff.getMisc3() != null) {
+          addItem(stuff.getMisc3());
+        }
+
+        // Only quickslots that actually held an item in this run are listed.
+        // Empty slots used to be drawn as bare ColorBlock placeholders in a
+        // grid sized to the full QuickSlot.SIZE capacity, which both wasted
+        // rows and made empty cells look identical to occupied ones.
+        ArrayList<Item> quickItems = new ArrayList<Item>();
+        for (int i = 0; i < QuickSlot.SIZE; i++) {
+          Item item = Dungeon.INSTANCE.getQuickslot().getItem(i);
+          if (item != null) {
+            quickItems.add(item);
+          }
+        }
+        if (quickItems.isEmpty()) {
+          setSize(WIDTH, pos);
+          return;
+        }
+
+        float baseY = pos + QUICKSLOT_TOP_GAP;
+        for (int i = 0; i < quickItems.size(); i++) {
+          float posx = (i % COLUMNS) * (SLOT + SLOT_GAP);
+          float posy = baseY + (i / COLUMNS) * (SLOT + SLOT_GAP);
+
+          // WndRanking's own read-only QuickSlotButton (extends ItemSlot); its
+          // onClick opens WndItem, the item description, like the rows above.
+          QuickSlotButton slot = new QuickSlotButton(quickItems.get(i));
+          slot.setRect(posx, posy, SLOT, SLOT);
+          add(slot);
+        }
+
+        setSize(WIDTH, baseY + ((quickItems.size() - 1) / COLUMNS + 1) * (SLOT + SLOT_GAP));
+      }
+
+      private void addItem(Item item) {
+        ItemButton slot = new ItemButton(item);
+        slot.setRect(0, pos, WIDTH, ItemButton.HEIGHT);
+        add(slot);
+
+        pos += slot.height() + 1;
+      }
     }
   }
 
