@@ -549,6 +549,22 @@ public class DarkestPixelDungeon extends Game {
     return Preferences.INSTANCE.getString(Preferences.KEY_EPITAPH_NOTICE, "");
   }
 
+  public static void updateCheck(boolean value) {
+    Preferences.INSTANCE.put(Preferences.KEY_UPDATE_CHECK, value);
+  }
+
+  public static boolean updateCheck() {
+    return Preferences.INSTANCE.getBoolean(Preferences.KEY_UPDATE_CHECK, true);
+  }
+
+  public static void updateIgnored(int value) {
+    Preferences.INSTANCE.put(Preferences.KEY_UPDATE_IGNORED, value);
+  }
+
+  public static int updateIgnored() {
+    return Preferences.INSTANCE.getInt(Preferences.KEY_UPDATE_IGNORED, 0);
+  }
+
   /*
    * <--- Preferences
    */

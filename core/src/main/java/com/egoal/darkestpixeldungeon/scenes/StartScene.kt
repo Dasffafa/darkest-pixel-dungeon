@@ -8,6 +8,8 @@ import com.egoal.darkestpixeldungeon.effects.Speck
 import com.egoal.darkestpixeldungeon.items.Generator
 import com.egoal.darkestpixeldungeon.messages.M
 import com.egoal.darkestpixeldungeon.network.SpiritServer
+import com.egoal.darkestpixeldungeon.update.UpdateInfo
+import com.egoal.darkestpixeldungeon.update.Updates
 import com.egoal.darkestpixeldungeon.ui.*
 import com.egoal.darkestpixeldungeon.windows.InputDialog
 import com.egoal.darkestpixeldungeon.windows.WndOptions
@@ -33,6 +35,7 @@ class StartScene : PixelScene() {
 
     private var buttonX: Float = 0f
     private var buttonY: Float = 0f
+    private var updateShown: Boolean = false
 
     override fun create() {
         super.create()
@@ -150,6 +153,25 @@ class StartScene : PixelScene() {
         if (SpiritServer.shouldPrompt) add(WndSpiritSyncConsent())
         SpiritServer.onStartup()
         showEpitaphNotice()
+
+        Updates.checkForUpdate()
+    }
+
+    private fun showUpdate(info: UpdateInfo) {
+        val title = M.L(Updates::class.java, "title") + " " + info.versionName
+        val message = if (info.desc.isNotEmpty()) info.desc else M.L(Updates::class.java, "default_desc")
+        add(object : WndOptions(
+                title,
+                message,
+                M.L(Updates::class.java, "download"),
+                M.L(Updates::class.java, "later")) {
+            override fun onSelect(index: Int) {
+                when (index) {
+                    0 -> Game.platform.openURI(info.downloadUrl)
+                    else -> Updates.ignore()
+                }
+            }
+        })
     }
 
     private fun showEpitaphNotice() {
@@ -170,6 +192,14 @@ class StartScene : PixelScene() {
 
         // todo: refactor this
         tip.alpha(sin(Game.timeTotal * 2f) * .4f + .6f)
+
+        if (!updateShown) {
+            val info = Updates.available
+            if (info != null) {
+                updateShown = true
+                showUpdate(info)
+            }
+        }
     }
 
     override fun destroy() {

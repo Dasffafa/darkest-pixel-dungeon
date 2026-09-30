@@ -1,0 +1,11 @@
+{
+    "versionName": "0.8.1a",
+    "versionCode": 56,
+    "desc": "最新版本更新说明（手动维护 server-php/src/api/version.json）",
+    "downloadUrl": "https://github.com/Dasffafa/darkest-pixel-dungeon/releases",
+    "urls": {
+        "android": "https://github.com/Dasffafa/darkest-pixel-dungeon/releases",
+        "windows": "https://github.com/Dasffafa/darkest-pixel-dungeon/releases",
+        "jar": "https://github.com/Dasffafa/darkest-pixel-dungeon/releases"
+    }
+}

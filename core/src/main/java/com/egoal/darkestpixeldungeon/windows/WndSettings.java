@@ -32,6 +32,7 @@ import com.egoal.darkestpixeldungeon.scenes.GameScene;
 import com.egoal.darkestpixeldungeon.scenes.PixelScene;
 import com.egoal.darkestpixeldungeon.ui.CheckBox;
 import com.egoal.darkestpixeldungeon.ui.Toolbar;
+import com.egoal.darkestpixeldungeon.update.Updates;
 import com.watabou.noosa.ColorBlock;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.Group;
@@ -368,6 +369,18 @@ public class WndSettings extends WndTabbed {
               BTN_HEIGHT);
       chkEpitaphSync.checked(DarkestPixelDungeon.epitaphSync());
       add(chkEpitaphSync);
+
+      CheckBox chkUpdateCheck = new CheckBox(Messages.get(this, "update_check")) {
+        @Override
+        public void onClick() {
+          super.onClick();
+          DarkestPixelDungeon.updateCheck(checked());
+          if (checked()) Updates.INSTANCE.checkForUpdate();
+        }
+      };
+      chkUpdateCheck.setRect(0, chkEpitaphSync.bottom() + GAP_SML, WIDTH, BTN_HEIGHT);
+      chkUpdateCheck.checked(DarkestPixelDungeon.updateCheck());
+      add(chkUpdateCheck);
     }
   }
 

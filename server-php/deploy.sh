@@ -26,6 +26,7 @@ put "$DIR/src/.htaccess" "$FTP_ROOT/.htaccess"
 put "$DIR/src/api/lib.php" "$FTP_ROOT/api/lib.php"
 put "$DIR/src/api/index.php" "$FTP_ROOT/api/index.php"
 put "$DIR/src/api/config.sample.php" "$FTP_ROOT/api/config.sample.php"
+put "$DIR/src/api/version.json" "$FTP_ROOT/api/version.json"
 
 if [ -f "$DIR/src/api/config.php" ]; then
   put "$DIR/src/api/config.php" "$FTP_ROOT/api/config.php"

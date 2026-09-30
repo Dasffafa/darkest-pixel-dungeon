@@ -16,6 +16,19 @@ function handle_health() {
     json_out(array('ok' => true), 200);
 }
 
+function handle_version() {
+    $path = dirname(__FILE__) . '/version.json';
+    $raw = @file_get_contents($path);
+    $data = is_string($raw) ? json_decode($raw, true) : null;
+    if (!is_array($data) || !isset($data['versionCode'])) {
+        fail(500, 'version info unavailable');
+    }
+    $mtime = @filemtime($path);
+    if ($mtime !== false) $data['updatedAt'] = $mtime;
+    header('Cache-Control: no-cache, no-store, must-revalidate');
+    json_out($data, 200);
+}
+
 function handle_stats() {
     $pdo = db();
     $since = time() - 24 * 3600;
@@ -202,6 +215,8 @@ if (strpos($path, 'api/') === 0) {
 
 if ($method === 'GET' && $path === 'health') {
     handle_health();
+} elseif ($method === 'GET' && $path === 'v1/version') {
+    handle_version();
 } elseif ($method === 'GET' && $path === 'v1/stats') {
     handle_stats();
 } elseif ($method === 'POST' && $path === 'v1/spirits') {
