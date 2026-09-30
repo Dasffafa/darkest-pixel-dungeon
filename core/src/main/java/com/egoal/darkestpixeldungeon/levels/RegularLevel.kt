@@ -502,6 +502,8 @@ abstract class RegularLevel : Level() {
 
             val trap = trapClasses[Random.chances(trapChances)].newInstance().hide()
             trap.pending = true
+            // some traps (worn, grim) override hide() to reveal themselves; a reserved trap must stay secret
+            trap.visible = false
             setTrap(trap, cell)
             map[cell] = Terrain.SECRET_TRAP
             ++spawned

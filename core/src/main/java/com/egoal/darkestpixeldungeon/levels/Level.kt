@@ -849,7 +849,8 @@ abstract class Level : Bundlable {
         trap.pending = false
         if (prizeTrapCount < MAX_PRIZE_TRAPS && !Dungeon.isHeroNull && Random.Float() < prizeChance()) {
             ++prizeTrapCount
-            convertTrapToPrize(trap)
+            // a reserved trap is secret: the treasure it hides must not show before it is stepped on
+            convertTrapToPrize(trap).hide()
         } else {
             vanishTrap(trap)
         }
