@@ -22,6 +22,9 @@ bin/
 site/
 server-php/src/api/config.php
 
+# 本地部署脚本（含 FTP 凭据，切勿提交）
+server-php/deploy.local.*
+
 # Gradle files
 .gradle/
 build/

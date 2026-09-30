@@ -23,3 +23,17 @@ allprojects {
         mavenCentral()
     }
 }
+
+// 把 server-php 一键部署到远程 FTP。
+// 凭据放在被 .gitignore 忽略的 server-php/deploy.local.fish 中，本任务只是它的入口。
+tasks.register('deployServer', Exec) {
+    group = 'deployment'
+    description = 'Deploy server-php to the remote FTP host (credentials in server-php/deploy.local.fish)'
+    workingDir rootProject.projectDir
+    doFirst {
+        if (!file('server-php/deploy.local.fish').exists()) {
+            throw new GradleException('server-php/deploy.local.fish not found. Create it with your FTP credentials first.')
+        }
+    }
+    commandLine 'fish', 'server-php/deploy.local.fish'
+}
