@@ -64,6 +64,49 @@ function handle_stats() {
     ), 200);
 }
 
+function clamp_n($value, $default, $max) {
+    $n = isset($value) ? (int) $value : $default;
+    if ($n < 1) $n = 1;
+    if ($n > $max) $n = $max;
+    return $n;
+}
+
+function handle_recent_epitaphs() {
+    $n = clamp_n(isset($_GET['n']) ? $_GET['n'] : null, 20, 50);
+
+    $stmt = db()->prepare('SELECT name, text, created_at FROM epitaphs WHERE text <> \'\' ORDER BY id DESC LIMIT ?');
+    $stmt->bindValue(1, $n, PDO::PARAM_INT);
+    $stmt->execute();
+
+    $epitaphs = array();
+    foreach ($stmt->fetchAll() as $row) {
+        $epitaphs[] = array(
+            'name' => $row['name'],
+            'text' => $row['text'],
+            'created_at' => (int) $row['created_at'],
+        );
+    }
+    json_out(array('epitaphs' => $epitaphs), 200);
+}
+
+function handle_recent_victory() {
+    $n = clamp_n(isset($_GET['n']) ? $_GET['n'] : null, 20, 50);
+
+    $stmt = db()->prepare('SELECT username, speech, created_at FROM victory WHERE speech <> \'\' ORDER BY id DESC LIMIT ?');
+    $stmt->bindValue(1, $n, PDO::PARAM_INT);
+    $stmt->execute();
+
+    $victory = array();
+    foreach ($stmt->fetchAll() as $row) {
+        $victory[] = array(
+            'name' => $row['username'],
+            'speech' => $row['speech'],
+            'created_at' => (int) $row['created_at'],
+        );
+    }
+    json_out(array('victory' => $victory), 200);
+}
+
 function handle_upload_spirit() {
     $device = device_id();
     if (too_many_uploads($device)) fail(429, 'rate limited');
@@ -219,6 +262,10 @@ if ($method === 'GET' && $path === 'health') {
     handle_version();
 } elseif ($method === 'GET' && $path === 'v1/stats') {
     handle_stats();
+} elseif ($method === 'GET' && $path === 'v1/epitaphs/recent') {
+    handle_recent_epitaphs();
+} elseif ($method === 'GET' && $path === 'v1/victory/recent') {
+    handle_recent_victory();
 } elseif ($method === 'POST' && $path === 'v1/spirits') {
     handle_upload_spirit();
 } elseif ($method === 'POST' && $path === 'v1/victory') {

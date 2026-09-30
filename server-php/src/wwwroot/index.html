@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Darkest Pixel Dungeon</title>
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=20260930">
 </head>
 <body>
 <div class="desktop">
@@ -84,6 +84,34 @@
         </tbody>
       </table>
 
+      <h2 data-i18n="epitaph_title">最近的遗言</h2>
+      <table class="panel" id="epitaph-table">
+        <thead>
+          <tr>
+            <th data-i18n="col_name">角色名</th>
+            <th data-i18n="col_epitaph">遗言</th>
+            <th data-i18n="col_time">时间</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td colspan="3" data-i18n="loading">加载中……</td></tr>
+        </tbody>
+      </table>
+
+      <h2 data-i18n="victory_title">最近的胜利感言</h2>
+      <table class="panel" id="victory-table">
+        <thead>
+          <tr>
+            <th data-i18n="col_name">角色名</th>
+            <th data-i18n="col_speech">感言</th>
+            <th data-i18n="col_time">时间</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td colspan="3" data-i18n="loading">加载中……</td></tr>
+        </tbody>
+      </table>
+
       <hr>
 
       <h2 data-i18n="links_title">相关链接</h2>
@@ -105,6 +133,6 @@
 
 </div>
 
-<script src="app.js"></script>
+<script src="app.js?v=20260930"></script>
 </body>
 </html>

@@ -12,3 +12,10 @@ RewriteRule ^health$ api/index.php [QSA,L]
 # Apex homepage -> ICP filing page (subdomain keeps the game site at /)
 RewriteCond %{HTTP_HOST} ^(www\.)?crystaldragons\.top$ [NC]
 RewriteRule ^$ filing/index.html [L]
+
+# Revalidate static assets instead of letting browsers serve stale copies
+<IfModule mod_headers.c>
+  <FilesMatch "\.(html|js|css)$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+</IfModule>

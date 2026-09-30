@@ -1,7 +1,7 @@
 {
     "versionName": "0.8.1a",
     "versionCode": 56,
-    "desc": "最新版本更新说明（手动维护 server-php/src/api/version.json）",
+    "desc": "0.8.1a 更新：新增图鉴系统，幸运机制重做；调整压力、饥饿与回复、节食天赋；古老者之手、回合进度圆盘、背包丢弃、伤害类型图标；巫师帽、蜜酒、鉴定戒指、快速回复；易伤与元素破坏重做、传送、字体优化；锁镰、桌面端操作、联机功能、风格文本、零伤害、头饰承伤、饮酒统计、受保护掉落、献祭之火、六合大枪、雕花木杖、疯狂面具等。完整说明见游戏内更新日志。",
     "downloadUrl": "https://github.com/Dasffafa/darkest-pixel-dungeon/releases",
     "urls": {
         "android": "https://github.com/Dasffafa/darkest-pixel-dungeon/releases",

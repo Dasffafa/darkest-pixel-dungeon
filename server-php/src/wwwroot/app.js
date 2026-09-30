@@ -17,11 +17,15 @@ var I18N = {
     stats_recent: "近 24 小时新增",
     stats_classes: "职业分布",
     recent_title: "最近的红灵",
+    epitaph_title: "最近的遗言",
+    victory_title: "最近的胜利感言",
     col_name: "角色名",
     col_class: "职业",
     col_level: "等级",
     col_depth: "深度",
     col_time: "时间",
+    col_epitaph: "遗言",
+    col_speech: "感言",
     links_title: "相关链接",
     link_qq: "玩家 QQ 群：818725226",
     link_email: "作者邮箱：xixi012.c@gmail.com",
@@ -49,11 +53,15 @@ var I18N = {
     stats_recent: "近 24 小時新增",
     stats_classes: "職業分佈",
     recent_title: "最近的紅靈",
+    epitaph_title: "最近的遺言",
+    victory_title: "最近的勝利感言",
     col_name: "角色名",
     col_class: "職業",
     col_level: "等級",
     col_depth: "深度",
     col_time: "時間",
+    col_epitaph: "遺言",
+    col_speech: "感言",
     links_title: "相關連結",
     link_qq: "玩家 QQ 群：818725226",
     link_email: "作者信箱：xixi012.c@gmail.com",
@@ -81,11 +89,15 @@ var I18N = {
     stats_recent: "Uploaded in last 24h",
     stats_classes: "Class breakdown",
     recent_title: "Recent Red Spirits",
+    epitaph_title: "Recent Epitaphs",
+    victory_title: "Recent Victory Words",
     col_name: "Hero",
     col_class: "Class",
     col_level: "Level",
     col_depth: "Depth",
     col_time: "Time",
+    col_epitaph: "Epitaph",
+    col_speech: "Speech",
     links_title: "Links",
     link_qq: "QQ group: 818725226",
     link_email: "Contact: xixi012.c@gmail.com",
@@ -202,6 +214,55 @@ function loadStats() {
   xhr.send();
 }
 
+function renderList(tableId, rows, textKey) {
+  var tbody = document.querySelector("#" + tableId + " tbody");
+  tbody.innerHTML = "";
+
+  if (!rows || !rows.length) {
+    var emptyRow = document.createElement("tr");
+    var emptyCell = document.createElement("td");
+    emptyCell.colSpan = 3;
+    emptyCell.textContent = t("empty");
+    emptyRow.appendChild(emptyCell);
+    tbody.appendChild(emptyRow);
+    return;
+  }
+
+  for (var i = 0; i < rows.length; i++) {
+    var item = rows[i];
+    var row = document.createElement("tr");
+    var cells = [
+      escapeHtml(item.name || ""),
+      escapeHtml(item[textKey] || ""),
+      escapeHtml(new Date((item.created_at || 0) * 1000).toLocaleString())
+    ];
+    for (var c = 0; c < cells.length; c++) {
+      var td = document.createElement("td");
+      td.innerHTML = cells[c];
+      row.appendChild(td);
+    }
+    tbody.appendChild(row);
+  }
+}
+
+function loadList(url, tableId, collectionKey, textKey) {
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET", url, true);
+  xhr.onreadystatechange = function () {
+    if (xhr.readyState !== 4) return;
+    var rows = [];
+    if (xhr.status >= 200 && xhr.status < 300) {
+      try {
+        rows = JSON.parse(xhr.responseText)[collectionKey] || [];
+      } catch (e) {
+        rows = [];
+      }
+    }
+    renderList(tableId, rows, textKey);
+  };
+  xhr.send();
+}
+
 (function () {
   var links = document.querySelectorAll("[data-lang]");
   for (var i = 0; i < links.length; i++) {
@@ -212,4 +273,6 @@ function loadStats() {
   }
   applyLang(lang);
   loadStats();
+  loadList("/api/v1/epitaphs/recent?n=20", "epitaph-table", "epitaphs", "text");
+  loadList("/api/v1/victory/recent?n=20", "victory-table", "victory", "speech");
 })();
