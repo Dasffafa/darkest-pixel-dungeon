@@ -7,7 +7,7 @@ return array(
 
     'ai_base_url' => 'https://api.deepseek.com/v1',
     'ai_api_key' => 'CHANGE_ME',
-    'ai_model' => 'deepseek-flash',
+    'ai_model' => 'deepseek-chat',
     'ai_timeout' => 10,
 
     'max_body_bytes' => 65536,

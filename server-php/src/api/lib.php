@@ -46,6 +46,7 @@ function json_out($data, $status) {
     if ($status === null) $status = 200;
     send_status($status);
     header('Content-Type: application/json; charset=utf-8');
+    header('Cache-Control: no-store');
     echo json_encode($data);
     exit;
 }
@@ -166,8 +167,12 @@ function moderate($name, $text) {
     $base = rtrim($c['ai_base_url'], '/');
     if (substr($base, -17) !== '/chat/completions') $base .= '/chat/completions';
 
-    $prompt = "根据中国法律，以下文本是否既有意义、又适合作为游戏id或墓志铭？只回答“是”或“否”：\n"
-        . "游戏id：" . $name . "\n墓志铭：" . $text;
+    $prompt = "你是游戏内容审核员。下面是一段玩家填写的游戏ID与墓志铭。\n"
+        . "只有当其中含有下列任一违规内容时才判定为不合规：\n"
+        . "违反中国法律法规、色情低俗、宣扬暴力血腥、侮辱谩骂、政治或宗教敏感、泄露他人隐私、广告或联系方式。\n"
+        . "游戏ID：" . $name . "\n"
+        . "墓志铭：" . $text . "\n"
+        . "只回答一个单词：合规回复 PASS，违规回复 BLOCK。不要解释。";
 
     $payload = json_encode(array(
         'model' => $c['ai_model'],
@@ -202,9 +207,19 @@ function moderate($name, $text) {
 
     $data = json_decode($body, true);
     if (!is_array($data) || !isset($data['choices'][0]['message']['content'])) return 'failed';
-    $content = trim($data['choices'][0]['message']['content']);
-    if ($content === '是') return 'approved';
-    if ($content === '否') return 'rejected';
+    return judge_verdict($data['choices'][0]['message']['content']);
+}
+
+function judge_verdict($content) {
+    $c = strtoupper(trim((string) $content));
+    $c = trim($c, " \t\n\r\"'“”‘’。.！!：:，,");
+    if ($c === '') return 'failed';
+    if (strpos($c, 'BLOCK') !== false) return 'rejected';
+    if (strpos($c, 'PASS') !== false) return 'approved';
+    // fall back to Chinese keywords in case the model ignores the PASS/BLOCK format
+    if (strpos($c, '违规') !== false || strpos($c, '不合规') !== false
+            || strpos($c, '拒绝') !== false) return 'rejected';
+    if (strpos($c, '合规') !== false || strpos($c, '通过') !== false) return 'approved';
     return 'failed';
 }
 
