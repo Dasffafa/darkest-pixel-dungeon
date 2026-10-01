@@ -183,7 +183,7 @@ class UnstableSpellbook : Artifact() {
             desc += "\n\n" + Messages.get(this, "desc_cursed")
         }
 
-        cachedScroll?.let { desc += M.L(this, "desc_cache", it.name()) }
+        cachedScroll?.let { desc += "\n\n" + M.L(this, "desc_cache", it.name()) }
 
         if (level() < levelCap) {
             if (scrolls.size > 0) {
