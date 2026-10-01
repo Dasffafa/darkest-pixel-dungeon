@@ -300,12 +300,11 @@ class Hero : Char() {
     }
 
     fun wealthBonus(): Int {
-//        = min(10, Ring.getBonus(this, RingOfWealth.Wealth::class.java) + if (subClass == HeroSubClass.LANCER) -1 else 0)
         var n = Ring.getBonus(this, RingOfWealth.Wealth::class.java)
         if (subClass == HeroSubClass.LANCER) --n
         if (buff(Lucky::class.java) != null) ++n
 
-        return min(10, n)
+        return n
     }
 
     /** armed by a lucky strike: the next weapon damage roll takes its maximum */

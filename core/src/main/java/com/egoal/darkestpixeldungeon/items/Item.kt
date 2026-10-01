@@ -54,7 +54,6 @@ import com.watabou.utils.Bundle
 import com.watabou.utils.Callback
 import com.watabou.utils.Random
 import java.util.*
-import kotlin.math.min
 
 open class Item : Bundlable {
     var defaultAction: String = ""
@@ -114,14 +113,14 @@ open class Item : Bundlable {
 
     /**
      * Rare quality boost for unidentified gear: rolls extra levels with the hero's
-     * real-time luck (wealth bonus). The first roll succeeds with
-     * p = min(1, 0.02 + 0.1 * luck); each success grants one level and halves the
-     * chance for the next roll, until a roll fails. [inverted] grants levels down
-     * instead (cursed rings), so that a later uncursing turns the negative level
+     * real-time luck (wealth bonus). The chance starts at p = 0.02 + 0.1 * luck; while
+     * p >= 1 the roll is a guaranteed success, and each success grants one level and
+     * halves the chance for the next roll, until a roll fails. [inverted] grants levels
+     * down instead (cursed rings), so that a later uncursing turns the negative level
      * into a stronger positive one.
      */
     fun rollRareQuality(hero: Hero, inverted: Boolean = false) {
-        var p = min(1f, 0.02f + 0.1f * hero.wealthBonus())
+        var p = 0.02f + 0.1f * hero.wealthBonus()
         while (Random.Float() < p) {
             level(level() + if (inverted) -1 else 1)
             p /= 2f
