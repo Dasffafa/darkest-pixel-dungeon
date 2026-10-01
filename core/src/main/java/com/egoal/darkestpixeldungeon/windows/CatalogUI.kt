@@ -1,6 +1,7 @@
 package com.egoal.darkestpixeldungeon.windows
 
 import com.egoal.darkestpixeldungeon.DarkestPixelDungeon
+import com.egoal.darkestpixeldungeon.items.Catalog
 import com.egoal.darkestpixeldungeon.messages.M
 import com.egoal.darkestpixeldungeon.scenes.GameScene
 import com.egoal.darkestpixeldungeon.ui.Icons
@@ -15,6 +16,10 @@ import com.watabou.noosa.Game
 object CatalogUI {
 
     fun open() {
+
+        // otherwise catalog.dat is only read when a save start/load
+        Catalog.Load() 
+
         if (!DarkestPixelDungeon.catalogSpoilerWarning()) {
             show(WndCatalogs())
             return
