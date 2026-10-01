@@ -469,9 +469,10 @@ abstract class RegularLevel : Level() {
         val traps = min(nTraps(), (validCells.size * 0.15).toInt())
 
         // one prize trap is placed statically; further traps may secretly turn into
-        // prize traps later, judged with the hero's real-time luck (see Level.rollPrizeTrapUpgrade)
-        val nPrize = 1
-        prizeTrapCount = 1
+        // prize traps later, judged with the hero's real-time luck (see Level.rollPrizeTrapUpgrade).
+        // boss levels run none of it: they hold no treasure traps at all.
+        val nPrize = if (Dungeon.bossLevel()) 0 else 1
+        prizeTrapCount = nPrize
 
         val trapsToSpawn = List(min(traps + nPrize, validCells.size)) {
             if (it < traps)
@@ -490,6 +491,9 @@ abstract class RegularLevel : Level() {
             map[cell] = if (trap.visible) Terrain.TRAP else Terrain.SECRET_TRAP
         }
 
+        // boss levels: stop spawning pending traps
+        if (Dungeon.bossLevel()) return
+
         // ~5 extra hidden traps are reserved and judged when their cell is first seen:
         // each either becomes a prize trap or vanishes entirely (see Level.resolvePendingTrap).
         // skip cells already surrounded by traps so prizes do not pile up inside a trap room.
@@ -498,7 +502,7 @@ abstract class RegularLevel : Level() {
         val nPending = Random.NormalIntRange(4, 6)
         while (spawned < nPending && index < validCells.size) {
             val cell = validCells[index++]
-            if (PathFinder.NEIGHBOURS8.count { this.traps.get(cell + it) != null } >= 3) continue
+            if (PathFinder.NEIGHBOURS8.count { this.traps.get(cell + it) != null } >= 2) continue
 
             val trap = trapClasses[Random.chances(trapChances)].newInstance().hide()
             trap.pending = true

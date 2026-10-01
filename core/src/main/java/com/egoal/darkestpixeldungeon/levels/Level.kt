@@ -814,11 +814,11 @@ abstract class Level : Bundlable {
         GameScene.updateMap(pos)
     }
 
-    /** Whether another trap may secretly become a prize trap, judged with the hero's real-time luck. */
+    /** Whether another trap may secretly become a prize trap, judged with the hero's real-time luck. And not on boss levels. */
     fun rollPrizeTrapUpgrade(pos: Int): Boolean {
-        if (prizeTrapCount >= MAX_PRIZE_TRAPS || Dungeon.isHeroNull) return false
+        if (prizeTrapCount >= MAX_PRIZE_TRAPS || Dungeon.isHeroNull || Dungeon.bossLevel()) return false
         // a trap room is dense: do not turn a trap into treasure when it is already surrounded by traps
-        if (PathFinder.NEIGHBOURS8.count { traps.get(pos + it) != null } >= 3) return false
+        if (PathFinder.NEIGHBOURS8.count { traps.get(pos + it) != null } >= 2) return false
         if (Random.Float() >= prizeChance()) return false
 
         ++prizeTrapCount
