@@ -34,4 +34,9 @@ object CatalogAppearance {
 
     /** the catalog's look for a class, or null for items with a fixed sprite */
     fun image(cls: Class<*>): Int? = images[cls]
+
+    /** drops the catalog's own looks, so [image] falls back to each item's own sprite */
+    fun clear() {
+        images = emptyMap()
+    }
 }

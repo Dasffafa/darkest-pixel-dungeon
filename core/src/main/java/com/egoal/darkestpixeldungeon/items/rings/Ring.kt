@@ -39,6 +39,7 @@ import com.watabou.utils.Random
 
 import java.util.ArrayList
 import java.util.HashMap
+import java.util.HashSet
 
 open abstract class Ring : KindofMisc() {
 
@@ -225,6 +226,12 @@ open abstract class Ring : KindofMisc() {
 
         /** a fresh, complete gem set: the catalog rolls its own, never a run's */
         fun catalogLabels(): ItemStatusHandler<Ring> = ItemStatusHandler(rings, gems)
+
+        val known: HashSet<Class<out Ring>>
+            get() = handler.known()
+
+        val unknown: HashSet<Class<out Ring>>
+            get() = handler.unknown()
 
         fun save(bundle: Bundle) {
             handler.save(bundle)

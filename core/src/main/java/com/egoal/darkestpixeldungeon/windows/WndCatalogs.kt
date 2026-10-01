@@ -36,7 +36,7 @@ import com.watabou.noosa.ui.Component
 import com.watabou.utils.Log
 import java.util.ArrayList
 
-class WndCatalogs : WndTabbed() {
+class WndCatalogs(private val inRun: Boolean = false) : WndTabbed() {
 
     private val btnTitle: RedButton
 
@@ -77,8 +77,8 @@ class WndCatalogs : WndTabbed() {
         Catalog.ApplyDebugUnlock()
 
         // the randomized looks (potions, scrolls, rings) are the catalog's own,
-        // re-dealt on every open rather than borrowed from the running save
-        CatalogAppearance.reroll()
+        // re-dealt on every open; in a run the save's own looks are used instead
+        if (inRun) CatalogAppearance.clear() else CatalogAppearance.reroll()
 
         val wndWidth = if (DarkestPixelDungeon.landscape()) WIDTH_L else WIDTH_P
         resize(wndWidth, HEIGHT)
@@ -233,7 +233,7 @@ class WndCatalogs : WndTabbed() {
                 POTIONS_TAB -> when (section) {
                     0 -> entries.addAll(catalogEntries(Catalog.POTION))
                     1 -> Catalog.POTION.allItems().forEach { key ->
-                        if (Catalog.IsSeen(key) && (key.cls.newInstance() as Potion).canBeReinforced())
+                        if (seen(key.cls) && (key.cls.newInstance() as Potion).canBeReinforced())
                             entries.add(Entry.ItemEntry(castClass(key.cls), reinforced = true))
                     }
                     else -> Reagent.all.forEach { entries.add(Entry.ItemEntry(it)) }
@@ -266,8 +266,19 @@ class WndCatalogs : WndTabbed() {
     }
 
     private fun catalogEntries(cat: Catalog): List<Entry> =
-            cat.allItems().sortedBy { if (Catalog.IsSeen(it)) 0 else 1 }
+            cat.allItems().sortedBy { if (seen(it.cls)) 0 else 1 }
                     .map { Entry.ItemEntry(castClass(it.cls)) }
+
+    /** Whether a class is known: the running save's own set in-run, else the codex's. */
+    private fun seen(cls: Class<*>): Boolean {
+        if (!inRun) return Catalog.IsSeen(cls)
+        return when {
+            Potion::class.java.isAssignableFrom(cls) -> Potion.known.any { it == cls }
+            Scroll::class.java.isAssignableFrom(cls) -> Scroll.known.any { it == cls }
+            Ring::class.java.isAssignableFrom(cls) -> Ring.known.any { it == cls }
+            else -> Catalog.IsSeen(cls)
+        }
+    }
 
     private fun mobEntries(cat: Catalog): List<Entry> =
             cat.allItems().sortedBy { if (Catalog.IsSeen(it)) 0 else 1 }
@@ -354,7 +365,7 @@ class WndCatalogs : WndTabbed() {
 
         var pos = 0f
         for (entry in entryList) {
-            val item = ListItem(entry)
+            val item = ListItem(entry, inRun)
             item.setRect(0f, pos, width.toFloat(), ITEM_HEIGHT)
             content.add(item)
             entries.add(item)
@@ -372,7 +383,7 @@ class WndCatalogs : WndTabbed() {
         class EffectEntry(val cls: Class<*>) : Entry()
     }
 
-    private class ListItem(val entry: Entry) : Component() {
+    private class ListItem(val entry: Entry, private val inRun: Boolean) : Component() {
 
         private var revealed = false
         private var name = ""
@@ -423,28 +434,32 @@ class WndCatalogs : WndTabbed() {
 
             when {
                 item is Potion -> {
-                    // potions are listed by their appearance, revealed only once
-                    // the class has been identified in any run
-                    revealed = Catalog.IsSeen(cls)
+                    revealed = if (inRun) item.isKnown else Catalog.IsSeen(cls)
                     if (reinforced) item.reinforce()
-                    name = if (revealed) item.trueName() + (item.status() ?: "") else ""
-                    sprite.view(if (revealed) CatalogAppearance.image(cls) ?: item.image()
-                    else ItemSpriteSheet.SOMETHING, null)
+                    name = if (revealed) item.trueName() + (item.status() ?: "")
+                    else if (inRun) item.name()
+                    else ""
+                    val look = if (inRun) item.image()
+                    else CatalogAppearance.image(cls) ?: item.image()
+                    sprite.view(if (revealed) look else ItemSpriteSheet.SOMETHING, null)
                 }
                 item is Scroll -> {
-                    // same for scrolls, their rune is revealed on identification
-                    revealed = Catalog.IsSeen(cls)
-                    name = if (revealed) item.trueName() else ""
-                    sprite.view(if (revealed) CatalogAppearance.image(cls) ?: item.image()
-                    else ItemSpriteSheet.SOMETHING, null)
+                    revealed = if (inRun) item.isKnown else Catalog.IsSeen(cls)
+                    name = if (revealed) item.trueName()
+                    else if (inRun) item.name()
+                    else ""
+                    val look = if (inRun) item.image()
+                    else CatalogAppearance.image(cls) ?: item.image()
+                    sprite.view(if (revealed) look else ItemSpriteSheet.SOMETHING, null)
                 }
                 item is Ring -> {
-                    // and for rings: the gem is the identifying look, shown once
-                    // the ring has been identified
-                    revealed = Catalog.IsSeen(cls)
-                    name = if (revealed) item.trueName() else ""
-                    sprite.view(if (revealed) CatalogAppearance.image(cls) ?: item.image()
-                    else ItemSpriteSheet.SOMETHING, null)
+                    revealed = if (inRun) item.isKnown else Catalog.IsSeen(cls)
+                    name = if (revealed) item.trueName()
+                    else if (inRun) item.name()
+                    else ""
+                    val look = if (inRun) item.image()
+                    else CatalogAppearance.image(cls) ?: item.image()
+                    sprite.view(if (revealed) look else ItemSpriteSheet.SOMETHING, null)
                 }
                 item is Wine -> {
                     revealed = Catalog.IsSeen(cls)
