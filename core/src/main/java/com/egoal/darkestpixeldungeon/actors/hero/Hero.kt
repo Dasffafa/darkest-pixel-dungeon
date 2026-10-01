@@ -22,6 +22,7 @@ import com.egoal.darkestpixeldungeon.items.armor.MageArmor
 import com.egoal.darkestpixeldungeon.items.armor.glyphs.*
 import com.egoal.darkestpixeldungeon.items.artifacts.*
 import com.egoal.darkestpixeldungeon.items.bags.SkillTree
+import com.egoal.darkestpixeldungeon.items.Catalog
 import com.egoal.darkestpixeldungeon.items.helmets.*
 import com.egoal.darkestpixeldungeon.items.rings.*
 import com.egoal.darkestpixeldungeon.items.scrolls.ScrollOfMagicMapping
@@ -1660,6 +1661,8 @@ class Hero : Char() {
             if (src is Hero) Badges.validateSuicide()
 
             if (src is Doom) src.onDeath()
+
+            Catalog.Save()
 
             Dungeon.deleteGame(true, true)
 
