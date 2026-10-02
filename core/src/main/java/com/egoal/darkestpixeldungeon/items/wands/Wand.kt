@@ -79,6 +79,9 @@ abstract class Wand(val isMissile: Boolean) : Item() {
         if (!isIdentified) rollRareQuality(hero)
     }
 
+    /** Wands zap straight from the backpack, so luck grants them a smaller level boost. */
+    override fun rareQualityLuckCoef(): Float = 0.05f
+
     init {
         defaultAction = AC_ZAP
         usesTargeting = true

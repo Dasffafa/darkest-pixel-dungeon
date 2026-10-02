@@ -111,16 +111,23 @@ open class Item : Bundlable {
 
     open fun onFirstSeen(hero: Hero) {}
 
+    /** Base chance of the rare quality roll, shared by every unidentified item. */
+    protected open fun rareQualityBaseChance(): Float = 0.02f
+
+    /** How strongly the hero's real-time luck (wealth bonus) feeds the rare quality roll. */
+    protected open fun rareQualityLuckCoef(): Float = 0.1f
+
     /**
      * Rare quality boost for unidentified gear: rolls extra levels with the hero's
-     * real-time luck (wealth bonus). The chance starts at p = 0.02 + 0.1 * luck; while
-     * p >= 1 the roll is a guaranteed success, and each success grants one level and
-     * halves the chance for the next roll, until a roll fails. [inverted] grants levels
-     * down instead (cursed rings), so that a later uncursing turns the negative level
-     * into a stronger positive one.
+     * real-time luck (wealth bonus). The chance starts at
+     * [rareQualityBaseChance] + [rareQualityLuckCoef] * luck; while p >= 1 the roll is a
+     * guaranteed success, and each success grants one level and halves the chance for
+     * the next roll, until a roll fails. [inverted] grants levels down instead (cursed
+     * rings), so that a later uncursing turns the negative level into a stronger
+     * positive one.
      */
     fun rollRareQuality(hero: Hero, inverted: Boolean = false) {
-        var p = 0.02f + 0.1f * hero.wealthBonus()
+        var p = rareQualityBaseChance() + rareQualityLuckCoef() * hero.wealthBonus()
         while (Random.Float() < p) {
             level(level() + if (inverted) -1 else 1)
             p /= 2f
