@@ -468,9 +468,7 @@ abstract class RegularLevel : Level() {
         val validCells = (1 until length).filter { map[it] == Terrain.EMPTY && findMobAt(it) == null }.shuffled()
         val traps = min(nTraps(), (validCells.size * 0.15).toInt())
 
-        // one prize trap is placed statically; further traps may secretly turn into
-        // prize traps later, judged with the hero's real-time luck (see Level.rollPrizeTrapUpgrade).
-        // boss levels run none of it: they hold no treasure traps at all.
+        // 1 guaranteed prize trap are spawned by default
         val nPrize = if (Dungeon.bossLevel()) 0 else 1
         prizeTrapCount = nPrize
 
@@ -512,6 +510,8 @@ abstract class RegularLevel : Level() {
             map[cell] = Terrain.SECRET_TRAP
             ++spawned
         }
+
+        prizeRolls = (traps + spawned).coerceAtLeast(1)
     }
 
     protected fun randomSpace(type: DigResult.Type, tries: Int = Int.MAX_VALUE): Space? {

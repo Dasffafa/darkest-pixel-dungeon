@@ -123,6 +123,10 @@ abstract class Level : Bundlable {
     // be converted into prize traps with the hero's real-time luck, up to the cap.
     var prizeTrapCount = 0
 
+    // Later levels contain more traps by default， use this variable as a division to make prize
+    // trap numbers consistent by default.
+    var prizeRolls = 1
+
     // visuals is added each time the scene is created,
     // so, no need to keep track on them in the bundle
     protected lateinit var visuals: Group // ? = null
@@ -310,6 +314,9 @@ abstract class Level : Bundlable {
         if (bundle.contains(PRIZE_TRAP_COUNT)) {
             prizeTrapCount = bundle.getInt(PRIZE_TRAP_COUNT)
         }
+        if (bundle.contains(PRIZE_ROLLS)) {
+            prizeRolls = bundle.getInt(PRIZE_ROLLS)
+        }
 
         collection = bundle.getCollection(CUSTOM_TILES)
         for (p in collection) {
@@ -347,6 +354,7 @@ abstract class Level : Bundlable {
         bundle.put(PLANTS, plants.values())
         bundle.put(TRAPS, traps.values())
         bundle.put(PRIZE_TRAP_COUNT, prizeTrapCount)
+        bundle.put(PRIZE_ROLLS, prizeRolls)
         bundle.put(CUSTOM_TILES, customTiles)
         bundle.put(MOBS, mobs)
         bundle.put(BLOBS, blobs.values)
@@ -825,8 +833,9 @@ abstract class Level : Bundlable {
         return true
     }
 
-    /** The hero's real-time luck chance for a hidden trap to secretly hold treasure. */
-    private fun prizeChance(): Float = 0.15f + 0.1f * Dungeon.hero.wealthBonus()
+    /** Chance for one candidate trap to convert; divided by the floor's candidate count so the per-floor expectation stays depth-independent. */
+    private fun prizeChance(): Float =
+            (0.25f + 0.45f * Dungeon.hero.wealthBonus()).coerceAtLeast(0f) / prizeRolls
 
     /** Replaces a trap with a prize trap in place, preserving visibility; the sprite is reused. */
     fun convertTrapToPrize(trap: Trap): PrizeTrap {
@@ -1312,6 +1321,7 @@ abstract class Level : Bundlable {
         private const val PLANTS = "plants"
         private const val TRAPS = "traps"
         private const val PRIZE_TRAP_COUNT = "prize_trap_count"
+        private const val PRIZE_ROLLS = "prize_rolls"
         const val MAX_PRIZE_TRAPS = 8
         private const val CUSTOM_TILES = "customTiles"
         private const val MOBS = "mobs"
