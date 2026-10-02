@@ -141,6 +141,40 @@ object CatalogInfo {
         else -> null
     }
 
+    fun effectVisual(cls: Class<*>): Image = when (val effect = cls.newInstance()) {
+        is Inscription -> InscribedWeaponIcon(effect)
+        else -> ItemSprite(effectIcon(cls), effectGlowing(cls))
+    }
+
+    private class InscribedWeaponIcon(inscription: Inscription) : Image() {
+        private val base = ItemSprite(ItemSpriteSheet.WORN_SHORTSWORD, null)
+        private val mark: Image? = inscription.icon.takeIf { it >= 0 }?.let { icon ->
+            Image(TextureCache.get(Assets.DPD_CONS_ICONS)).apply {
+                frame((icon % 18) * 7, (3 + icon / 18) * 8, 7, 8)
+            }
+        }
+
+        init {
+            width = base.width
+            height = base.height
+        }
+
+        override fun draw() {
+            val camera = camera()
+            base.camera = camera
+            base.x = x
+            base.y = y
+            base.draw()
+
+            mark?.let {
+                it.camera = camera
+                it.x = x + width - it.width()
+                it.y = y + height - it.height()
+                it.draw()
+            }
+        }
+    }
+
     fun effectName(cls: Class<*>): String = when (val effect = cls.newInstance()) {
         is Armor.Glyph -> effect.name()
         is Enchantment -> effect.name()
@@ -183,7 +217,7 @@ class WndCatalogText(cls: Class<*>) : WndTitledMessage(
 
 /** detail window for a glyph, an enchantment or a curse */
 class WndCatalogEffect(cls: Class<*>) : WndTitledMessage(
-        ItemSprite(CatalogInfo.effectIcon(cls), CatalogInfo.effectGlowing(cls)),
+        CatalogInfo.effectVisual(cls),
         CatalogInfo.effectName(cls), CatalogInfo.text(cls))
 
 /** detail window for a perk: its icon and its text, which opens with the level cap */

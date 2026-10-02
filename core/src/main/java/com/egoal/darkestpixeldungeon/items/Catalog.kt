@@ -7,6 +7,7 @@ import com.egoal.darkestpixeldungeon.items.armor.*
 import com.egoal.darkestpixeldungeon.items.armor.curses.*
 import com.egoal.darkestpixeldungeon.items.armor.glyphs.*
 import com.egoal.darkestpixeldungeon.items.artifacts.*
+import com.egoal.darkestpixeldungeon.items.helmets.*
 import com.egoal.darkestpixeldungeon.items.food.*
 import com.egoal.darkestpixeldungeon.items.potions.*
 import com.egoal.darkestpixeldungeon.items.rings.*
@@ -153,6 +154,29 @@ enum class Catalog(private val baseItems: Map<Class<*>, Boolean>) {
             HuntressArmor::class.java to false,
             SorceressArmor::class.java to false,
             ExileArmor::class.java to false
+    )),
+
+    /** every helmet the hero can find; a helmet cannot be upgraded */
+    HELMET(linkedMapOf(
+            HelmetBarbarian::class.java to false,
+            HelmetCrusader::class.java to false,
+            HoodApprentice::class.java to false,
+            LittlePail::class.java to false,
+            CircletEmerald::class.java to false,
+            CrownOfDwarf::class.java to false,
+            HeaddressRegeneration::class.java to false,
+            WizardHat::class.java to false,
+            MaskOfHorror::class.java to false,
+            MaskOfClown::class.java to false,
+            RangerHat::class.java to false,
+            MaskOfMadness::class.java to false,
+            TurtleScarf::class.java to false,
+            MaskOfLider::class.java to false,
+            GuardHelmet::class.java to false,
+            StrawHat::class.java to false,
+            Mantilla::class.java to false,
+            CollarOfSlave::class.java to false,
+            Headgear::class.java to false
     )),
 
     /**

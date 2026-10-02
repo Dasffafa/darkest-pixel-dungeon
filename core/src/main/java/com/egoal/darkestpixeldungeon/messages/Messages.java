@@ -81,6 +81,7 @@ public class Messages {
           "com.egoal.darkestpixeldungeon.messages.catalog.catalog_scrolls",
           "com.egoal.darkestpixeldungeon.messages.catalog.catalog_weapons",
           "com.egoal.darkestpixeldungeon.messages.catalog.catalog_armors",
+          "com.egoal.darkestpixeldungeon.messages.catalog.catalog_helmets",
           "com.egoal.darkestpixeldungeon.messages.catalog.catalog_perks"
   };
 

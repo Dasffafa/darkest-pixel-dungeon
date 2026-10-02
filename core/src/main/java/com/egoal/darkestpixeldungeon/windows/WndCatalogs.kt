@@ -12,6 +12,7 @@ import com.egoal.darkestpixeldungeon.items.Item
 import com.egoal.darkestpixeldungeon.items.artifacts.Artifact
 import com.egoal.darkestpixeldungeon.items.armor.Armor
 import com.egoal.darkestpixeldungeon.items.food.Wine
+import com.egoal.darkestpixeldungeon.items.helmets.Helmet
 import com.egoal.darkestpixeldungeon.items.potions.Potion
 import com.egoal.darkestpixeldungeon.items.potions.Reagent
 import com.egoal.darkestpixeldungeon.items.rings.Ring
@@ -171,8 +172,9 @@ class WndCatalogs(private val inRun: Boolean = false) : WndTabbed() {
             5 -> CrabSprite()
             6 -> GhostSprite()
             7 -> ItemSprite(ItemSpriteSheet.ARMOR_PLATE, null)
-            8 -> ItemSprite(ItemSpriteSheet.WORN_SHORTSWORD, null)
-            9 -> Image(TextureCache.get(Assets.PERKS))
+            8 -> ItemSprite(ItemSpriteSheet.HELMET_GUARD, null)
+            9 -> ItemSprite(ItemSpriteSheet.WORN_SHORTSWORD, null)
+            10 -> Image(TextureCache.get(Assets.PERKS))
                     .apply { frame(CatalogInfo.perkFilm.get(PerkImageSheet.EXTRA_CHOICE)) }
             else -> ItemSprite(ItemSpriteSheet.SOMETHING, null)
         }
@@ -249,6 +251,7 @@ class WndCatalogs(private val inRun: Boolean = false) : WndTabbed() {
                     1 -> entries.addAll(effectEntries(Catalog.GLYPH))
                     else -> entries.addAll(effectEntries(Catalog.ARMOR_CURSE))
                 }
+                HELMET_TAB -> entries.addAll(catalogEntries(Catalog.HELMET))
                 WEAPON_TAB -> when (section) {
                     0 -> entries.addAll(catalogEntries(Catalog.WEAPON))
                     1 -> entries.addAll(effectEntries(Catalog.ENCHANTMENT))
@@ -466,9 +469,9 @@ class WndCatalogs(private val inRun: Boolean = false) : WndTabbed() {
                     name = if (revealed) item.trueName() else ""
                     sprite.view(if (revealed) item.image() else ItemSpriteSheet.SOMETHING, null)
                 }
-                item is Armor || item is Weapon -> {
-                    // armor and weapons are catalogued as soon as the hero has
-                    // held one, whether or not its level and curse are known
+                item is Armor || item is Weapon || item is Helmet -> {
+                    // armor, weapons and helmets are catalogued as soon as the
+                    // hero has held one, whether or not its level and curse are known
                     revealed = Catalog.IsSeen(cls)
                     name = if (revealed) item.trueName() else ""
                     sprite.view(if (revealed) item.image() else ItemSpriteSheet.SOMETHING, null)
@@ -512,7 +515,7 @@ class WndCatalogs(private val inRun: Boolean = false) : WndTabbed() {
             revealed = Catalog.IsSeen(cls)
             name = if (revealed) CatalogInfo.effectName(cls) else ""
 
-            sprite = if (revealed) ItemSprite(CatalogInfo.effectIcon(cls), CatalogInfo.effectGlowing(cls))
+            sprite = if (revealed) CatalogInfo.effectVisual(cls)
             else ItemSprite(ItemSpriteSheet.SOMETHING, null)
         }
 
@@ -565,11 +568,12 @@ class WndCatalogs(private val inRun: Boolean = false) : WndTabbed() {
         private const val POTIONS_TAB = 0
         private const val MOBS_TAB = 5
         private const val ARMOR_TAB = 7
-        private const val WEAPON_TAB = 8
-        private const val PERK_TAB = 9
+        private const val HELMET_TAB = 8
+        private const val WEAPON_TAB = 9
+        private const val PERK_TAB = 10
 
-        /** ten tabs share the window width, so every tab icon is drawn smaller */
-        private const val TAB_ICON_SCALE = 0.75f
+        /** eleven tabs share the window width, so every tab icon is drawn smaller */
+        private const val TAB_ICON_SCALE = 0.6f
 
         /** label keys of the monster tab's pages: five acts, then the depth-independent mobs */
         private val MOB_PAGES = arrayOf("act1", "act2", "act3", "act4", "act5", "universal")
@@ -594,7 +598,7 @@ class WndCatalogs(private val inRun: Boolean = false) : WndTabbed() {
 
         private val TABS = arrayOf(
                 "potions", "scrolls", "rings", "artifacts", "food",
-                "mobs", "npcs", "armor", "weapons", "perks"
+                "mobs", "npcs", "armor", "helmets", "weapons", "perks"
         )
 
         private var CurrentTab = 0
