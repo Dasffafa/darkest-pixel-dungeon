@@ -24,6 +24,7 @@ import com.watabou.noosa.Game
 import com.egoal.darkestpixeldungeon.Assets
 import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.actors.Actor
+import com.egoal.darkestpixeldungeon.actors.Char
 import com.egoal.darkestpixeldungeon.actors.buffs.Blindness
 import com.egoal.darkestpixeldungeon.actors.buffs.Buff
 import com.egoal.darkestpixeldungeon.actors.mobs.Mob
@@ -64,10 +65,18 @@ class RogueArmor : ClassArmor() {
 
                     curUser.HP -= curUser.HP / 3
 
-                    Dungeon.level.mobs.filter { Level.fieldOfView[it.pos] }.forEach {
-                        Buff.prolong(it, Blindness::class.java, 2f)
-                        if (it.state === it.HUNTING) it.state = it.WANDERING
-                        it.sprite.emitter().burst(Speck.factory(Speck.LIGHT), 4)
+                    val mobFov = BooleanArray(Dungeon.level.length())
+                    for (mob in Dungeon.level.mobs) {
+                        if (mob.isLiving && mob.state !== mob.SLEEPING && mob.camp != Char.Camp.HERO && mob.buff(Blindness::class.java) == null) {
+                            if (Dungeon.level.distance(mob.pos, curUser.pos) <= mob.seeDistance()) {
+                                Dungeon.level.updateFieldOfView(mob, mobFov)
+                                if (curUser.invisible <= 0 && mobFov[curUser.pos]) {
+                                    Buff.prolong(mob, Blindness::class.java, 2f)
+                                    if (mob.state === mob.HUNTING) mob.state = mob.WANDERING
+                                    mob.sprite.emitter().burst(Speck.factory(Speck.LIGHT), 4)
+                                }
+                            }
+                        }
                     }
 
                     // use a teleportation scroll
