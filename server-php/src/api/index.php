@@ -74,13 +74,14 @@ function clamp_n($value, $default, $max) {
 function handle_recent_epitaphs() {
     $n = clamp_n(isset($_GET['n']) ? $_GET['n'] : null, 20, 50);
 
-    $stmt = db()->prepare('SELECT name, text, created_at FROM epitaphs WHERE text <> \'\' ORDER BY id DESC LIMIT ?');
+    $stmt = db()->prepare('SELECT id, name, text, created_at FROM epitaphs WHERE text <> \'\' ORDER BY id DESC LIMIT ?');
     $stmt->bindValue(1, $n, PDO::PARAM_INT);
     $stmt->execute();
 
     $epitaphs = array();
     foreach ($stmt->fetchAll() as $row) {
         $epitaphs[] = array(
+            'id' => (int) $row['id'],
             'name' => $row['name'],
             'text' => $row['text'],
             'created_at' => (int) $row['created_at'],
@@ -92,13 +93,14 @@ function handle_recent_epitaphs() {
 function handle_recent_victory() {
     $n = clamp_n(isset($_GET['n']) ? $_GET['n'] : null, 20, 50);
 
-    $stmt = db()->prepare('SELECT username, speech, created_at FROM victory WHERE speech <> \'\' ORDER BY id DESC LIMIT ?');
+    $stmt = db()->prepare('SELECT id, username, speech, created_at FROM victory WHERE speech <> \'\' ORDER BY id DESC LIMIT ?');
     $stmt->bindValue(1, $n, PDO::PARAM_INT);
     $stmt->execute();
 
     $victory = array();
     foreach ($stmt->fetchAll() as $row) {
         $victory[] = array(
+            'id' => (int) $row['id'],
             'name' => $row['username'],
             'speech' => $row['speech'],
             'created_at' => (int) $row['created_at'],
@@ -238,14 +240,51 @@ function handle_random_epitaphs() {
     json_out(array('epitaphs' => $epitaphs), 200);
 }
 
-function handle_delete_spirit($id) {
+function require_admin() {
     $token = isset($_SERVER['HTTP_X_ADMIN_TOKEN']) ? $_SERVER['HTTP_X_ADMIN_TOKEN'] : '';
     $admin = cfgv('admin_token');
     if ($admin === '' || $token !== $admin) fail(403, 'forbidden');
+}
+
+function handle_delete_spirit($id) {
+    require_admin();
 
     $stmt = db()->prepare('DELETE FROM spirits WHERE id = ?');
     $stmt->execute(array((int) $id));
     json_out(array('deleted' => $stmt->rowCount()), 200);
+}
+
+function handle_delete_victory($id) {
+    require_admin();
+
+    $stmt = db()->prepare('DELETE FROM victory WHERE id = ?');
+    $stmt->execute(array((int) $id));
+    json_out(array('deleted' => $stmt->rowCount()), 200);
+}
+
+function handle_delete_epitaph($id) {
+    require_admin();
+
+    $stmt = db()->prepare('DELETE FROM epitaphs WHERE id = ?');
+    $stmt->execute(array((int) $id));
+    json_out(array('deleted' => $stmt->rowCount()), 200);
+}
+
+/** admin-only dry run of the moderation: checks a text without publishing it */
+function handle_admin_moderate() {
+    require_admin();
+
+    $data = json_decode(read_body(), true);
+    if (!is_array($data)) fail(400, 'bad payload');
+
+    $name = sanitize_username(isset($data['name']) ? $data['name'] : null);
+    if ($name === null) $name = 'test';
+    $text = sanitize_text(isset($data['text']) ? $data['text'] : null, (int) cfgv('max_speech'));
+    if ($text === null) fail(400, 'bad text');
+
+    $raw = null;
+    $verdict = moderate($name, $text, $raw);
+    json_out(array('verdict' => $verdict, 'raw' => $raw), 200);
 }
 
 $method = $_SERVER['REQUEST_METHOD'];
@@ -278,6 +317,12 @@ if ($method === 'GET' && $path === 'health') {
     handle_random_epitaphs();
 } elseif ($method === 'DELETE' && preg_match('#^v1/admin/spirits/([0-9]+)$#', $path, $m)) {
     handle_delete_spirit($m[1]);
+} elseif ($method === 'DELETE' && preg_match('#^v1/admin/victory/([0-9]+)$#', $path, $m)) {
+    handle_delete_victory($m[1]);
+} elseif ($method === 'DELETE' && preg_match('#^v1/admin/epitaphs/([0-9]+)$#', $path, $m)) {
+    handle_delete_epitaph($m[1]);
+} elseif ($method === 'POST' && $path === 'v1/admin/moderate') {
+    handle_admin_moderate();
 } else {
     fail(404, 'not found');
 }

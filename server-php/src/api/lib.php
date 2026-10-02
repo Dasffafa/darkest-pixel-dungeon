@@ -160,7 +160,7 @@ function validate_record(&$record) {
     ));
 }
 
-function moderate($name, $text) {
+function moderate($name, $text, &$raw = null) {
     $c = cfg();
     if ($c['ai_base_url'] === '' || $c['ai_model'] === '') return 'failed';
 
@@ -168,8 +168,8 @@ function moderate($name, $text) {
     if (substr($base, -17) !== '/chat/completions') $base .= '/chat/completions';
 
     $prompt = "你是游戏内容审核员。下面是一段玩家填写的游戏ID与墓志铭。\n"
-        . "只有当其中含有下列任一违规内容时才判定为不合规：\n"
-        . "违反中国法律法规、色情低俗、宣扬暴力血腥、侮辱谩骂、政治或宗教敏感、泄露他人隐私、广告或联系方式。\n"
+        . "在其中含有下列任一违规内容时判定为不合规：\n"
+        . "违反中国法律法规、色情或性暗示（含擦边、挑逗、拟声词、emoji、谐音等任何形式）、宣扬暴力血腥、侮辱谩骂、政治或宗教敏感、泄露他人隐私、广告或联系方式。\n"
         . "游戏ID：" . $name . "\n"
         . "墓志铭：" . $text . "\n"
         . "只回答一个单词：合规回复 PASS，违规回复 BLOCK。不要解释。";
@@ -207,7 +207,8 @@ function moderate($name, $text) {
 
     $data = json_decode($body, true);
     if (!is_array($data) || !isset($data['choices'][0]['message']['content'])) return 'failed';
-    return judge_verdict($data['choices'][0]['message']['content']);
+    $raw = $data['choices'][0]['message']['content'];
+    return judge_verdict($raw);
 }
 
 function judge_verdict($content) {
