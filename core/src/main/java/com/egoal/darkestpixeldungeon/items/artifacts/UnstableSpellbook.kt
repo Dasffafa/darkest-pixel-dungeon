@@ -102,7 +102,7 @@ class UnstableSpellbook : Artifact() {
 
     override fun actions(hero: Hero): ArrayList<String> {
         val actions = super.actions(hero)
-        if (isEquipped(hero) && charge > 0 && !cursed)
+        if (isEquipped(hero) && (charge > 0 || cachedScroll != null) && !cursed)
             actions.add(AC_READ)
         if (isEquipped(hero) && level() < levelCap && !cursed)
             actions.add(AC_ADD)
@@ -116,7 +116,7 @@ class UnstableSpellbook : Artifact() {
         if (action == AC_READ) {
             if (!isEquipped(hero))
                 GLog.i(Messages.get(Artifact::class.java, "need_to_equip"))
-            else if (charge == 0)
+            else if (charge == 0 && cachedScroll == null)
                 GLog.i(Messages.get(this, "no_charge"))
             else if (cursed)
                 GLog.i(Messages.get(this, "cursed"))
@@ -183,7 +183,7 @@ class UnstableSpellbook : Artifact() {
             desc += "\n\n" + Messages.get(this, "desc_cursed")
         }
 
-        cachedScroll?.let { desc += M.L(this, "desc_cache", it.name()) }
+        cachedScroll?.let { desc += "\n\n" + M.L(this, "desc_cache", it.name()) }
 
         if (level() < levelCap) {
             if (scrolls.size > 0) {
