@@ -146,17 +146,24 @@ class Vulnerable : Buff(), Char.IIncomingDamageProc {
         private const val ELEMENT = "elem_"
         private const val LEFT = "left_"
 
-        fun add(target: Char, ratio: Float, dmgType: Damage.Type = Damage.Type.NORMAL, duration: Float): Vulnerable {
-            val v = Buff.affect(target, Vulnerable::class.java)
-            v.addEntry(ratio, dmgType, duration)
+        // The entry must be registered before the buff is attached: attachTo()
+        // refuses an entry-less instance, and Buff.affect() attaches immediately.
+        private fun entry(target: Char, add: (Vulnerable) -> Unit): Vulnerable {
+            target.buff(Vulnerable::class.java)?.let {
+                add(it)
+                return it
+            }
+            val v = Vulnerable()
+            add(v)
+            v.attachTo(target)
             return v
         }
 
-        fun add(target: Char, ratio: Float, element: Damage.Element, duration: Float): Vulnerable {
-            val v = Buff.affect(target, Vulnerable::class.java)
-            v.addEntry(ratio, element, duration)
-            return v
-        }
+        fun add(target: Char, ratio: Float, dmgType: Damage.Type = Damage.Type.NORMAL, duration: Float): Vulnerable =
+                entry(target) { it.addEntry(ratio, dmgType, duration) }
+
+        fun add(target: Char, ratio: Float, element: Damage.Element, duration: Float): Vulnerable =
+                entry(target) { it.addEntry(ratio, element, duration) }
     }
 }
 
