@@ -60,6 +60,7 @@ class RotGardenDigger : RectDigger() {
 
     private fun placePlant(level: Level, pos: Int, plant: Mob) {
         plant.pos = pos
+        plant.initialize()
         level.mobs.add(plant)
 
         PathFinder.NEIGHBOURS8.forEach {
