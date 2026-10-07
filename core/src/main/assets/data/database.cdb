@@ -882,7 +882,7 @@
 						{
 							"Magic": 0.5,
 							"Fire": -1,
-							"Poison": 0.5,
+							"Poison": 1.0,
 							"Ice": 0,
 							"Light": 0,
 							"Shadow": 0,
