@@ -36,6 +36,7 @@ import com.egoal.darkestpixeldungeon.messages.Messages
 import com.egoal.darkestpixeldungeon.ui.BuffIndicator
 import com.watabou.utils.Bundle
 import com.watabou.utils.Random
+import kotlin.math.max
 
 class Hunger : Buff(), Hero.Doom {
 
@@ -71,46 +72,44 @@ class Hunger : Buff(), Hero.Doom {
             val hero = target as Hero
 
             if (isStarving) {
-                // hunger costs 1/4 of the hero's fed regeneration rate per turn. every STEP
-                // turns the built-up damage pops once: a pop is always worth at least 1, and the
-                // integer part pops while the fraction is carried over to the next pop.
-                var dhp = HUNGER_DAMAGE_PER_TURN * STEP * hero.fedRegeneration()
+                // hunger costs 1/4 of the hero's fed regeneration rate per turn. the rate is
+                // accumulated every STEP and only settled once it passes 1: the whole number pops
+                // while the fraction is carried over to the next settle. a cursed-regen hero would
+                // never starve, so the rate is floored at MIN_REGEN.
+                var dhp = HUNGER_DAMAGE_PER_TURN * STEP * max(hero.fedRegeneration(), MIN_REGEN)
                 if (hero.heroPerk.get(RavenousAppetite::class.java) != null) dhp *= 1.5f
                 partialDamage += dhp
 
-                val dmg = if (partialDamage < 1f) {
-                    partialDamage = 0f
-                    1
-                } else {
-                    val i = partialDamage.toInt()
-                    partialDamage -= i.toFloat()
-                    i
-                }
+                if (partialDamage > 1f) {
+                    val dmg = partialDamage.toInt()
+                    partialDamage -= dmg.toFloat()
 
-                target.takeDamage(Damage(dmg, this, target)
-                        .type(Damage.Type.MAGICAL)
-                        .addFeature(Damage.Feature.PURE or Damage.Feature.HUNGER))
-                if (target.isAlive) {
-                    target.takeDamage(Damage(Random.Int(0, dmg + 1), this, target)
-                            .type(Damage.Type.MENTAL).addFeature(Damage.Feature.PURE))
-                    if (Random.Float() < 0.2f)
-                        (target as Hero).sayShort(HeroLines.WHY_NOT_EAT)
+                    target.takeDamage(Damage(dmg, this, target)
+                            .type(Damage.Type.MAGICAL)
+                            .addFeature(Damage.Feature.PURE or Damage.Feature.HUNGER))
+                    if (target.isAlive) {
+                        // mental damage does not scale with the pop
+                        target.takeDamage(Damage(Random.Int(0, 2), this, target)
+                                .type(Damage.Type.MENTAL).addFeature(Damage.Feature.PURE))
+                        if (Random.Float() < 0.2f)
+                            (target as Hero).sayShort(HeroLines.WHY_NOT_EAT)
 
-                    // 2026/9/29 made this change to make sure rogue get lvl 2 of this after taking 80 dmg
-                    val diet = hero.heroPerk.get(Dieting::class.java)
-                    if (diet == null || diet.level < 2) {
-                        dmgTokenInTotal += dmg
-                        if (diet == null && dmgTokenInTotal >= 100) {
-                            val newDiet = Dieting()
-                            hero.heroPerk.add(newDiet)
-                            PerkGain.Show(hero, newDiet)
-                            GLog.w(M.L(this, "dieting"))
-                            dmgTokenInTotal = 0
-                        } else if (diet != null && dmgTokenInTotal >= 80) {
-                            hero.heroPerk.add(diet)
-                            PerkGain.Show(hero, diet)
-                            GLog.w(M.L(this, "dieting2"))
-                            dmgTokenInTotal = 0
+                        // 2026/9/29 made this change to make sure rogue get lvl 2 of this after taking 80 dmg
+                        val diet = hero.heroPerk.get(Dieting::class.java)
+                        if (diet == null || diet.level < 2) {
+                            dmgTokenInTotal += dmg
+                            if (diet == null && dmgTokenInTotal >= 100) {
+                                val newDiet = Dieting()
+                                hero.heroPerk.add(newDiet)
+                                PerkGain.Show(hero, newDiet)
+                                GLog.w(M.L(this, "dieting"))
+                                dmgTokenInTotal = 0
+                            } else if (diet != null && dmgTokenInTotal >= 80) {
+                                hero.heroPerk.add(diet)
+                                PerkGain.Show(hero, diet)
+                                GLog.w(M.L(this, "dieting2"))
+                                dmgTokenInTotal = 0
+                            }
                         }
                     }
                 }
@@ -220,6 +219,9 @@ class Hunger : Buff(), Hero.Doom {
 
         // starving damage per turn, as a fraction of the hero's fed regeneration rate
         private const val HUNGER_DAMAGE_PER_TURN = 0.25f
+
+        // fed regeneration is floored here so cursed gear cannot make the hero starve-proof
+        private const val MIN_REGEN = 0.05f
 
         const val HUNGRY = 350f
         const val STARVING = 500f
