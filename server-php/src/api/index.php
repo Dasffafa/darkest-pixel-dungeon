@@ -38,7 +38,7 @@ function handle_stats() {
     $recent_count = (int) $stmt->fetchColumn();
 
     $class_rows = $pdo->query('SELECT hero_class, COUNT(*) AS c FROM spirits GROUP BY hero_class')->fetchAll();
-    $recent_rows = $pdo->query('SELECT username, hero_class, level, depth, created_at FROM spirits ORDER BY id DESC LIMIT 20')->fetchAll();
+    $recent_rows = $pdo->query('SELECT username, hero_class, level, depth, killed_by, victims, created_at FROM spirits ORDER BY id DESC LIMIT 20')->fetchAll();
 
     $by_class = array();
     foreach ($class_rows as $row) {
@@ -52,6 +52,8 @@ function handle_stats() {
             'hero_class' => $row['hero_class'],
             'level' => $row['level'] !== null ? (int) $row['level'] : null,
             'depth' => $row['depth'] !== null ? (int) $row['depth'] : null,
+            'killed_by' => $row['killed_by'],
+            'victims' => $row['victims'],
             'created_at' => (int) $row['created_at'],
         );
     }
@@ -240,6 +242,45 @@ function handle_random_epitaphs() {
     json_out(array('epitaphs' => $epitaphs), 200);
 }
 
+/** records a kill involving a shared spirit: who killed it, or whom it killed */
+function handle_report_kill() {
+    $data = json_decode(gunzip_body(read_body()), true);
+    if (!is_array($data)) fail(400, 'bad payload');
+
+    $uuid = sanitize_uuid(isset($data['uuid']) ? $data['uuid'] : null);
+    if ($uuid === null) fail(400, 'bad uuid');
+
+    $event = isset($data['event']) ? $data['event'] : '';
+    if ($event !== 'killed_by' && $event !== 'victim') fail(400, 'bad event');
+
+    $username = sanitize_username(isset($data['username']) ? $data['username'] : null);
+    if ($username === null) fail(400, 'bad username');
+
+    $pdo = db();
+    $stmt = $pdo->prepare('SELECT id, killed_by, victims FROM spirits WHERE uuid = ?');
+    $stmt->execute(array($uuid));
+    $row = $stmt->fetch();
+    if (!$row) json_out(array('ok' => false, 'reason' => 'unknown'), 200);
+
+    if ($event === 'killed_by') {
+        // a spirit dies once, so the first report wins
+        if ($row['killed_by'] === null || $row['killed_by'] === '') {
+            $stmt = $pdo->prepare('UPDATE spirits SET killed_by = ? WHERE id = ?');
+            $stmt->execute(array($username, $row['id']));
+        }
+    } else {
+        $victims = split_victims($row['victims']);
+        if (!in_array($username, $victims, true)) {
+            $victims[] = $username;
+            if (count($victims) > MAX_VICTIMS) $victims = array_slice($victims, -MAX_VICTIMS);
+            $stmt = $pdo->prepare('UPDATE spirits SET victims = ? WHERE id = ?');
+            $stmt->execute(array(implode(',', $victims), $row['id']));
+        }
+    }
+
+    json_out(array('ok' => true), 200);
+}
+
 function require_admin() {
     $token = isset($_SERVER['HTTP_X_ADMIN_TOKEN']) ? $_SERVER['HTTP_X_ADMIN_TOKEN'] : '';
     $admin = cfgv('admin_token');
@@ -305,6 +346,8 @@ if ($method === 'GET' && $path === 'health') {
     handle_recent_epitaphs();
 } elseif ($method === 'GET' && $path === 'v1/victory/recent') {
     handle_recent_victory();
+} elseif ($method === 'POST' && $path === 'v1/spirits/kill') {
+    handle_report_kill();
 } elseif ($method === 'POST' && $path === 'v1/spirits') {
     handle_upload_spirit();
 } elseif ($method === 'POST' && $path === 'v1/victory') {

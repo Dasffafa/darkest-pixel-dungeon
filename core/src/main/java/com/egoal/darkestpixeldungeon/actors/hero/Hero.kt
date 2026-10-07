@@ -1632,6 +1632,10 @@ class Hero : Char() {
             }
 
             Bones.leave()
+
+            // if a dark spirit struck the killing blow, tell the server whom it claimed
+            if (src is DarkSpirit) DarkSpirit.ReportKilledHero(src, Dungeon.hero.userName)
+
             val spiritRecord = DarkSpirit.PrepareDeath(deathRegeneration, deathCritChance)
             deathRegeneration = null
             deathCritChance = null

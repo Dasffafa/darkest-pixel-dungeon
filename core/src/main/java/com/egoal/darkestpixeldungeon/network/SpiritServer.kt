@@ -74,6 +74,22 @@ object SpiritServer {
         }
     }
 
+    /** reports a kill involving a shared spirit: who killed it, or whom it killed */
+    fun reportKill(uuid: String, event: String, username: String) {
+        if (!DarkestPixelDungeon.spiritSync() || !isConfigured) return
+        if (uuid.isBlank() || username.isBlank()) return
+
+        val body = buildJsonObject {
+            put("uuid", uuid)
+            put("event", event)
+            put("username", username)
+        }.toString().toByteArray(Charsets.UTF_8)
+
+        background {
+            request("POST", "$baseUrl/api/v1/spirits/kill", body, json = true, sendDeviceId = false)
+        }
+    }
+
     fun uploadEpitaph(userName: String, text: String) {
         if (!DarkestPixelDungeon.epitaphSync() || !isConfigured) return
         if (text.isBlank()) return
@@ -177,13 +193,13 @@ object SpiritServer {
         val isSuccessful get() = code in 200..299
     }
 
-    private fun request(method: String, url: String, body: ByteArray?, json: Boolean = false): Response {
+    private fun request(method: String, url: String, body: ByteArray?, json: Boolean = false, sendDeviceId: Boolean = true): Response {
         val conn = URL(url).openConnection() as HttpURLConnection
         try {
             conn.requestMethod = method
             conn.connectTimeout = CONNECT_TIMEOUT
             conn.readTimeout = READ_TIMEOUT
-            conn.setRequestProperty("X-Device-Id", DarkestPixelDungeon.deviceId())
+            if (sendDeviceId) conn.setRequestProperty("X-Device-Id", DarkestPixelDungeon.deviceId())
             if (body != null) {
                 conn.doOutput = true
                 conn.setRequestProperty(

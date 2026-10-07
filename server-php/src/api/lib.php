@@ -99,6 +99,34 @@ function sanitize_username($name) {
     return $name;
 }
 
+/** at most this many victim names are kept per spirit */
+define('MAX_VICTIMS', 20);
+
+function table_has_column($table, $col) {
+    $stmt = db()->query('PRAGMA table_info(' . $table . ')');
+    foreach ($stmt->fetchAll() as $row) {
+        if ($row['name'] === $col) return true;
+    }
+    return false;
+}
+
+function sanitize_uuid($s) {
+    if (!is_string($s)) return null;
+    if (!preg_match('/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/', $s)) return null;
+    return $s;
+}
+
+/** victim names live in one comma-separated column */
+function split_victims($raw) {
+    if (!is_string($raw) || trim($raw) === '') return array();
+    $out = array();
+    foreach (explode(',', $raw) as $name) {
+        $name = trim($name);
+        if ($name !== '') $out[] = $name;
+    }
+    return $out;
+}
+
 function allowed_prefixes() {
     return array(
         'com.egoal.darkestpixeldungeon.items.',
@@ -140,7 +168,7 @@ function validate_record(&$record) {
 
     $depth = isset($record['depth']) ? $record['depth'] : null;
     $level = isset($record['level']) ? $record['level'] : null;
-    if (!is_int($depth) || $depth < 0 || $depth > 10) return array(false, 'bad depth', array());
+    if (!is_int($depth) || $depth < 0 || $depth > 14) return array(false, 'bad depth', array());
     if (!is_int($level) || $level < 1 || $level > 50) return array(false, 'bad level', array());
     if (!array_key_exists('heldby', $record) || $record['heldby'] !== -1) return array(false, 'record is not free', array());
     if (!isset($record['perk']) || !is_array($record['perk']) || !isset($record['perk']['__className']) || !is_string($record['perk']['__className'])) {
@@ -267,78 +295,98 @@ function init_db() {
     $pdo = db();
     $pdo->exec('CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT)');
 
-    $flag = $pdo->query("SELECT v FROM meta WHERE k = 'schema_v1'")->fetchColumn();
-    if ($flag === '1') return;
+    if (get_meta('schema_v1') !== '1') {
+        $pdo->exec('CREATE TABLE IF NOT EXISTS spirits (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            device_id TEXT NOT NULL,
+            uuid TEXT,
+            depth INTEGER NOT NULL,
+            hero_class TEXT,
+            level INTEGER,
+            username TEXT,
+            epitaph TEXT,
+            record_json TEXT NOT NULL,
+            created_at INTEGER NOT NULL,
+            claimed_at INTEGER,
+            claimed_by TEXT,
+            killed_by TEXT,
+            victims TEXT
+        )');
+        $pdo->exec('CREATE INDEX IF NOT EXISTS idx_spirits_unclaimed ON spirits(claimed_at)');
 
-    $pdo->exec('CREATE TABLE IF NOT EXISTS spirits (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        device_id TEXT NOT NULL,
-        depth INTEGER NOT NULL,
-        hero_class TEXT,
-        level INTEGER,
-        username TEXT,
-        epitaph TEXT,
-        record_json TEXT NOT NULL,
-        created_at INTEGER NOT NULL,
-        claimed_at INTEGER,
-        claimed_by TEXT
-    )');
-    $pdo->exec('CREATE INDEX IF NOT EXISTS idx_spirits_unclaimed ON spirits(claimed_at)');
+        $pdo->exec('CREATE TABLE IF NOT EXISTS pending (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            device_id TEXT NOT NULL,
+            kind TEXT NOT NULL,
+            payload_json TEXT NOT NULL,
+            created_at INTEGER NOT NULL
+        )');
 
-    $pdo->exec('CREATE TABLE IF NOT EXISTS pending (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        device_id TEXT NOT NULL,
-        kind TEXT NOT NULL,
-        payload_json TEXT NOT NULL,
-        created_at INTEGER NOT NULL
-    )');
+        $pdo->exec('CREATE TABLE IF NOT EXISTS victory (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            device_id TEXT NOT NULL,
+            username TEXT,
+            speech TEXT,
+            created_at INTEGER NOT NULL
+        )');
 
-    $pdo->exec('CREATE TABLE IF NOT EXISTS victory (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        device_id TEXT NOT NULL,
-        username TEXT,
-        speech TEXT,
-        created_at INTEGER NOT NULL
-    )');
+        $pdo->exec('CREATE TABLE IF NOT EXISTS malice (
+            device_id TEXT PRIMARY KEY,
+            count INTEGER NOT NULL DEFAULT 0,
+            banned_until INTEGER NOT NULL DEFAULT 0
+        )');
 
-    $pdo->exec('CREATE TABLE IF NOT EXISTS malice (
-        device_id TEXT PRIMARY KEY,
-        count INTEGER NOT NULL DEFAULT 0,
-        banned_until INTEGER NOT NULL DEFAULT 0
-    )');
+        $pdo->exec('CREATE TABLE IF NOT EXISTS seed_epitaphs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            text TEXT NOT NULL
+        )');
 
-    $pdo->exec('CREATE TABLE IF NOT EXISTS seed_epitaphs (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        text TEXT NOT NULL
-    )');
+        $pdo->exec('CREATE TABLE IF NOT EXISTS epitaphs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            device_id TEXT NOT NULL,
+            name TEXT,
+            text TEXT NOT NULL,
+            created_at INTEGER NOT NULL
+        )');
 
-    $pdo->exec('CREATE TABLE IF NOT EXISTS epitaphs (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        device_id TEXT NOT NULL,
-        name TEXT,
-        text TEXT NOT NULL,
-        created_at INTEGER NOT NULL
-    )');
+        $pdo->exec('CREATE TABLE IF NOT EXISTS upload_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            device_id TEXT NOT NULL,
+            created_at INTEGER NOT NULL
+        )');
+        $pdo->exec('CREATE INDEX IF NOT EXISTS idx_upload_device ON upload_log(device_id, created_at)');
 
-    $pdo->exec('CREATE TABLE IF NOT EXISTS upload_log (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        device_id TEXT NOT NULL,
-        created_at INTEGER NOT NULL
-    )');
-    $pdo->exec('CREATE INDEX IF NOT EXISTS idx_upload_device ON upload_log(device_id, created_at)');
-
-    $count = (int) $pdo->query('SELECT COUNT(*) FROM seed_epitaphs')->fetchColumn();
-    if ($count === 0) {
-        $pdo->beginTransaction();
-        $stmt = $pdo->prepare('INSERT INTO seed_epitaphs(name, text) VALUES (?, ?)');
-        foreach (generate_seeds() as $pair) {
-            $stmt->execute($pair);
+        $count = (int) $pdo->query('SELECT COUNT(*) FROM seed_epitaphs')->fetchColumn();
+        if ($count === 0) {
+            $pdo->beginTransaction();
+            $stmt = $pdo->prepare('INSERT INTO seed_epitaphs(name, text) VALUES (?, ?)');
+            foreach (generate_seeds() as $pair) {
+                $stmt->execute($pair);
+            }
+            $pdo->commit();
         }
-        $pdo->commit();
+
+        $pdo->exec("REPLACE INTO meta(k, v) VALUES('schema_v1', '1')");
     }
 
-    $pdo->exec("REPLACE INTO meta(k, v) VALUES('schema_v1', '1')");
+    if (get_meta('schema_v2') !== '1') {
+        if (!table_has_column('spirits', 'uuid')) $pdo->exec('ALTER TABLE spirits ADD COLUMN uuid TEXT');
+        if (!table_has_column('spirits', 'killed_by')) $pdo->exec('ALTER TABLE spirits ADD COLUMN killed_by TEXT');
+        if (!table_has_column('spirits', 'victims')) $pdo->exec('ALTER TABLE spirits ADD COLUMN victims TEXT');
+        $pdo->exec('CREATE INDEX IF NOT EXISTS idx_spirits_uuid ON spirits(uuid)');
+
+        // backfill the uuid column for records uploaded before it existed
+        $rows = $pdo->query('SELECT id, record_json FROM spirits WHERE uuid IS NULL')->fetchAll();
+        $upd = $pdo->prepare('UPDATE spirits SET uuid = ? WHERE id = ?');
+        foreach ($rows as $row) {
+            $rec = json_decode($row['record_json'], true);
+            $uuid = is_array($rec) ? sanitize_uuid(isset($rec['uuid']) ? $rec['uuid'] : null) : null;
+            if ($uuid !== null) $upd->execute(array($uuid, $row['id']));
+        }
+
+        $pdo->exec("REPLACE INTO meta(k, v) VALUES('schema_v2', '1')");
+    }
 }
 
 function get_meta($key) {
@@ -381,9 +429,11 @@ function queue_pending($device, $kind, $payload) {
 }
 
 function publish_spirit($device, $record, $meta) {
-    $stmt = db()->prepare('INSERT INTO spirits(device_id, depth, hero_class, level, username, epitaph, record_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+    $uuid = sanitize_uuid(isset($record['uuid']) ? $record['uuid'] : null);
+    $stmt = db()->prepare('INSERT INTO spirits(device_id, uuid, depth, hero_class, level, username, epitaph, record_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
     $stmt->execute(array(
         $device,
+        $uuid,
         $meta['depth'],
         $meta['hero_class'],
         $meta['level'],

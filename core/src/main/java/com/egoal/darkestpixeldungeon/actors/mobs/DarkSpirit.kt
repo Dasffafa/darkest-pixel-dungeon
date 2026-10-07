@@ -15,13 +15,10 @@ import com.egoal.darkestpixeldungeon.actors.hero.perks.Perk
 import com.egoal.darkestpixeldungeon.effects.CellEmitter
 import com.egoal.darkestpixeldungeon.effects.PerkGain
 import com.egoal.darkestpixeldungeon.effects.Speck
-import com.egoal.darkestpixeldungeon.items.Generator
 import com.egoal.darkestpixeldungeon.items.Item
 import com.egoal.darkestpixeldungeon.items.armor.Armor
 import com.egoal.darkestpixeldungeon.items.potions.PotionOfHealing
-import com.egoal.darkestpixeldungeon.items.weapon.Inscription
 import com.egoal.darkestpixeldungeon.items.weapon.Weapon
-import com.egoal.darkestpixeldungeon.items.weapon.melee.MeleeWeapon
 import com.egoal.darkestpixeldungeon.messages.M
 import com.egoal.darkestpixeldungeon.network.BundleGuard
 import com.egoal.darkestpixeldungeon.network.SpiritServer
@@ -49,6 +46,7 @@ class DarkSpirit : Mob() {
     private var spiritClass = HeroClass.ROGUE
     private var spiritPerk: Perk? = null
     private var spiritName = DEFAULT_NAME
+    private var spiritUuid = ""
     private var spiritLevel = 1
     private var spiritArmor: Armor? = null
     private var spiritWeapon: Weapon? = null
@@ -60,7 +58,7 @@ class DarkSpirit : Mob() {
     init {
         applySpirit()
 
-        potions = Random.IntRange(2, 3)
+        potions = Random.IntRange(1, 2)
 
         state = WANDERING
 
@@ -72,7 +70,8 @@ class DarkSpirit : Mob() {
         spiritClass = record.heroClass
         spiritPerk = record.perk
         spiritName = record.userName
-        spiritLevel = record.level + Random.IntRange(2, 3)
+        spiritUuid = record.uuid
+        spiritLevel = record.level
         spiritArmor = record.armor
         spiritWeapon = record.weapon
         spiritStrength = strengthFor(record.depth)
@@ -194,6 +193,9 @@ class DarkSpirit : Mob() {
         // however it died, its record is gone for good
         RemoveSpiritStoredInSlot(GamesInProgress.curSlot)
 
+        // let the server know which player landed the killing blow
+        if (cause is Hero) SpiritServer.reportKill(spiritUuid, "killed_by", cause.userName)
+
         // the gear it carried may be left behind
         spiritWeapon?.let { if (Random.Float() < GEAR_DROP_CHANCE) Dungeon.level.drop(it, pos).sprite.drop() }
         spiritArmor?.let { if (Random.Float() < GEAR_DROP_CHANCE) Dungeon.level.drop(it, pos).sprite.drop() }
@@ -217,6 +219,7 @@ class DarkSpirit : Mob() {
         bundle.put(POTION_CD, potionCD)
 
         bundle.put(USERNAME, spiritName)
+        bundle.put(UUID, spiritUuid)
         bundle.put(LEVEL, spiritLevel)
         bundle.put(STRENGTH, spiritStrength)
         bundle.put(REGENERATION, spiritRegeneration)
@@ -230,6 +233,7 @@ class DarkSpirit : Mob() {
     override fun restoreFromBundle(bundle: Bundle) {
         // level snapshots saved before the spirit carried its own identity fall back to defaults
         spiritName = bundle.getString(USERNAME).ifEmpty { DEFAULT_NAME }
+        spiritUuid = bundle.getString(UUID)
         spiritLevel = bundle.getInt(LEVEL).coerceAtLeast(1)
         spiritStrength = if (bundle.contains(STRENGTH)) bundle.getInt(STRENGTH) else SPIRIT_STRENGTH_DEEP
         spiritRegeneration = if (bundle.contains(REGENERATION)) bundle.getFloat(REGENERATION) else 0f
@@ -312,17 +316,17 @@ class DarkSpirit : Mob() {
         private const val MAX_UPGRADE = 3
         private const val GEAR_DROP_CHANCE = 0.3f
 
-        /** the spirit haunts the dungeon this many floors below where its hero died */
-        private const val SPAWN_DEPTH_OFFSET = 5
+        /** the spirit appears on the deepest floor its hero ever reached, never the first floor */
+        private const val MIN_SPAWN_DEPTH = 2
+
+        /** deepest floor a spirit may be tied to */
+        private const val MAX_SPIRIT_DEPTH = 14
 
         /** enough for some tier-3 weapon */
         private const val SPIRIT_STRENGTH = 13
 
         /** spirits out of the deeper half of the range carry one more point */
         private const val SPIRIT_STRENGTH_DEEP = 14
-
-        private val WEAPON_TIER_CHANCES = floatArrayOf(0.66f, 0.31f, 0.02f)
-        private val TIER_2_WEAPON_CHANCES = floatArrayOf(0.33f, 0.62f, 0.05f)
 
         private fun strengthFor(depth: Int): Int = if (depth >= 6) SPIRIT_STRENGTH_DEEP else SPIRIT_STRENGTH
 
@@ -374,6 +378,11 @@ class DarkSpirit : Mob() {
             if (records.removeAll { it.uuid == uuid }) savePool(records)
         }
 
+        /** tells the server which player this spirit killed, if it is a shared one */
+        fun ReportKilledHero(spirit: DarkSpirit, victimName: String) {
+            SpiritServer.reportKill(spirit.spiritUuid, "victim", victimName)
+        }
+
         fun Gen(): DarkSpirit? {
             if (Dungeon.IsChallenged() || Statistics.DarkSpiritSpawned) return null
 
@@ -383,7 +392,7 @@ class DarkSpirit : Mob() {
             // this save already holds a spirit: cannot generate any new spirit in this run
             if (records.any { it.heldBy == slot }) return null
 
-            val record = records.firstOrNull { it.heldBy == NO_SLOT && it.depth + SPAWN_DEPTH_OFFSET == Dungeon.depth } ?: return null
+            val record = records.firstOrNull { it.heldBy == NO_SLOT && spawnDepthOf(it) == Dungeon.depth } ?: return null
 
             record.heldBy = slot
             savePool(records)
@@ -406,6 +415,9 @@ class DarkSpirit : Mob() {
             return dirty
         }
 
+        /** the floor [record]'s spirit appears on: its hero's deepest floor, never the first one */
+        private fun spawnDepthOf(record: SpiritRecord): Int = max(record.depth, MIN_SPAWN_DEPTH)
+
         private fun trimPool(records: MutableList<SpiritRecord>) {
             while (records.size > MAX_POOL_SIZE) {
                 val indexToRemove = records.indexOfFirst { it.heldBy == NO_SLOT }.let { if (it >= 0) it else 0 }
@@ -414,10 +426,11 @@ class DarkSpirit : Mob() {
         }
 
         private fun buildFromDeath(regeneration: Float?, critChance: Float?): SpiritRecord? {
-            if (Dungeon.depth !in 0..10 || Dungeon.bossLevel() || abs(Dungeon.depth - Dungeon.hero.lvl) > 5) return null
+            val deepest = Statistics.DeepestFloor
+            if (deepest !in 0..MAX_SPIRIT_DEPTH || Dungeon.bossLevel(deepest) || abs(deepest - Dungeon.hero.lvl) > 5) return null
 
             // those who won, die far above their max depth, or who are challenged drop no bones.
-            if (Statistics.AmuletObtained || Statistics.DeepestFloor - 5 >= Dungeon.depth || Dungeon.IsChallenged())
+            if (Statistics.AmuletObtained || deepest - 5 >= Dungeon.depth || Dungeon.IsChallenged())
                 return null
 
             val hero = Dungeon.hero
@@ -430,7 +443,7 @@ class DarkSpirit : Mob() {
 
             val perk = perks.random()
             return SpiritRecord(
-                    depth = Dungeon.depth,
+                    depth = deepest,
                     heldBy = NO_SLOT,
                     heroClass = hero.heroClass,
                     // a detached copy, keeping the level the dead hero had it at
@@ -444,54 +457,15 @@ class DarkSpirit : Mob() {
                     uuid = java.util.UUID.randomUUID().toString())
         }
 
-        /**
-         * The weapon the spirit will carry. One that is missing, or a plain tier-1, is too
-         * forgettable to haunt anyone with, so a stronger one is rolled instead; a tier-2
-         * one is rolled as well, with weights of its own.
-         */
-        private fun carriedWeapon(hero: Hero): Weapon {
-            val carried = hero.belongings.weapon as? Weapon
-
-            val weapon = when {
-                carried == null -> rollWeapon(WEAPON_TIER_CHANCES)
-                carried is MeleeWeapon && carried.tier <= 1 -> rollWeapon(WEAPON_TIER_CHANCES)
-                carried is MeleeWeapon && carried.tier == 2 -> rollWeapon(TIER_2_WEAPON_CHANCES)
-                else -> carried
-            }
+        /** the spirit carries exactly the weapon its hero died holding, upgrade capped as usual */
+        private fun carriedWeapon(hero: Hero): Weapon? {
+            val weapon = hero.belongings.weapon as? Weapon ?: return null
 
             capUpgrade(weapon)
             // known up front so the weapon does not "identify itself" while the spirit fights
             weapon.identify()
 
             return weapon
-        }
-
-        /** a re-rolled weapon is guaranteed to be either inscribed or cursed */
-        private fun rollWeapon(chances: FloatArray): MeleeWeapon {
-            val weapon = rollPlainWeapon(chances)
-            if (weapon.inscription != null || weapon.cursed) return weapon
-
-            return if (Random.Float() < 0.5f) {
-                weapon.inscribe()
-                weapon
-            } else {
-                rollPlainWeapon(chances).apply {
-                    inscribe(Inscription.randomNegative())
-                    cursed = true
-                }
-            }
-        }
-
-        private fun rollPlainWeapon(chances: FloatArray): MeleeWeapon {
-            val tier = 2 + Random.chances(chances)
-
-            // same guard as Ghost: a tier's generator is not guaranteed to hand back a melee weapon
-            var weapon: Weapon
-            do {
-                weapon = Generator.WEAPON.MELEE.tier(tier).generate() as Weapon
-            } while (weapon !is MeleeWeapon)
-
-            return weapon as MeleeWeapon
         }
 
         private fun <T : Item> capUpgrade(item: T?): T? {

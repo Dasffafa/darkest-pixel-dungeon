@@ -23,6 +23,8 @@ var I18N = {
     col_class: "职业",
     col_level: "等级",
     col_depth: "深度",
+    col_killed_by: "击杀者",
+    col_victims: "击杀过",
     col_time: "时间",
     col_epitaph: "遗言",
     col_speech: "感言",
@@ -59,6 +61,8 @@ var I18N = {
     col_class: "職業",
     col_level: "等級",
     col_depth: "深度",
+    col_killed_by: "擊殺者",
+    col_victims: "擊殺過",
     col_time: "時間",
     col_epitaph: "遺言",
     col_speech: "感言",
@@ -95,6 +99,8 @@ var I18N = {
     col_class: "Class",
     col_level: "Level",
     col_depth: "Depth",
+    col_killed_by: "Killed by",
+    col_victims: "Killed",
     col_time: "Time",
     col_epitaph: "Epitaph",
     col_speech: "Speech",
@@ -170,7 +176,7 @@ function renderStats(data) {
   if (!recent.length) {
     var emptyRow = document.createElement("tr");
     var emptyCell = document.createElement("td");
-    emptyCell.colSpan = 5;
+    emptyCell.colSpan = 7;
     emptyCell.textContent = t("empty");
     emptyRow.appendChild(emptyCell);
     tbody.appendChild(emptyRow);
@@ -185,6 +191,8 @@ function renderStats(data) {
       escapeHtml(className(item.hero_class)),
       escapeHtml(item.level),
       escapeHtml(item.depth),
+      escapeHtml(item.killed_by || ""),
+      escapeHtml(item.victims || ""),
       escapeHtml(new Date((item.created_at || 0) * 1000).toLocaleString())
     ];
     for (var c = 0; c < cells.length; c++) {
