@@ -23,6 +23,7 @@ package com.egoal.darkestpixeldungeon.actors.hero
 import com.egoal.darkestpixeldungeon.Assets
 import com.egoal.darkestpixeldungeon.DarkestPixelDungeon
 import com.egoal.darkestpixeldungeon.Dungeon
+import com.egoal.darkestpixeldungeon.Statistics
 import com.egoal.darkestpixeldungeon.actors.Char
 import com.egoal.darkestpixeldungeon.actors.buffs.Disarm
 import com.egoal.darkestpixeldungeon.actors.buffs.Hunger
@@ -290,7 +291,9 @@ abstract class HeroAction(var dst: Int = 0) {
                         Dungeon.deleteGame(true, true)
                         Game.switchScene(SurfaceScene::class.java)
                     }
-                } else if (Dungeon.depth == 1 && hero.belongings.getItem(Amulet::class.java) == null) {
+                } else if (Dungeon.depth == 1
+                        && hero.belongings.getItem(Amulet::class.java) == null
+                        && !Statistics.AmuletObtained) {
                     GameScene.show { WndMessage(Messages.get(hero, "leave")) }
                     hero.ready()
                 } else {
