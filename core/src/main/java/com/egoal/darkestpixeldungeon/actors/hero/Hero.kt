@@ -1111,7 +1111,10 @@ class Hero : Char() {
 
         curAction = defineAction(cell)
         if (curAction !is HeroAction.Move) stopContinuousMoving()
-        if (curAction is HeroAction.Move) lastAction = null // move cancel last action
+        if (curAction is HeroAction.Move) {
+            lastAction = null // move cancel last action
+            belongings.getItem(CloakOfSheep::class.java)?.tryAutoBlink(this, cell)
+        }
 
         return true
     }
