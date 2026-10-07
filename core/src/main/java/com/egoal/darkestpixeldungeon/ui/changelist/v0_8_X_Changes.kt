@@ -1,15 +1,18 @@
 package com.egoal.darkestpixeldungeon.ui.changelist
 
+import com.egoal.darkestpixeldungeon.actors.buffs.Pressure
 import com.egoal.darkestpixeldungeon.actors.buffs.Vulnerable
-import com.egoal.darkestpixeldungeon.actors.mobs.MadMan
+import com.egoal.darkestpixeldungeon.actors.mobs.npcs.Yvette
+import com.egoal.darkestpixeldungeon.effects.FloatingText
 import com.egoal.darkestpixeldungeon.messages.M
 import com.egoal.darkestpixeldungeon.sprites.ItemSpriteSheet
 import com.egoal.darkestpixeldungeon.ui.Icons
 import com.watabou.noosa.Image
+import com.egoal.darkestpixeldungeon.sprites.RotHeartSprite
 
 object v0_8_X_Changes {
 
-    const val VERSION = "0.8.1a"
+    const val VERSION = "0.8.1b"
 
     /**
      * Adds every release to [list] below [top], within [width], and returns the
@@ -27,12 +30,44 @@ object v0_8_X_Changes {
     }
 
     private fun sections(): List<ChangeInfo> = listOf(
+            header("0.8.1b"),
+
+            section("updates",
+                    entry("0.8.1b", "update_check", ChangeIcons.icon(Icons.INFO)),
+                    entry("0.8.1b", "epitaph", ChangeIcons.item(ItemSpriteSheet.GRAVE)),
+                    entry("0.8.1b", "spirit_record", ChangeIcons.icon(Icons.NETWORK)),
+                    entry("0.8.1b", "hunter_portrait", ChangeIcons.icon(Icons.HUNTRESS))),
+
+            section("adjustments",
+                    entry("0.8.1b", "hunger", ChangeIcons.item(ItemSpriteSheet.RATION)),
+                    entry("0.8.1b", "luck", ChangeIcons.icon(Icons.CLOVER)),
+                    entry("0.8.1b", "lucky_coin", ChangeIcons.item(ItemSpriteSheet.LUCKY_COIN)),
+                    entry("0.8.1b", "rogue_armor", ChangeIcons.icon(Icons.ROGUE)),
+                    entry("0.8.1b", "artifact", ChangeIcons.item(ItemSpriteSheet.ARTIFACT_HORN4)),
+                    entry("0.8.1b", "vulnerable", ChangeIcons.buff(Vulnerable())),
+                    entry("0.8.1b", "amulet_return", ChangeIcons.item(ItemSpriteSheet.AMULET))),
+
+            section("ui",
+                    entry("0.8.1b", "ranking", ChangeIcons.icon(Icons.RANKINGS)),
+                    entry("0.8.1b", "container", ChangeIcons.icon(Icons.BACKPACK)),
+                    entry("0.8.1b", "catalog", ChangeIcons.item(ItemSpriteSheet.DPD_BOOKS))),
+
+            section("fixes",
+                    entry("0.8.1b", "spellbook", ChangeIcons.item(ItemSpriteSheet.ARTIFACT_SPELLBOOK)),
+                    entry("0.8.1b", "rot_heart", RotHeartSprite()),
+                    entry("0.8.1b", "torch", ChangeIcons.item(ItemSpriteSheet.TORCH)),
+                    entry("0.8.1b", "text", ChangeIcons.icon(Icons.NOTES)),
+                    entry("0.8.1b", "yvette", Yvette.Sprite())),
+
+            section("others",
+                    entry("0.8.1b", "server", ChangeIcons.icon(Icons.SERVER))),
+
             header("0.8.1a"),
 
             section("updates",
                     entry("0.8.1a", "codex", ChangeIcons.item(ItemSpriteSheet.DPD_BOOKS)),
                     entry("0.8.1a", "luck", ChangeIcons.item(ItemSpriteSheet.LUCKY_COIN)),
-                    entry("0.8.1a", "pressure", MadMan.Sprite()),
+                    entry("0.8.1a", "pressure", ChangeIcons.buff(Pressure())),
                     entry("0.8.1a", "madness_mask", ChangeIcons.item(ItemSpriteSheet.MASK_OF_MADNESS))),
 
             section("adjustments",
@@ -42,18 +77,18 @@ object v0_8_X_Changes {
                     entry("0.8.1a", "elder_hand", ChangeIcons.item(ItemSpriteSheet.BONE_HAND)),
                     entry("0.8.1a", "vulnerable", ChangeIcons.buff(Vulnerable())),
                     entry("0.8.1a", "teleport", ChangeIcons.icon(Icons.COMPASS)),
-                    entry("0.8.1a", "latin_font", ChangeIcons.icon(Icons.NOTES)),
+                    entry("0.8.1a", "latin_font", ChangeIcons.icon(Icons.LANGS)),
                     entry("0.8.1a", "kusarigama", ChangeIcons.item(ItemSpriteSheet.KUSARIGAMA)),
                     entry("0.8.1a", "longest_spear", ChangeIcons.item(ItemSpriteSheet.LONGEST_SPEAR)),
                     entry("0.8.1a", "carvedstaff", ChangeIcons.item(ItemSpriteSheet.CARVED_STAFF))),
 
             section("ui",
-                    entry("0.8.1a", "damage_icons", ChangeIcons.icon(Icons.INFO)),
+                    entry("0.8.1a", "damage_icons", ChangeIcons.textIcon(FloatingText.PHYS_DMG)),
                     entry("0.8.1a", "turn_disc", ChangeIcons.icon(Icons.BUSY)),
                     entry("0.8.1a", "bag_drop", ChangeIcons.icon(Icons.BACKPACK)),
-                    entry("0.8.1a", "desktop_keys", ChangeIcons.icon(Icons.PREFS)),
-                    entry("0.8.1a", "spirit_sync", ChangeIcons.icon(Icons.SKULL)),
-                    entry("0.8.1a", "style_text", ChangeIcons.icon(Icons.WATA))),
+                    entry("0.8.1a", "desktop_keys", ChangeIcons.icon(Icons.KEYBOARD)),
+                    entry("0.8.1a", "spirit_sync", ChangeIcons.icon(Icons.NETWORK)),
+                    entry("0.8.1a", "style_text", ChangeIcons.icon(Icons.NOTES))),
 
             section("fixes",
                     entry("0.8.1a", "ring_identify", ChangeIcons.item(ItemSpriteSheet.RING_OPAL)),
