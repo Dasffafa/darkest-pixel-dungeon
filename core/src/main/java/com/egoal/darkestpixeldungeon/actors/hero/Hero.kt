@@ -302,7 +302,7 @@ class Hero : Char() {
     fun wealthBonus(): Int {
         var n = Ring.getBonus(this, RingOfWealth.Wealth::class.java)
         if (subClass == HeroSubClass.LANCER) --n
-        if (buff(Lucky::class.java) != null) ++n
+        buff(Lucky::class.java)?.let { n += it.level }
 
         return n
     }

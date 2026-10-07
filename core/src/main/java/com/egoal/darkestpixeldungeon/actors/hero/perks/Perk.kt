@@ -94,7 +94,8 @@ abstract class Perk(val maxLevel: Int = 1, var level: Int = 1) : Bundlable {
             override fun onGain() {
                 super.onGain()
                 Buff.affect(Dungeon.hero, Relieve::class.java).prolong(100f) // 100* 0.3f
-                Buff.prolong(Dungeon.hero, Lucky::class.java, 100f)
+                val lucky = Buff.prolong(Dungeon.hero, Lucky::class.java, Lucky.DURATION)
+                lucky.level = maxOf(lucky.level, 3)
             }
         }
 
