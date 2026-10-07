@@ -108,9 +108,29 @@ abstract class WndDialogue(image: Image?, text: String, what: String, vararg opt
         private const val MARGIN = 2f
 
         fun Show(mob: Mob, content: String, vararg options: String, callback: (Int) -> Unit) {
+            show(mob, content, options, null, callback)
+        }
+
+        /** like [Show], but the back button runs [onCancel] instead of closing silently */
+        fun Show(mob: Mob, content: String, vararg options: String,
+                 onCancel: (() -> Unit)?, callback: (Int) -> Unit) {
+            show(mob, content, options, onCancel, callback)
+        }
+
+        private fun show(mob: Mob, content: String, options: Array<out String>,
+                         onCancel: (() -> Unit)?, callback: (Int) -> Unit) {
             GameScene.show { object : WndDialogue(mob.sprite(), mob.name, content, *options) {
                 override fun onSelect(idx: Int) {
                     callback(idx)
+                }
+
+                override fun onBackPressed() {
+                    if (onCancel == null) {
+                        super.onBackPressed()
+                    } else {
+                        hide()
+                        onCancel()
+                    }
                 }
             } }
         }

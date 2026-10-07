@@ -43,6 +43,7 @@ class Yvette : NPC() {
 
     private var questGiven = false
     private var seenBefore = false // no store
+    private var bowOfferDismissed = false // no store
     private var foodGotten = false
     private var potionGotten = false
 
@@ -148,50 +149,8 @@ class Yvette : NPC() {
             return
         }
 
-        //todo: clean this
         if (potionGotten) {
-            val content = M.L(this, "thanks-for-scroll") + "\n\n" + M.L(this, "give-bow")
-            WndDialogue.Show(this, content, M.L(this, "decline_bow"), M.L(this, "bye")) {
-                if (it == 0) {
-                    GameScene.show {
-                        object : WndQuest(this, M.L(this, "give_key")) {
-                            override fun onBackPressed() {
-                                super.onBackPressed()
-                                Quest.Completed = true
-                                Dungeon.hero.recoverSanity(Random.Float(10f, 25f)) // recover much more.
-                                Dungeon.level.drop(IronKey(20), pos).sprite.drop()
-
-                                if (foodGotten) {
-                                    val perk = IntendedTransportation()
-                                    Dungeon.hero.heroPerk.add(perk)
-
-                                    PerkGain.Show(Dungeon.hero, perk)
-                                    GLog.p(Messages.get(Yvette::class.java, "taught", name))
-                                }
-
-                                this@Yvette.destroy()
-                                (sprite as Sprite).leave()
-                            }
-                        }
-                    }
-                } else {
-                    Quest.Completed = true
-                    Dungeon.hero.recoverSanity(Random.Float(4f, 10f))
-                    val bow = MagicBow().apply {
-                        identify()
-                        val p = Random.Float()
-                        when {
-                            p < 0.5f -> upgrade()
-                            p < 0.75f -> upgrade(2)
-                            p < 0.8f -> upgrade(3)
-                        }
-                    }
-                    Dungeon.level.drop(bow, pos).sprite.drop()
-
-                    this@Yvette.destroy()
-                    (sprite as Sprite).leave()
-                }
-            }
+            offerBow()
         } else {
             val content = M.L(this, "thanks-for-scroll") + M.L(this, "give-items") +
                     if (foodGotten) "\n\n" + Messages.get(this, "teach-teleportation") else ""
@@ -205,6 +164,86 @@ class Yvette : NPC() {
                 }
             }
         }
+    }
+
+    /** the farewell gift: the bow, or the key for whoever declines it */
+    private fun offerBow() {
+        val content = M.L(this, "thanks-for-scroll") + "\n\n" + M.L(this, "give-bow")
+        WndDialogue.Show(this, content, M.L(this, "decline_bow"), M.L(this, "bye"), onCancel = {
+            // dismissing the window is not an answer: press once, then take it as a refusal
+            if (bowOfferDismissed) {
+                declineGift()
+            } else {
+                bowOfferDismissed = true
+                WndDialogue.Show(this, M.L(this, "insist"), M.L(this, "insist-ok"),
+                        onCancel = { offerBow() }) {
+                    offerBow()
+                }
+            }
+        }) { it ->
+            if (it == 0) {
+                GameScene.show {
+                    object : WndQuest(this, M.L(this, "give_key")) {
+                        override fun onBackPressed() {
+                            super.onBackPressed()
+                            Quest.Completed = true
+                            Dungeon.hero.recoverSanity(Random.Float(10f, 25f)) // recover much more.
+                            Dungeon.level.drop(IronKey(20), pos).sprite.drop()
+                            teachTeleportation()
+
+                            this@Yvette.destroy()
+                            (sprite as Sprite).leave()
+                        }
+                    }
+                }
+            } else {
+                Quest.Completed = true
+                Dungeon.hero.recoverSanity(Random.Float(4f, 10f))
+                val bow = MagicBow().apply {
+                    identify()
+                    val p = Random.Float()
+                    when {
+                        p < 0.5f -> upgrade()
+                        p < 0.75f -> upgrade(2)
+                        p < 0.8f -> upgrade(3)
+                    }
+                }
+                Dungeon.level.drop(bow, pos).sprite.drop()
+
+                this@Yvette.destroy()
+                (sprite as Sprite).leave()
+            }
+        }
+    }
+
+    /** she gives up on the gift and departs, the kindness still owed */
+    private fun declineGift() {
+        WndDialogue.Show(this, M.L(this, "declined"), M.L(this, "declined-ok"),
+                onCancel = { departEmpty() }) {
+            departEmpty()
+        }
+    }
+
+    private fun departEmpty() {
+        Quest.Completed = true
+
+        GLog.i(Messages.get(this, "disappear", name))
+        Dungeon.hero.recoverSanity(Random.Float(4f, 10f))
+        teachTeleportation()
+
+        destroy()
+        (sprite as Sprite).leave()
+    }
+
+    /** the perk for having fed her; unrelated to the farewell gift */
+    private fun teachTeleportation() {
+        if (!foodGotten) return
+
+        val perk = IntendedTransportation()
+        Dungeon.hero.heroPerk.add(perk)
+
+        PerkGain.Show(Dungeon.hero, perk)
+        GLog.p(Messages.get(Yvette::class.java, "taught", name))
     }
 
     private fun onPotionGotten(potion: Potion) {
@@ -223,13 +262,7 @@ class Yvette : NPC() {
     private fun leave() {
         Quest.Completed = true
 
-        if (foodGotten) {
-            val perk = IntendedTransportation()
-            Dungeon.hero.heroPerk.add(perk)
-
-            PerkGain.Show(Dungeon.hero, perk)
-            GLog.p(Messages.get(this, "taught", name))
-        }
+        teachTeleportation()
 
         // ScrollOfTeleportation.appear(this, -1) // move outside
         GLog.i(Messages.get(this, "disappear", name))
