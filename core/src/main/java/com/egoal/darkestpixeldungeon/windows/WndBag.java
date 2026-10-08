@@ -160,6 +160,7 @@ public class WndBag extends WndTabbed {
     private static Mode lastMode;
     private static Bag lastBag;
     private static Filter lastFilter;
+    private static WndBag lastInstance;
 
     public WndBag(Bag bag, Listener listener, Mode mode, String title) {
         super();
@@ -185,6 +186,9 @@ public class WndBag extends WndTabbed {
         lastBag = bag;
 
         openedBag = bag;
+
+        if (lastInstance != null && lastInstance.parent != null) lastInstance.hide();
+        lastInstance = this;
 
         nCols = DarkestPixelDungeon.landscape() ? COLS_L : COLS_P;
         // +6+1 equipments and gold
@@ -227,7 +231,7 @@ public class WndBag extends WndTabbed {
 
     public static WndBag lastBag(Listener listener, Mode mode, String title) {
 
-        if (mode == lastMode && lastBag != null &&
+        if ((mode == lastMode || mode == Mode.FOR_SALE) && lastBag != null &&
                 Dungeon.INSTANCE.getHero().getBelongings().getBackpack().contains(lastBag)) {
             return new WndBag(lastBag, listener, mode, title);
         } else {
@@ -261,11 +265,6 @@ public class WndBag extends WndTabbed {
                 (ItemSpriteSheet.RING_HOLDER));
 
         boolean backpack = (container == Dungeon.INSTANCE.getHero().getBelongings().getBackpack());
-        if (!backpack && DarkestPixelDungeon.landscape()) {
-            count = nCols;
-            col = 0;
-            row = 1;
-        }
 
         //container itself is the 1st item if it is not the root backpack
         if(!backpack) {
@@ -296,6 +295,21 @@ public class WndBag extends WndTabbed {
             row = nRows - 1;
             col = nCols - 2;
             placeItem(goldClaw);
+
+            row = nRows - 1;
+            col = nCols - 1;
+            placeItem(new Gold(Dungeon.INSTANCE.getGold(), false));
+        }
+
+        // Portrait containers leave the last two slots empty; the backpack fills them with the claw and gold
+        if (!backpack && !DarkestPixelDungeon.landscape()) {
+            Item claw = Dungeon.INSTANCE.getHero().getBelongings().getItem(GoldenClaw.class);
+
+            if (claw != null) {
+                row = nRows - 1;
+                col = nCols - 2;
+                placeItem(claw);
+            }
 
             row = nRows - 1;
             col = nCols - 1;
@@ -526,14 +540,17 @@ public class WndBag extends WndTabbed {
             // the bag shown in its own window is not contained in itself, so it must bypass
             // the "is this item still in the bag" guard and be opened as a normal item
             boolean selfBag = (listener == null || mode == Mode.QUICKSLOT) && item == openedBag;
+
+            // the claw is shown in every window but only ever stored in the backpack
+            boolean carriedClaw = item != null && item == Dungeon.INSTANCE.getHero().getBelongings().getItem(GoldenClaw.class);
+
             if (!(item instanceof Gold) && !lastBag.contains(item)
-                    && !item.isEquipped(Dungeon.INSTANCE.getHero()) && !selfBag) {
+                    && !item.isEquipped(Dungeon.INSTANCE.getHero()) && !selfBag && !carriedClaw) {
 
                 hide();
 
             } else if (listener != null) {
-
-                hide();
+                if (mode != Mode.FOR_SALE) hide();
                 listener.onSelect(item);
 
             } else {
