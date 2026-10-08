@@ -30,7 +30,7 @@ class PotionBandolier : Bag() {
     init {
         image = ItemSpriteSheet.BANDOLIER
 
-        size = Belongings.BACKPACK_SIZE
+        size = Belongings.BACKPACK_SIZE - 1
     }
 
     override fun canHold(item: Item): Boolean = (item is Potion || item is Reagent) && super.canHold(item)

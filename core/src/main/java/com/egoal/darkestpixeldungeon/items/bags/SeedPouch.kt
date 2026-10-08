@@ -30,7 +30,7 @@ class SeedPouch : Bag() {
     init {
         image = ItemSpriteSheet.POUCH
 
-        size = Belongings.BACKPACK_SIZE
+        size = Belongings.BACKPACK_SIZE - 1
     }
 
     override fun canHold(item: Item): Boolean = item is Plant.Seed && super.canHold(item)

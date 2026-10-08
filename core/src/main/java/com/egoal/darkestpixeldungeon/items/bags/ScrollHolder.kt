@@ -30,7 +30,7 @@ class ScrollHolder : Bag() {
     init {
         image = ItemSpriteSheet.HOLDER
 
-        size = Belongings.BACKPACK_SIZE
+        size = Belongings.BACKPACK_SIZE - 1
     }
 
     override fun canHold(item: Item): Boolean = item is Scroll && super.canHold(item)

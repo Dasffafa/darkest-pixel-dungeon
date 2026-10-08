@@ -30,7 +30,7 @@ class WandHolster : Bag() {
     init {
         image = ItemSpriteSheet.HOLSTER
 
-        size = Belongings.BACKPACK_SIZE
+        size = Belongings.BACKPACK_SIZE - 1
     }
 
     override fun canHold(item: Item): Boolean = item is Wand && super.canHold(item)

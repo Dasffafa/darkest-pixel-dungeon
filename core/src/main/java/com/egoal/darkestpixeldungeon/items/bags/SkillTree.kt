@@ -13,7 +13,7 @@ class SkillTree : Bag() {
     init {
         image = ItemSpriteSheet.SKILL_TREE
 
-        size = Belongings.BACKPACK_SIZE + 2
+        size = Belongings.BACKPACK_SIZE - 1
     }
 
     override fun canHold(item: Item): Boolean = super.canHold(item) && item is Special
