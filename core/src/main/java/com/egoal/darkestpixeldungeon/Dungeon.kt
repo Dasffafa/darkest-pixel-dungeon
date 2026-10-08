@@ -699,9 +699,9 @@ object Dungeon {
         Hero.Preview(info, bundle.getBundle(HERO))
     }
 
-    fun fail(cause: Class<*>?) {
+    fun fail(cause: Class<*>?, causeName: String? = null) {
         if (hero.belongings.getItem(Ankh::class.java) == null) {
-            Rankings.Submit(false, cause)
+            Rankings.Submit(false, cause, causeName)
         }
     }
 

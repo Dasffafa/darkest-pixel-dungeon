@@ -35,12 +35,13 @@ object Rankings {
     var totalNumber = 0
     var wonNumber = 0
 
-    fun Submit(win: Boolean, cause: Class<*>?) {
+    fun Submit(win: Boolean, cause: Class<*>?, causeName: String? = null) {
         Load()
 
         // make new record
         val rec = Record().apply {
             this.cause = cause
+            this.causeName = causeName
             this.win = win
             userName = Dungeon.hero.userName
             heroClass = Dungeon.hero.heroClass
@@ -167,6 +168,7 @@ object Rankings {
             Dungeon.hero.lvl * (if (win) 26 * 2 else Dungeon.depth) * 100
 
     private const val REC_CAUSE = "cause"
+    private const val REC_CAUSE_NAME = "causeName"
     private const val REC_WIN = "win"
     private const val REC_SCORE = "score"
     private const val REC_TIER = "tier"
@@ -177,14 +179,16 @@ object Rankings {
     private const val REC_USER_NAME = "username"
 
     /** The same cause-of-death line shown in the rankings, used as the default epitaph. */
-    fun deathDescription(cause: Class<*>?): String {
+    fun deathDescription(cause: Class<*>?, causeName: String? = null): String {
         if (cause == null) return M.L(Record::class.java, "something")
-        val result = M.L(cause, "rankings_desc", M.L(cause, "name"))
+        val name = causeName?.takeIf { it.isNotBlank() } ?: M.L(cause, "name")
+        val result = M.L(cause, "rankings_desc", name)
         return if (result.contains("missed string")) M.L(Record::class.java, "something") else result
     }
 
     class Record : Bundlable {
         var cause: Class<*>? = null
+        var causeName: String? = null
         var win: Boolean = false
         var userName: String = "无名"
         lateinit var heroClass: HeroClass
@@ -197,15 +201,16 @@ object Rankings {
 
         var score = 0
 
-        fun desc(): String = if (cause == null) {
-            M.L(this, "something")
-        } else {
-            val result = M.L(cause!!, "rankings_desc", M.L(cause!!, "name"))
-            if (result.contains("missed string")) M.L(this, "something") else result
+        fun desc(): String {
+            val c = cause?: return M.L(this, "something")
+            val name = causeName?.takeIf { it.isNotBlank() } ?: M.L(c, "name")
+            val result = M.L(c, "rankings_desc", name)
+            return if (result.contains("missed string")) M.L(this, "something") else result
         }
 
         override fun storeInBundle(bundle: Bundle) {
             bundle.put(REC_CAUSE, cause)
+            bundle.put(REC_CAUSE_NAME, causeName)
 
             bundle.put(REC_WIN, win)
             bundle.put(REC_USER_NAME, userName)
@@ -221,6 +226,7 @@ object Rankings {
 
         override fun restoreFromBundle(bundle: Bundle) {
             cause = bundle.getClass(REC_CAUSE)
+            causeName = bundle.getString(REC_CAUSE_NAME).ifBlank { null }
 
             win = bundle.getBoolean(REC_WIN)
             userName = bundle.getString(REC_USER_NAME)
