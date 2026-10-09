@@ -206,7 +206,7 @@ class WndCatalogs(private val inRun: Boolean = false) : WndTabbed() {
         val icon: Visual = when (index) {
             0 -> ItemSprite(ItemSpriteSheet.POTION_CRIMSON, null)
             1 -> ItemSprite(ItemSpriteSheet.SCROLL_KAUNAN, null)
-            2 -> ItemSprite(ItemSpriteSheet.RING_HOLDER, null)
+            2 -> ItemSprite(ItemSpriteSheet.RING_DIAMOND, null)
             3 -> ItemSprite(ItemSpriteSheet.ARTIFACT_HOURGLASS, null)
             4 -> ItemSprite(ItemSpriteSheet.RATION, null)
             5 -> CrabSprite()
