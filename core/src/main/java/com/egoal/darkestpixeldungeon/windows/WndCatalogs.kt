@@ -503,6 +503,7 @@ class WndCatalogs(private val inRun: Boolean = false) : WndTabbed() {
 
     private fun showList(entryList: List<Entry>) {
         entries.clear()
+        perkCells.clear()
 
         val content = list.content()
         content.clear()
