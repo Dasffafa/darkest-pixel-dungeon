@@ -25,22 +25,41 @@ import com.egoal.darkestpixeldungeon.sprites.CrabSprite
 import com.egoal.darkestpixeldungeon.sprites.GhostSprite
 import com.egoal.darkestpixeldungeon.sprites.ItemSprite
 import com.egoal.darkestpixeldungeon.sprites.ItemSpriteSheet
+import com.egoal.darkestpixeldungeon.ui.IconButton
+import com.egoal.darkestpixeldungeon.ui.Icons
 import com.egoal.darkestpixeldungeon.ui.RedButton
 import com.egoal.darkestpixeldungeon.ui.RenderedTextMultiline
 import com.egoal.darkestpixeldungeon.ui.ScrollPane
 import com.egoal.darkestpixeldungeon.ui.Window
 import com.watabou.gltextures.TextureCache
+import com.watabou.input.ScrollEvent
 import com.watabou.noosa.ColorBlock
 import com.watabou.noosa.Image
 import com.watabou.noosa.Visual
 import com.watabou.noosa.ui.Component
 import com.watabou.utils.Log
+import com.watabou.utils.Signal
 import java.util.ArrayList
+import kotlin.math.floor
 
 class WndCatalogs(private val inRun: Boolean = false) : WndTabbed() {
 
     private val btnTitle: RedButton
 
+    /** the tabs are paged: one page of them is shown at a time, behind two arrows */
+    private var page = 0
+
+    private lateinit var arrowLeft: ArrowButton
+    private lateinit var arrowRight: ArrowButton
+
+    private val scrollListener = Signal.Listener<ScrollEvent> { event ->
+        if (isActive() && overStrip(event.pos.x, event.pos.y)) {
+            turnPage(if (event.amount < 0) 1 else -1)
+            true
+        } else {
+            false
+        }
+    }
     /** the sub-page buttons of every tab that has sub-pages, by tab index */
     private val sectionButtons = HashMap<Int, List<RedButton>>()
 
@@ -83,6 +102,26 @@ class WndCatalogs(private val inRun: Boolean = false) : WndTabbed() {
 
         val wndWidth = if (DarkestPixelDungeon.landscape()) WIDTH_L else WIDTH_P
         resize(wndWidth, HEIGHT)
+
+        // the strip is paged, so an arrow sits at either end of it
+        arrowLeft = object : ArrowButton(Image().apply {
+            flipHorizontal = true
+            copy(Icons.get(Icons.ARROW_RIGHT))
+        }) {
+            override fun onClick() {
+                turnPage(-1)
+            }
+        }
+        add(arrowLeft)
+
+        arrowRight = object : ArrowButton(Icons.get(Icons.ARROW_RIGHT)) {
+            override fun onClick() {
+                turnPage(1)
+            }
+        }
+        add(arrowRight)
+
+        ScrollEvent.addScrollListener(scrollListener)
 
         btnTitle = RedButton(titleText(), 9)
         btnTitle.textColor(Window.TITLE_COLOR)
@@ -151,6 +190,7 @@ class WndCatalogs(private val inRun: Boolean = false) : WndTabbed() {
             add(tab)
         }
 
+        page = pageOf(CurrentTab)
         layoutTabs()
 
         select(CurrentTab)
@@ -159,8 +199,8 @@ class WndCatalogs(private val inRun: Boolean = false) : WndTabbed() {
     private fun titleText(): String = M.L(WndCatalogs::class.java, TABS[CurrentTab])
 
     /**
-     * One icon per category, taken from the game's own art. Ten tabs share the
-     * width of the window, so every icon is scaled down to [TAB_ICON_SCALE].
+     * One icon per category, taken from the game's own art. Every tab is at
+     * least [MIN_TAB_WIDTH] wide, so the 16px art is drawn at its own size.
      */
     private fun tabIcon(index: Int): Visual {
         val icon: Visual = when (index) {
@@ -179,8 +219,110 @@ class WndCatalogs(private val inRun: Boolean = false) : WndTabbed() {
             else -> ItemSprite(ItemSpriteSheet.SOMETHING, null)
         }
 
-        icon.scale.set(TAB_ICON_SCALE, TAB_ICON_SCALE)
         return icon
+    }
+
+    override fun layoutTabs() {
+        if (tabs.isEmpty() || !::arrowLeft.isInitialized) return
+
+        val left = -chrome.marginLeft() + 1f
+        val right = left + stripWidth()
+        val stripHeight = tabHeight().toFloat()
+
+        val perPage = tabPageSize()
+        val pages = (tabs.size + perPage - 1) / perPage
+        page = page.coerceIn(0, pages - 1)
+
+        arrowLeft.setRect(left, height.toFloat(), ARROW_WIDTH, stripHeight)
+        arrowRight.setRect(right - ARROW_WIDTH, height.toFloat(), ARROW_WIDTH, stripHeight)
+        arrowLeft.dimmed(page == 0)
+        arrowRight.dimmed(page >= pages - 1)
+
+        // a short last page is centred between the two arrows
+        val area = stripWidth() - 2f * ARROW_WIDTH
+        val first = page * perPage
+        val count = minOf(perPage, tabs.size - first)
+        val tabWidth = floor(area / perPage)
+        val rowLeft = left + ARROW_WIDTH + floor((area - tabWidth * count) / 2f)
+
+        for ((i, tab) in tabs.withIndex()) {
+            val onPage = i >= first && i < first + count
+            tab.visible = onPage
+            if (onPage) {
+                tab.setSize(tabWidth, stripHeight)
+                tab.setPos(rowLeft + (i - first) * tabWidth, height.toFloat())
+            }
+        }
+    }
+
+    /** the width the tab strip has to share: the window plus its chrome */
+    private fun stripWidth(): Float = (width + chrome.marginHor() - 2).toFloat()
+
+    //How many tabs a page holds: as many as fit at [MIN_TAB_WIDTH], then
+    //spread evenly over the pages so the last one is not a stub.
+    private fun tabPageSize(): Int {
+        if (tabs.isEmpty()) return 1
+
+        val fit = maxOf(1, floor((stripWidth() - 2f * ARROW_WIDTH) / MIN_TAB_WIDTH).toInt())
+        val pages = (tabs.size + fit - 1) / fit
+        return (tabs.size + pages - 1) / pages
+    }
+
+    /** the page a tab is on */
+    private fun pageOf(tab: Int): Int = tab / tabPageSize()
+
+    private fun turnPage(delta: Int) {
+        val next = (page + delta).coerceIn(0, (tabs.size - 1) / tabPageSize())
+        if (next == page) return
+
+        page = next
+        layoutTabs()
+    }
+
+    private fun overStrip(x: Float, y: Float): Boolean {
+        val camera = camera() ?: return false
+        val p = camera.screenToCamera(x.toInt(), y.toInt())
+
+        return p.x >= -chrome.marginLeft() && p.x < width + chrome.marginRight() &&
+                p.y >= height && p.y < height + tabHeight()
+    }
+
+    override fun resize(w: Int, h: Int) {
+        super.resize(w, h)
+
+        // resize re-adds the tabs, so they are paged again here
+        if (tabs.isNotEmpty()) layoutTabs()
+    }
+
+    override fun destroy() {
+        ScrollEvent.removeScrollListener(scrollListener)
+
+        super.destroy()
+    }
+
+    /** an arrow at one end of the strip; with no further page it dims instead of vanishing */
+    private open class ArrowButton(private val arrow: Image) : IconButton(arrow) {
+
+        private var dim = false
+
+        fun dimmed(value: Boolean) {
+            dim = value
+            applyDim()
+        }
+
+        override fun onTouchDown() {
+            // a dead arrow neither flashes nor clicks
+            if (!dim) super.onTouchDown()
+        }
+
+        override fun onTouchUp() {
+            super.onTouchUp()
+            applyDim()
+        }
+
+        private fun applyDim() {
+            arrow.am = if (dim) ARROW_DIM else 1f
+        }
     }
 
     private fun selectSection(index: Int) {
@@ -571,6 +713,15 @@ class WndCatalogs(private val inRun: Boolean = false) : WndTabbed() {
         private const val HELMET_TAB = 8
         private const val WEAPON_TAB = 9
         private const val PERK_TAB = 10
+
+        /** width of the paging arrow at either end of the tab strip */
+        private const val ARROW_WIDTH = 13f
+
+        /** the narrowest a tab may be: a 16px icon with room to spare either side */
+        private const val MIN_TAB_WIDTH = 21f
+
+        /** how far a paging arrow with no further page to turn to is dimmed */
+        private const val ARROW_DIM = 0.35f
 
         /** eleven tabs share the window width, so every tab icon is drawn smaller */
         private const val TAB_ICON_SCALE = 0.6f
