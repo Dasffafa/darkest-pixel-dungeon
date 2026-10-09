@@ -174,6 +174,8 @@ class WndCatalogs(private val inRun: Boolean = false) : WndTabbed() {
                 override fun select(value: Boolean) {
                     super.select(value)
 
+                    active = true
+
                     icon.am = if (selected) 1f else 0.6f
 
                     if (selected) {
