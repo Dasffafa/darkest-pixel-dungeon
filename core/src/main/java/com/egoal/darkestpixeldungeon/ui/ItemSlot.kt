@@ -95,7 +95,10 @@ open class ItemSlot() : Button() {
 
     open fun item(item: Item?) {
         if (this.item === item) {
-            if (item != null) icon.frame(item.image())
+            if (item != null) {
+                icon.frame(item.image())
+                icon.glow(item.glowing())
+            }
             updateText()
             return
         }
