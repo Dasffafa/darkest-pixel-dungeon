@@ -287,6 +287,7 @@ abstract class Weapon : KindOfWeapon() {
         if (cursedKnown) Catalog.SetSeen(type)
         GLog.w(M.L(Weapon::class.java, "on_enchanted", name(), enchantments.first { it.javaClass == type }.name()))
 
+        updateQuickslot()
         return this
     }
 
