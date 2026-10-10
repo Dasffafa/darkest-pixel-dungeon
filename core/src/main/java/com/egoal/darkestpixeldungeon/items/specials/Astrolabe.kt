@@ -91,7 +91,7 @@ class Astrolabe : Special() {
 
         Sample.INSTANCE.play(Assets.SND_ASTROLABE)
 
-        val invokePositive = Random.Float() < if (cursed) .5f else .75f
+        val invokePositive = Random.Float() < .75f
 
         if (!invokePositive && blockNextNegative) {
             blockNextNegative = false
