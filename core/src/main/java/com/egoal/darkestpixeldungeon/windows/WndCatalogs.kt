@@ -34,6 +34,7 @@ import com.egoal.darkestpixeldungeon.ui.Window
 import com.watabou.gltextures.TextureCache
 import com.watabou.input.ScrollEvent
 import com.watabou.noosa.ColorBlock
+import com.watabou.noosa.Game
 import com.watabou.noosa.Image
 import com.watabou.noosa.Visual
 import com.watabou.noosa.ui.Component
@@ -46,7 +47,7 @@ class WndCatalogs(private val inRun: Boolean = false) : WndTabbed() {
 
     private val btnTitle: RedButton
 
-    /** the tabs are paged: one page of them is shown at a time, behind two arrows */
+    /** the tabs are paged: one full page of them is shown at a time, between two arrows */
     private var page = 0
 
     private lateinit var arrowLeft: ArrowButton
@@ -227,25 +228,27 @@ class WndCatalogs(private val inRun: Boolean = false) : WndTabbed() {
     override fun layoutTabs() {
         if (tabs.isEmpty() || !::arrowLeft.isInitialized) return
 
-        val left = -chrome.marginLeft() + 1f
-        val right = left + stripWidth()
+        // the row spans the whole bottom of the frame; the arrows sit just
+        // outside it, on the row's own line, so no tab width is spent on them
+        val left = -chrome.marginLeft().toFloat()
+        val strip = stripWidth()
         val stripHeight = tabHeight().toFloat()
 
-        val perPage = tabPageSize()
-        val pages = (tabs.size + perPage - 1) / perPage
+        val pages = pageCount()
         page = page.coerceIn(0, pages - 1)
 
-        arrowLeft.setRect(left, height.toFloat(), ARROW_WIDTH, stripHeight)
-        arrowRight.setRect(right - ARROW_WIDTH, height.toFloat(), ARROW_WIDTH, stripHeight)
+        arrowLeft.setRect(left - ARROW_WIDTH, height.toFloat(), ARROW_WIDTH, stripHeight)
+        arrowRight.setRect(left + strip, height.toFloat(), ARROW_WIDTH, stripHeight)
         arrowLeft.dimmed(page == 0)
         arrowRight.dimmed(page >= pages - 1)
 
-        // a short last page is centred between the two arrows
-        val area = stripWidth() - 2f * ARROW_WIDTH
-        val first = page * perPage
+        // the page slides: the last page keeps a full row by shifting back
+        // over the tabs the page before it already showed, never a stub
+        val perPage = tabPageSize()
+        val first = pageStart(page)
         val count = minOf(perPage, tabs.size - first)
-        val tabWidth = floor(area / perPage)
-        val rowLeft = left + ARROW_WIDTH + floor((area - tabWidth * count) / 2f)
+        val tabWidth = floor(strip / perPage)
+        val rowLeft = left + floor((strip - tabWidth * count) / 2f)
 
         for ((i, tab) in tabs.withIndex()) {
             val onPage = i >= first && i < first + count
@@ -257,24 +260,30 @@ class WndCatalogs(private val inRun: Boolean = false) : WndTabbed() {
         }
     }
 
-    /** the width the tab strip has to share: the window plus its chrome */
-    private fun stripWidth(): Float = (width + chrome.marginHor() - 2).toFloat()
+    /** the width the tab strip spans: the whole bottom of the frame */
+    private fun stripWidth(): Float = (width + chrome.marginHor()).toFloat()
 
-    //How many tabs a page holds: as many as fit at [MIN_TAB_WIDTH], then
-    //spread evenly over the pages so the last one is not a stub.
+    /** how many tabs a page holds: as many as fit at [MIN_TAB_WIDTH] */
     private fun tabPageSize(): Int {
         if (tabs.isEmpty()) return 1
 
-        val fit = maxOf(1, floor((stripWidth() - 2f * ARROW_WIDTH) / MIN_TAB_WIDTH).toInt())
-        val pages = (tabs.size + fit - 1) / fit
-        return (tabs.size + pages - 1) / pages
+        val fit = maxOf(1, floor(stripWidth() / MIN_TAB_WIDTH).toInt())
+        return minOf(tabs.size, fit)
+    }
+
+    private fun pageCount(): Int = (tabs.size + tabPageSize() - 1) / tabPageSize()
+
+    /** the first tab of a page: the last page slides back to stay full */
+    private fun pageStart(p: Int): Int {
+        val perPage = tabPageSize()
+        return minOf(p * perPage, tabs.size - perPage).coerceAtLeast(0)
     }
 
     /** the page a tab is on */
-    private fun pageOf(tab: Int): Int = tab / tabPageSize()
+    private fun pageOf(tab: Int): Int = (tab / tabPageSize()).coerceIn(0, pageCount() - 1)
 
     private fun turnPage(delta: Int) {
-        val next = (page + delta).coerceIn(0, (tabs.size - 1) / tabPageSize())
+        val next = (page + delta).coerceIn(0, pageCount() - 1)
         if (next == page) return
 
         page = next
@@ -291,6 +300,17 @@ class WndCatalogs(private val inRun: Boolean = false) : WndTabbed() {
 
     override fun resize(w: Int, h: Int) {
         super.resize(w, h)
+
+        // The arrows sit outside the frame, past the camera's own scissor, so
+        // the camera is widened by an arrow on either side to take them in. Its
+        // scroll shifts with it, which keeps the window itself where it was.
+        camera?.let { cam ->
+            cam.scroll.x = -chrome.marginLeft().toFloat() - ARROW_WIDTH
+            cam.resize(cam.width + (ARROW_WIDTH * 2).toInt(), cam.height)
+            cam.x = ((Game.width - cam.screenWidth()) / 2f).toInt()
+            shadow.boxRect(cam.x / cam.zoom + ARROW_WIDTH, cam.y / cam.zoom,
+                    chrome.width(), chrome.height())
+        }
 
         // resize re-adds the tabs, so they are paged again here
         if (tabs.isNotEmpty()) layoutTabs()
@@ -717,7 +737,7 @@ class WndCatalogs(private val inRun: Boolean = false) : WndTabbed() {
         private const val WEAPON_TAB = 9
         private const val PERK_TAB = 10
 
-        /** width of the paging arrow at either end of the tab strip */
+        /** width of the paging arrows that sit just outside the frame */
         private const val ARROW_WIDTH = 13f
 
         /** the narrowest a tab may be: a 16px icon with room to spare either side */
@@ -725,9 +745,6 @@ class WndCatalogs(private val inRun: Boolean = false) : WndTabbed() {
 
         /** how far a paging arrow with no further page to turn to is dimmed */
         private const val ARROW_DIM = 0.35f
-
-        /** eleven tabs share the window width, so every tab icon is drawn smaller */
-        private const val TAB_ICON_SCALE = 0.6f
 
         /** label keys of the monster tab's pages: five acts, then the depth-independent mobs */
         private val MOB_PAGES = arrayOf("act1", "act2", "act3", "act4", "act5", "universal")
