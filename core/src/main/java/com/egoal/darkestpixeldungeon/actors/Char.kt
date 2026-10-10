@@ -660,7 +660,7 @@ abstract class Char : Actor() {
 
                 if (visibleFight) {
                     if (defender === Dungeon.hero) {
-                        Dungeon.fail(attacker.javaClass)
+                        Dungeon.fail(attacker)
                         GLog.n(M.CL(Char::class.java, "kill", attacker.name))
                     } else if (attackerIsHero) {
                         (attacker as Hero).onKillChar(defender)

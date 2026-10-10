@@ -1,5 +1,6 @@
 package com.egoal.darkestpixeldungeon
 
+import com.egoal.darkestpixeldungeon.actors.Char
 import com.egoal.darkestpixeldungeon.actors.hero.Hero
 import com.egoal.darkestpixeldungeon.actors.hero.HeroClass
 import com.egoal.darkestpixeldungeon.items.Generator
@@ -35,12 +36,15 @@ object Rankings {
     var totalNumber = 0
     var wonNumber = 0
 
-    fun Submit(win: Boolean, cause: Class<*>?) {
+    fun Submit(win: Boolean, cause: Any?) {
         Load()
 
         // make new record
+        val causeClass = causeClassOf(cause)
+        val causeName = causeNameOf(cause)
         val rec = Record().apply {
-            this.cause = cause
+            this.cause = causeClass
+            this.causeName = causeName
             this.win = win
             userName = Dungeon.hero.userName
             heroClass = Dungeon.hero.heroClass
@@ -167,6 +171,7 @@ object Rankings {
             Dungeon.hero.lvl * (if (win) 26 * 2 else Dungeon.depth) * 100
 
     private const val REC_CAUSE = "cause"
+    private const val REC_CAUSE_NAME = "causeName"
     private const val REC_WIN = "win"
     private const val REC_SCORE = "score"
     private const val REC_TIER = "tier"
@@ -176,15 +181,28 @@ object Rankings {
     private const val REC_ID = "gameID"
     private const val REC_USER_NAME = "username"
 
-    /** The same cause-of-death line shown in the rankings, used as the default epitaph. */
-    fun deathDescription(cause: Class<*>?): String {
+    private fun causeClassOf(cause: Any?): Class<*>? = when (cause) {
+        null -> null
+        is Class<*> -> cause
+        else -> cause.javaClass
+    }
+
+    // Only Char kill carry an instance name;
+    private fun causeNameOf(cause: Any?): String? = (cause as? Char)?.name
+
+    // The same cause-of-death line shown in the rankings, used as the default epitaph.
+    fun deathDescription(cause: Any?): String = renderDeathDesc(causeClassOf(cause), causeNameOf(cause))
+
+    private fun renderDeathDesc(cause: Class<*>?, causeName: String?): String {
         if (cause == null) return M.L(Record::class.java, "something")
-        val result = M.L(cause, "rankings_desc", M.L(cause, "name"))
+        val name = causeName?.takeIf { it.isNotBlank() } ?: M.L(cause, "name")
+        val result = M.L(cause, "rankings_desc", name)
         return if (result.contains("missed string")) M.L(Record::class.java, "something") else result
     }
 
     class Record : Bundlable {
         var cause: Class<*>? = null
+        var causeName: String? = null
         var win: Boolean = false
         var userName: String = "无名"
         lateinit var heroClass: HeroClass
@@ -197,15 +215,11 @@ object Rankings {
 
         var score = 0
 
-        fun desc(): String = if (cause == null) {
-            M.L(this, "something")
-        } else {
-            val result = M.L(cause!!, "rankings_desc", M.L(cause!!, "name"))
-            if (result.contains("missed string")) M.L(this, "something") else result
-        }
+        fun desc(): String = renderDeathDesc(cause, causeName)
 
         override fun storeInBundle(bundle: Bundle) {
             bundle.put(REC_CAUSE, cause)
+            bundle.put(REC_CAUSE_NAME, causeName)
 
             bundle.put(REC_WIN, win)
             bundle.put(REC_USER_NAME, userName)
@@ -221,6 +235,7 @@ object Rankings {
 
         override fun restoreFromBundle(bundle: Bundle) {
             cause = bundle.getClass(REC_CAUSE)
+            causeName = bundle.getString(REC_CAUSE_NAME).ifBlank { null }
 
             win = bundle.getBoolean(REC_WIN)
             userName = bundle.getString(REC_USER_NAME)
