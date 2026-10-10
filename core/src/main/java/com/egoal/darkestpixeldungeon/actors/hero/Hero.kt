@@ -1276,7 +1276,7 @@ class Hero : Char() {
         super.recoverHP(adhp, src)
         if (buff(TorsoOfTheElder.HealthChecker::class.java) != null) HP = min(HP, (HT * .3f).toInt())
 
-        if (!isAlive) Dungeon.fail(src?.javaClass, (src as? Char)?.name)
+        if (!isAlive) Dungeon.fail(src)
     }
 
     override fun die(src: Any?) {
@@ -1670,7 +1670,7 @@ class Hero : Char() {
             Dungeon.deleteGame(true, true)
 
             // let the player leave last words; fallback to default if dismissed or blank
-            val default = Rankings.deathDescription(src?.javaClass, (src as? Char)?.name)
+            val default = Rankings.deathDescription(src)
             InputDialog.GetStringWithResult(Epitaphs.deathTitle(), default) { accepted, text ->
                 val epitaph = if (accepted) text.ifBlank { default } else default
                 DarkSpirit.CommitDeath(spiritRecord)

@@ -21,7 +21,6 @@
 package com.egoal.darkestpixeldungeon.windows;
 
 import com.egoal.darkestpixeldungeon.Statistics;
-import com.egoal.darkestpixeldungeon.actors.Char;
 import com.egoal.darkestpixeldungeon.actors.hero.Hero;
 import com.egoal.darkestpixeldungeon.ui.RedButton;
 import com.egoal.darkestpixeldungeon.ui.RenderedTextMultiline;
@@ -82,10 +81,8 @@ public class WndResurrect extends Window {
       public void onClick() {
         hide();
 
-        Object cause = WndResurrect.causeOfDeath;
-        Rankings.INSTANCE.Submit(false, cause.getClass(),
-          cause instanceof Char ? ((Char) cause).getName() : null);
-        Hero.Companion.ReallyDie(cause);
+        Rankings.INSTANCE.Submit(false, WndResurrect.causeOfDeath);
+        Hero.Companion.ReallyDie(WndResurrect.causeOfDeath);
       }
     };
     btnNo.setRect(0, btnYes.bottom() + GAP, WIDTH, BTN_HEIGHT);

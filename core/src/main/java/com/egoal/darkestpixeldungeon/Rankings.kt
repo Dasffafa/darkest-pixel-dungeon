@@ -1,5 +1,6 @@
 package com.egoal.darkestpixeldungeon
 
+import com.egoal.darkestpixeldungeon.actors.Char
 import com.egoal.darkestpixeldungeon.actors.hero.Hero
 import com.egoal.darkestpixeldungeon.actors.hero.HeroClass
 import com.egoal.darkestpixeldungeon.items.Generator
@@ -35,12 +36,14 @@ object Rankings {
     var totalNumber = 0
     var wonNumber = 0
 
-    fun Submit(win: Boolean, cause: Class<*>?, causeName: String? = null) {
+    fun Submit(win: Boolean, cause: Any?) {
         Load()
 
         // make new record
+        val causeClass = causeClassOf(cause)
+        val causeName = causeNameOf(cause)
         val rec = Record().apply {
-            this.cause = cause
+            this.cause = causeClass
             this.causeName = causeName
             this.win = win
             userName = Dungeon.hero.userName
@@ -178,8 +181,19 @@ object Rankings {
     private const val REC_ID = "gameID"
     private const val REC_USER_NAME = "username"
 
-    /** The same cause-of-death line shown in the rankings, used as the default epitaph. */
-    fun deathDescription(cause: Class<*>?, causeName: String? = null): String {
+    private fun causeClassOf(cause: Any?): Class<*>? = when (cause) {
+        null -> null
+        is Class<*> -> cause
+        else -> cause.javaClass
+    }
+
+    // Only Char kill carry an instance name;
+    private fun causeNameOf(cause: Any?): String? = (cause as? Char)?.name
+
+    // The same cause-of-death line shown in the rankings, used as the default epitaph.
+    fun deathDescription(cause: Any?): String = renderDeathDesc(causeClassOf(cause), causeNameOf(cause))
+
+    private fun renderDeathDesc(cause: Class<*>?, causeName: String?): String {
         if (cause == null) return M.L(Record::class.java, "something")
         val name = causeName?.takeIf { it.isNotBlank() } ?: M.L(cause, "name")
         val result = M.L(cause, "rankings_desc", name)
@@ -201,12 +215,7 @@ object Rankings {
 
         var score = 0
 
-        fun desc(): String {
-            val c = cause?: return M.L(this, "something")
-            val name = causeName?.takeIf { it.isNotBlank() } ?: M.L(c, "name")
-            val result = M.L(c, "rankings_desc", name)
-            return if (result.contains("missed string")) M.L(this, "something") else result
-        }
+        fun desc(): String = renderDeathDesc(cause, causeName)
 
         override fun storeInBundle(bundle: Bundle) {
             bundle.put(REC_CAUSE, cause)
