@@ -9,6 +9,7 @@ import com.egoal.darkestpixeldungeon.items.armor.Armor
 import com.egoal.darkestpixeldungeon.items.armor.ClothArmor
 import com.egoal.darkestpixeldungeon.items.armor.PlateArmor
 import com.egoal.darkestpixeldungeon.items.artifacts.CloakOfShadows
+import com.egoal.darkestpixeldungeon.items.artifacts.CloakOfSheep
 import com.egoal.darkestpixeldungeon.items.artifacts.SandalsOfNature
 import com.egoal.darkestpixeldungeon.items.artifacts.UnstableSpellbook
 import com.egoal.darkestpixeldungeon.items.bags.SeedPouch
@@ -367,8 +368,6 @@ enum class HeroClass(private val title: String, vararg subclasses: HeroSubClass)
         hero.HT = 1000
         hero.HP = hero.HT
 
-        LongestSpear().identify().upgrade(6).collect()
-        CarvedStaff().identify().upgrade(6).collect()
         Stylus().quantity(6).collect()
         Nunchakus().identify().collect()
         MeadWine().identify().collect()
@@ -401,9 +400,11 @@ enum class HeroClass(private val title: String, vararg subclasses: HeroSubClass)
         PlateArmor().identify().upgrade(6).collect()
         Claymore().identify().upgrade(6).collect()
 
-        Headgear().collect()
+        CloakOfSheep().collect()
+        CloakOfSheep().identify().upgrade(10).collect()
 
         Amulet().collect()
+
     }
 
     companion object {
