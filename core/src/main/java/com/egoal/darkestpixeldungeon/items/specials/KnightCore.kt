@@ -149,7 +149,7 @@ class KnightCore : Special() {
                 override fun onSelected(cell: Int) {
                     cd = cooldown
                     honor -= cost
-
+                    updateQuickslot()
                     hero.sprite.attack(cell) {
                         val enemy = Actor.findChar(cell)!!
                         val damage = Damage(hero.SHLD, hero, enemy).addFeature(Damage.Feature.ACCURATE)
@@ -200,7 +200,7 @@ class KnightCore : Special() {
         private fun duel(hero: Hero, enemy: Mob) {
             cd = cooldown
             honor -= cost
-
+            updateQuickslot()
             hero.say(M.L(this, "cry_${Random.Int(3)}"))
             hero.busy()
             doAttack(hero, enemy)
