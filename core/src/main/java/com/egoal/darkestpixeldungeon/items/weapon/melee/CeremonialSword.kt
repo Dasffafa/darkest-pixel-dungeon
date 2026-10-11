@@ -72,6 +72,7 @@ class CeremonialSword : MeleeWeapon() {
         } else {
             Buff.affect(hero, Bleeding::class.java).set(bleedValue(hero))
             enchant(BloodCoil::class.java, 10f)
+            updateQuickslot()
         }
     }
 

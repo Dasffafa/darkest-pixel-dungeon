@@ -194,6 +194,11 @@ public class ItemSprite extends MovieClip {
     return this;
   }
 
+    public void glow(Glowing glowing) {
+      this.glowing = glowing;
+      if (glowing == null) resetColor();
+  }
+
   public void frame(int image) {
     frame(film.get(image));
   }
