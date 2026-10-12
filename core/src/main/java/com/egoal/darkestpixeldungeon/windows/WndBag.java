@@ -261,11 +261,6 @@ public class WndBag extends WndTabbed {
                 (ItemSpriteSheet.RING_HOLDER));
 
         boolean backpack = (container == Dungeon.INSTANCE.getHero().getBelongings().getBackpack());
-        if (!backpack && DarkestPixelDungeon.landscape()) {
-            count = nCols;
-            col = 0;
-            row = 1;
-        }
 
         //container itself is the 1st item if it is not the root backpack
         if(!backpack) {
@@ -287,7 +282,9 @@ public class WndBag extends WndTabbed {
         }
 
         // Free Space
-        while (count - (backpack ? 6 : nCols) < (backpack ? container.getSize() - 1 : container.getSize())) {
+        int totalSlots = nCols * nRows;
+        int reserved = backpack ? 2 : 0;   // gold + goldclaw occupy last 2 slots
+        while (itemButtons.size() < totalSlots - reserved) {
             placeItem(null);
         }
 
