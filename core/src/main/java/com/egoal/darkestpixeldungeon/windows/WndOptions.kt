@@ -106,8 +106,9 @@ open class WndOptions : Window {
     }
 
     private fun updateSelectionHighlight() {
+        val highlight = showOptionHighlight()
         optionButtons.forEachIndexed { i, button ->
-            button.textColor(if (i == selectedIndex) TITLE_COLOR else 0xFFFFFF)
+            button.textColor(if (highlight && i == selectedIndex) TITLE_COLOR else 0xFFFFFF)
         }
     }
 
