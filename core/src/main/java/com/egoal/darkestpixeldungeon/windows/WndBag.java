@@ -160,6 +160,7 @@ public class WndBag extends WndTabbed {
     private static Mode lastMode;
     private static Bag lastBag;
     private static Filter lastFilter;
+    private static WndBag lastInstance;
 
     public WndBag(Bag bag, Listener listener, Mode mode, String title) {
         super();
@@ -185,6 +186,9 @@ public class WndBag extends WndTabbed {
         lastBag = bag;
 
         openedBag = bag;
+
+        if (lastInstance != null && lastInstance.parent != null) lastInstance.hide();
+        lastInstance = this;
 
         nCols = DarkestPixelDungeon.landscape() ? COLS_L : COLS_P;
         // +6+1 equipments and gold
@@ -227,7 +231,7 @@ public class WndBag extends WndTabbed {
 
     public static WndBag lastBag(Listener listener, Mode mode, String title) {
 
-        if (mode == lastMode && lastBag != null &&
+        if ((mode == lastMode || mode == Mode.FOR_SALE) && lastBag != null &&
                 Dungeon.INSTANCE.getHero().getBelongings().getBackpack().contains(lastBag)) {
             return new WndBag(lastBag, listener, mode, title);
         } else {
@@ -261,11 +265,6 @@ public class WndBag extends WndTabbed {
                 (ItemSpriteSheet.RING_HOLDER));
 
         boolean backpack = (container == Dungeon.INSTANCE.getHero().getBelongings().getBackpack());
-        if (!backpack && DarkestPixelDungeon.landscape()) {
-            count = nCols;
-            col = 0;
-            row = 1;
-        }
 
         //container itself is the 1st item if it is not the root backpack
         if(!backpack) {
@@ -347,6 +346,12 @@ public class WndBag extends WndTabbed {
     @Override
     protected int tabHeight() {
         return 20;
+    }
+
+    @Override
+    public void hide() {
+        if (lastInstance == this) lastInstance = null;
+        super.hide();
     }
 
     private class BagTab extends Tab {
@@ -532,8 +537,7 @@ public class WndBag extends WndTabbed {
                 hide();
 
             } else if (listener != null) {
-
-                hide();
+                if (mode != Mode.FOR_SALE) hide();
                 listener.onSelect(item);
 
             } else {
