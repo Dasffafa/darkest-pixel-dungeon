@@ -617,7 +617,7 @@ abstract class Mob : Char() {
 
     override fun die(cause: Any?) {
         var justDie = true
-        for (a in abilities) justDie = a.onDying(this) && justDie
+        for (a in abilities) justDie = a.onDying(this, cause) && justDie
 
         if (justDie) {
             Catalog.SetSeen(this)
