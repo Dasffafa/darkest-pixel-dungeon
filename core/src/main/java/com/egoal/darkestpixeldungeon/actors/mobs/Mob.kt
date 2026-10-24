@@ -66,6 +66,8 @@ abstract class Mob : Char() {
 
     lateinit var spriteClass: Class<out CharSprite> // leave to subclass
 
+    var fellIntoChasm = false
+
     protected var target = -1
 
     protected var enemy: Char? = null
@@ -633,7 +635,13 @@ abstract class Mob : Char() {
             if (Dungeon.hero.isAlive && !Dungeon.visible[pos])
                 GLog.i(M.L(this, "died"))
 
-            super.die(cause)
+            if (fellIntoChasm) {
+                // The sprite belongs to the falling animation now; playing the normal death
+                // animation here would show death frames and death particles on top of it.
+                destroy()
+            } else {
+                super.die(cause)
+            }
         }
     }
 
