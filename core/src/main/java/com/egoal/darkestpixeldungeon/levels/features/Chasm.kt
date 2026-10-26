@@ -5,6 +5,7 @@ import com.egoal.darkestpixeldungeon.Badges
 import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.actors.Char
 import com.egoal.darkestpixeldungeon.actors.Damage
+import com.egoal.darkestpixeldungeon.actors.SilentDeath
 import com.egoal.darkestpixeldungeon.actors.buffs.Bleeding
 import com.egoal.darkestpixeldungeon.actors.buffs.Buff
 import com.egoal.darkestpixeldungeon.actors.buffs.Cripple
@@ -27,7 +28,7 @@ import com.watabou.noosa.Game
 import com.watabou.noosa.audio.Sample
 import com.watabou.utils.Random
 
-object Chasm {
+object Chasm : SilentDeath {
     var JumpConfirmed = false
 
     fun HeroJump(hero: Hero) {
@@ -82,7 +83,6 @@ object Chasm {
 
     fun MobFall(mob: Mob) {
         val sprite = mob.sprite as MobSprite
-        mob.fellIntoChasm = true
         mob.die(Chasm::class.java)
         sprite.fall()
     }

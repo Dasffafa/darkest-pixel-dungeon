@@ -12,7 +12,6 @@ import com.egoal.darkestpixeldungeon.actors.mobs.Mob
 import com.egoal.darkestpixeldungeon.actors.mobs.MobSpawner
 import com.egoal.darkestpixeldungeon.effects.CellEmitter
 import com.egoal.darkestpixeldungeon.effects.Speck
-import com.egoal.darkestpixeldungeon.levels.features.Chasm
 import com.egoal.darkestpixeldungeon.messages.M
 import com.egoal.darkestpixeldungeon.scenes.GameScene
 import com.egoal.darkestpixeldungeon.utils.GLog
@@ -22,8 +21,6 @@ import com.watabou.utils.Random
 
 class ExplodeDying : Ability() {
     override fun onDying(belonger: Mob, cause: Any?): Boolean {
-
-        if (cause == Chasm::class.java) return super.onDying(belonger, cause)
 
         val heroWasAlive = Dungeon.hero.isAlive
 
@@ -52,8 +49,6 @@ class ExplodeDying : Ability() {
 class MentalExplodeDying : Ability() {
     override fun onDying(belonger: Mob, cause: Any?): Boolean {
 
-        if (cause == Chasm::class.java) return super.onDying(belonger, cause)
-
         val dis = Dungeon.level.distance(belonger.pos, Dungeon.hero.pos)
         if (Dungeon.hero.isAlive && dis <= 2) {
             val dmg = Damage(Random.NormalIntRange(1, Dungeon.depth / 2) + 1, this, Dungeon.hero).type(Damage.Type.MENTAL)
@@ -72,7 +67,6 @@ class RespawnDying(var mobclass: Class<out Mob>? = null) : Ability() {
     var respawnDelay = Random.Int(5, 10)
 
     override fun onDying(belonger: Mob, cause: Any?): Boolean {
-        if (cause == Chasm::class.java) return super.onDying(belonger, cause)
         val head = MobSpawner(mobclass ?: belonger.javaClass, respawnDelay)
         head.pos = belonger.pos
         GameScene.add(head)

@@ -25,6 +25,7 @@ import com.egoal.darkestpixeldungeon.*
 import com.egoal.darkestpixeldungeon.actors.Actor
 import com.egoal.darkestpixeldungeon.actors.Char
 import com.egoal.darkestpixeldungeon.actors.Damage
+import com.egoal.darkestpixeldungeon.actors.DeathSilence
 import com.egoal.darkestpixeldungeon.actors.buffs.*
 import com.egoal.darkestpixeldungeon.actors.hero.Hero
 import com.egoal.darkestpixeldungeon.actors.hero.perks.Assassin
@@ -65,8 +66,6 @@ abstract class Mob : Char() {
     var state = SLEEPING
 
     lateinit var spriteClass: Class<out CharSprite> // leave to subclass
-
-    var fellIntoChasm = false
 
     protected var target = -1
 
@@ -618,8 +617,12 @@ abstract class Mob : Char() {
     }
 
     override fun die(cause: Any?) {
+        val silent = DeathSilence.isSilent(cause)
         var justDie = true
-        for (a in abilities) justDie = a.onDying(this, cause) && justDie
+
+        if (!silent) {
+            for (a in abilities) justDie = a.onDying(this, cause) && justDie
+        }
 
         if (justDie) {
             Catalog.SetSeen(this)
@@ -635,13 +638,7 @@ abstract class Mob : Char() {
             if (Dungeon.hero.isAlive && !Dungeon.visible[pos])
                 GLog.i(M.L(this, "died"))
 
-            if (fellIntoChasm) {
-                // The sprite belongs to the falling animation now; playing the normal death
-                // animation here would show death frames and death particles on top of it.
-                destroy()
-            } else {
-                super.die(cause)
-            }
+            if (silent) destroy() else super.die(cause)
         }
     }
 
