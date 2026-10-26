@@ -80,7 +80,7 @@ public class WndWandmaker extends Window {
             BTN_HEIGHT);
     add(btnWand1);
     buttons.add(btnWand1);
-    btnWand1.textColor(TITLE_COLOR);
+    if(Window.showOptionHighlight()) btnWand1.textColor(TITLE_COLOR);
 
     RedButton btnWand2 = new RedButton(Wandmaker.Quest.INSTANCE.getWand2().name()) {
       @Override
@@ -100,7 +100,7 @@ public class WndWandmaker extends Window {
     if (key.pressed && !buttons.isEmpty()) {
       if (key.code == Input.Keys.UP || key.code == Input.Keys.DOWN) {
         selected = (selected + 1) % buttons.size();
-        for (int i = 0; i < buttons.size(); i++) buttons.get(i).textColor(i == selected ? TITLE_COLOR : 0xFFFFFF);
+        for (int i = 0; i < buttons.size(); i++) buttons.get(i).textColor(i == selected && Window.showOptionHighlight() ? TITLE_COLOR : 0xFFFFFF);
         return true;
       } else if (key.code == Input.Keys.ENTER) {
         buttons.get(selected).onClick();

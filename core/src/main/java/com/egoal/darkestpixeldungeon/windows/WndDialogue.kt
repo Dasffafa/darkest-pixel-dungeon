@@ -183,7 +183,7 @@ abstract class WndDialogue(image: Image?, text: String, what: String, vararg opt
         }
 
         fun select(value: Boolean) {
-            if (active) text.hardlight(if (value) Window.TITLE_COLOR else 0xFFFFFF)
+            if (active) text.hardlight(if (value && showOptionHighlight()) Window.TITLE_COLOR else 0xFFFFFF)
         }
     }
 }
