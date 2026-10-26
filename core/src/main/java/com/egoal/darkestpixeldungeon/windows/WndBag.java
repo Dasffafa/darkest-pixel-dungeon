@@ -35,6 +35,7 @@ import com.egoal.darkestpixeldungeon.items.EquipableItem;
 import com.egoal.darkestpixeldungeon.items.Item;
 import com.egoal.darkestpixeldungeon.items.armor.Armor;
 import com.egoal.darkestpixeldungeon.items.bags.Bag;
+import com.egoal.darkestpixeldungeon.items.bags.HatBag;
 import com.egoal.darkestpixeldungeon.items.bags.PotionBandolier;
 import com.egoal.darkestpixeldungeon.items.bags.ScrollHolder;
 import com.egoal.darkestpixeldungeon.items.bags.SeedPouch;
@@ -59,6 +60,7 @@ import com.egoal.darkestpixeldungeon.messages.Messages;
 import com.egoal.darkestpixeldungeon.plants.Plant;
 import com.egoal.darkestpixeldungeon.scenes.GameScene;
 import com.egoal.darkestpixeldungeon.scenes.PixelScene;
+import com.egoal.darkestpixeldungeon.sprites.ItemSprite;
 import com.egoal.darkestpixeldungeon.sprites.ItemSpriteSheet;
 import com.egoal.darkestpixeldungeon.ui.Icons;
 import com.egoal.darkestpixeldungeon.ui.ItemSlot;
@@ -212,6 +214,7 @@ public class WndBag extends WndTabbed {
                 stuff.getItem(ScrollHolder.class),
                 stuff.getItem(PotionBandolier.class),
                 stuff.getItem(WandHolster.class),
+                stuff.getItem(HatBag.class),
                 stuff.getItem(SkillTree.class)};
 
         for (Bag b : bags) {
@@ -394,6 +397,8 @@ public class WndBag extends WndTabbed {
                 return Icons.Companion.get(Icons.WAND_HOLSTER);
             } else if (bag instanceof PotionBandolier) {
                 return Icons.Companion.get(Icons.POTION_BANDOLIER);
+            } else if (bag instanceof HatBag) {
+                return new ItemSprite(ItemSpriteSheet.STRAW_HAT, null);
             } else if (bag instanceof SkillTree) {
                 return Icons.Companion.get(Icons.SKILL_TREE);
             } else {
