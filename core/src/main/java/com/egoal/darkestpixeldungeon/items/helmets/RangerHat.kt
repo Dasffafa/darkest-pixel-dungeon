@@ -6,6 +6,8 @@ import com.egoal.darkestpixeldungeon.sprites.ItemSpriteSheet
 import kotlin.math.max
 
 class RangerHat : Helmet() {
+    override val drawId: Int get() = 3
+    override val replacesHead: Boolean get() = false
     init {
         image = ItemSpriteSheet.HELMET_RANGER
     }

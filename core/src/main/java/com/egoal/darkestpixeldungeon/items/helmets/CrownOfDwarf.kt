@@ -8,6 +8,8 @@ import com.egoal.darkestpixeldungeon.sprites.ItemSpriteSheet
  */
 
 class CrownOfDwarf : Helmet() {
+    override val drawId: Int get() = 6
+    override val replacesHead: Boolean get() = false
     init {
         image = ItemSpriteSheet.DWARF_CROWN
     }

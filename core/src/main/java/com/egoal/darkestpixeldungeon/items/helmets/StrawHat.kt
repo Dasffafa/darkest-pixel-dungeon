@@ -9,6 +9,9 @@ class StrawHat : Helmet() {
         image = ItemSpriteSheet.STRAW_HAT
     }
 
+    override val drawId: Int get() = 0
+    override val replacesHead: Boolean get() = false
+
     override fun desc(): String = super.desc() + "\n\n" + M.L(this, "effect-desc")
 
     override val isIdentified: Boolean

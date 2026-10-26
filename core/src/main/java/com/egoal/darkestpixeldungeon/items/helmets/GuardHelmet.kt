@@ -6,6 +6,8 @@ import com.egoal.darkestpixeldungeon.messages.M
 import com.egoal.darkestpixeldungeon.sprites.ItemSpriteSheet
 
 class GuardHelmet : Helmet() {
+    override val drawId: Int get() = 8
+    override val replacesHead: Boolean get() = true
     init {
         image = ItemSpriteSheet.HELMET_GUARD
     }
