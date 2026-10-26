@@ -5,6 +5,7 @@ import com.egoal.darkestpixeldungeon.actors.Damage
 import com.egoal.darkestpixeldungeon.actors.buffs.Pressure
 import com.egoal.darkestpixeldungeon.actors.hero.perks.*
 import com.egoal.darkestpixeldungeon.effects.PerkGain
+import com.egoal.darkestpixeldungeon.items.Catalog
 import com.egoal.darkestpixeldungeon.items.armor.Armor
 import com.egoal.darkestpixeldungeon.items.armor.ClothArmor
 import com.egoal.darkestpixeldungeon.items.armor.PlateArmor
@@ -12,12 +13,14 @@ import com.egoal.darkestpixeldungeon.items.artifacts.CloakOfShadows
 import com.egoal.darkestpixeldungeon.items.artifacts.CloakOfSheep
 import com.egoal.darkestpixeldungeon.items.artifacts.SandalsOfNature
 import com.egoal.darkestpixeldungeon.items.artifacts.UnstableSpellbook
+import com.egoal.darkestpixeldungeon.items.bags.HatBag
 import com.egoal.darkestpixeldungeon.items.bags.SeedPouch
 import com.egoal.darkestpixeldungeon.items.bags.SkillTree
 import com.egoal.darkestpixeldungeon.items.food.Food
 import com.egoal.darkestpixeldungeon.items.food.MeadWine
 import com.egoal.darkestpixeldungeon.items.food.Wine
 import com.egoal.darkestpixeldungeon.items.helmets.Headgear
+import com.egoal.darkestpixeldungeon.items.helmets.Helmet
 import com.egoal.darkestpixeldungeon.items.potions.*
 import com.egoal.darkestpixeldungeon.items.scrolls.*
 import com.egoal.darkestpixeldungeon.items.unclassified.*
@@ -405,6 +408,15 @@ enum class HeroClass(private val title: String, vararg subclasses: HeroSubClass)
 
         Amulet().collect()
 
+        val hatBag = HatBag()
+        hatBag.identify().collect()
+        for (key in Catalog.HELMET.allItems()) {
+            (key.cls.newInstance() as Helmet).apply {
+                cursed = false
+                identify()
+                collect(hatBag)
+            }
+        }
     }
 
     companion object {
