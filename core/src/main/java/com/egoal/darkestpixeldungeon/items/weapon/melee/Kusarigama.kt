@@ -8,6 +8,7 @@ import com.egoal.darkestpixeldungeon.actors.Damage
 import com.egoal.darkestpixeldungeon.actors.buffs.Bleeding
 import com.egoal.darkestpixeldungeon.actors.buffs.Buff
 import com.egoal.darkestpixeldungeon.actors.buffs.Cripple
+import com.egoal.darkestpixeldungeon.actors.buffs.Paralysis
 import com.egoal.darkestpixeldungeon.actors.hero.Hero
 import com.egoal.darkestpixeldungeon.actors.hero.HeroAction
 import com.egoal.darkestpixeldungeon.effects.Chains
@@ -21,6 +22,7 @@ import com.egoal.darkestpixeldungeon.utils.GLog
 import com.watabou.noosa.audio.Sample
 import com.watabou.utils.Bundle
 import com.watabou.utils.Callback
+import com.watabou.utils.Random
 import java.util.ArrayList
 import kotlin.math.round
 
@@ -28,9 +30,8 @@ class Kusarigama : MeleeWeapon() {
 
     private var form = MELEE
 
-    // this is used to match the description: hammer in 1 hand and scythe in 1 hand. so the attack sound is alternating.
-    // this will not be stored in the game saves slot. it's unnecessary.
-    private var meleeSoundToggle = false
+    // true = sickle, false = hammer. flipped before each landed melee strike, so the first hit uses the hammer.
+    private var currentHand = true
 
     init {
         tier = 4
@@ -144,7 +145,7 @@ class Kusarigama : MeleeWeapon() {
         if (defender.properties().contains(Char.Property.IMMOVABLE)) return null
 
         val chain = Ballistica(attacker.pos, defender.pos, Ballistica.PROJECTILE)
-        if (chain.collisionPos != defender.pos || chain.path.size < 2 || Level.pit[chain.path[1]]) return null
+        if (chain.collisionPos != defender.pos || chain.path.size < 2) return null
 
         for (i in chain.subPath(1, chain.dist)) {
             if (!Level.solid[i] && Actor.findChar(i) == null) return i
@@ -152,18 +153,35 @@ class Kusarigama : MeleeWeapon() {
         return null
     }
 
-    // a sweet spot hit plays the slash effect and causes bleeding equal to 10% of the damage dealt
+    // a sweet spot hit plays the slash effect and causes bleeding equal to 1/7 of the damage dealt;
+    // melee hits alternate hands: the sickle may cause bleeding, the hammer may paralyse
     override fun proc(dmg: Damage): Damage {
         val d = super.proc(dmg)
 
-        if (form == RANGED && d.from is Hero && d.to is Char) {
-            val attacker = d.from as Hero
-            val defender = d.to as Char
+        if (d.from !is Hero || d.to !is Char) return d
+        val attacker = d.from as Hero
+        val defender = d.to as Char
+
+        if (form == RANGED) {
             if (Dungeon.level.distance(attacker.pos, defender.pos) == reachFactor(attacker)) {
                 KusarigamaSlash.slash(attacker, defender)
                 val bleed = d.value / 7
                 if (bleed > 0) Buff.affect(defender, Bleeding::class.java).set(bleed)
             }
+            return d
+        }
+
+        currentHand = !currentHand
+        if (d.value <= 0 || !defender.isAlive) return d
+
+        if (currentHand) {
+            if (Random.Float() < HAND_EFFECT_CHANCE) {
+                val bleed = round(d.value * HAND_BLEED_FACTOR).toInt()
+                if (bleed > 0) Buff.affect(defender, Bleeding::class.java).set(bleed)
+            }
+        } else {
+            if (Random.Float() < HAND_EFFECT_CHANCE)
+                Buff.prolong(defender, Paralysis::class.java, HAND_PARALYSIS_DURATION)
         }
 
         return d
@@ -178,11 +196,10 @@ class Kusarigama : MeleeWeapon() {
         return dmg
     }
 
-    // ranged form always sounds like the sickle, melee alternates hammer and sickle
+    // ranged form always sounds like the sickle, melee sounds like the hand that just struck
     override fun hitSound(): String? {
         if (form == RANGED) return Assets.SND_HIT2
-        meleeSoundToggle = !meleeSoundToggle
-        return if (meleeSoundToggle) Assets.SND_HIT else Assets.SND_HIT2
+        return if (currentHand) Assets.SND_HIT2 else Assets.SND_HIT
     }
 
     override fun desc(): String = super.desc() + "\n\n" + M.L(this, "desc_$form")
@@ -190,11 +207,14 @@ class Kusarigama : MeleeWeapon() {
     override fun storeInBundle(bundle: Bundle) {
         super.storeInBundle(bundle)
         bundle.put(FORM, form)
+        bundle.put(CURRENT_HAND, currentHand)
     }
 
     override fun restoreFromBundle(bundle: Bundle) {
         super.restoreFromBundle(bundle)
         form = bundle.getInt(FORM)
+        // saves from before hand tracking have no value; the next strike then uses the hammer
+        currentHand = if (bundle.contains(CURRENT_HAND)) bundle.getBoolean(CURRENT_HAND) else true
         applyForm()
     }
 
@@ -203,9 +223,14 @@ class Kusarigama : MeleeWeapon() {
         private const val RANGED = 1
 
         private const val SWEET_SPOT_DAMAGE = 1.33f
-        private const val MELEE_DAMAGE = 0.50f
+        private const val MELEE_DAMAGE = 0.66f
+
+        private const val HAND_EFFECT_CHANCE = 0.3f
+        private const val HAND_BLEED_FACTOR = 0.15f
+        private const val HAND_PARALYSIS_DURATION = 1f
 
         private const val AC_SWITCH = "switch"
         private const val FORM = "form"
+        private const val CURRENT_HAND = "current_hand"
     }
 }
