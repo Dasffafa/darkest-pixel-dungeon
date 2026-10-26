@@ -615,6 +615,9 @@ abstract class Mob : Char() {
         return exp
     }
 
+    /** Whether this mob is allowed to roll its loot table on death. */
+    protected open fun canDropLoot(): Boolean = Dungeon.hero.lvl <= Config.MaxLevel + 2
+
     override fun die(cause: Any?) {
         var justDie = true
         for (a in abilities) justDie = a.onDying(this) && justDie
@@ -622,7 +625,7 @@ abstract class Mob : Char() {
         if (justDie) {
             Catalog.SetSeen(this)
 
-            if (Dungeon.hero.lvl <= Config.MaxLevel + 2) {
+            if (canDropLoot()) {
                 val chance = Config.LootChance * 1.15f.pow(Dungeon.hero.wealthBonus()) *
                         (if (properties.contains(Property.ELITE)) 2f else 1f)
                 if (Random.Float() < chance) {
