@@ -104,6 +104,7 @@ class Kusarigama : MeleeWeapon() {
 
         form = MELEE
         applyForm()
+        updateQuickslot()
         attacker.busy()
 
         val onDragDone = Callback {

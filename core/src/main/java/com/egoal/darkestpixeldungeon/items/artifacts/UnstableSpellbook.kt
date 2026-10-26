@@ -135,12 +135,14 @@ class UnstableSpellbook : Artifact() {
                         cachedScroll = null
                     } else if (Random.Int(80 + 10 * soudorps) <= if (isFullyUpgraded) 2 else 1) {
                         charge--
+                        updateQuickslot()
                         // todo: scroll of enchanting cannot be constructed, fixme
 //                        val scroll = if (Random.Int(3) == 0) ScrollOfUpgrade() else ScrollOfEnchanting()
                         val scroll = ScrollOfUpgrade()
                         useScroll(scroll)
                     } else {
                         charge--
+                        updateQuickslot()
 
                         var scroll: Scroll?
                         do {
