@@ -5,6 +5,7 @@ import com.egoal.darkestpixeldungeon.Badges
 import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.actors.Char
 import com.egoal.darkestpixeldungeon.actors.Damage
+import com.egoal.darkestpixeldungeon.actors.SilentDeath
 import com.egoal.darkestpixeldungeon.actors.buffs.Bleeding
 import com.egoal.darkestpixeldungeon.actors.buffs.Buff
 import com.egoal.darkestpixeldungeon.actors.buffs.Cripple
@@ -27,7 +28,7 @@ import com.watabou.noosa.Game
 import com.watabou.noosa.audio.Sample
 import com.watabou.utils.Random
 
-object Chasm {
+object Chasm : SilentDeath {
     var JumpConfirmed = false
 
     fun HeroJump(hero: Hero) {
@@ -81,9 +82,10 @@ object Chasm {
     }
 
     fun MobFall(mob: Mob) {
-        // Falling is a separate removal path; passing Chasm prevents mob-specific
-        // death effects (such as the Skeleton's explosion) from being triggered.
+        val sprite = mob.sprite as MobSprite
+        if (Dungeon.hero.isAlive)
+            GLog.i(Messages.capitalize(Messages.get(Char::class.java, "defeat", mob.name)))
         mob.die(Chasm::class.java)
-        (mob.sprite as MobSprite).fall()
+        sprite.fall()
     }
 }
