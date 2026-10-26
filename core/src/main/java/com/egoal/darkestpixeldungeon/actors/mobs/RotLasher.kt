@@ -10,6 +10,7 @@ import com.egoal.darkestpixeldungeon.actors.buffs.Cripple
 
 import com.egoal.darkestpixeldungeon.items.Generator
 import com.egoal.darkestpixeldungeon.sprites.RotLasherSprite
+import com.watabou.utils.Bundle
 import com.watabou.utils.Random
 import kotlin.math.max
 import kotlin.math.min
@@ -37,6 +38,33 @@ class RotLasher : Mob() {
 
         enemySeen = true
     }
+
+    override fun storeInBundle(bundle: Bundle) {
+        super.storeInBundle(bundle)
+        bundle.put(STR_LEVEL, level)
+    }
+
+    override fun restoreFromBundle(bundle: Bundle) {
+        super.restoreFromBundle(bundle)
+
+        val ht = HT
+        val hp = HP
+        val shield = SHLD
+        val seen = enemySeen
+
+        // saves made before the level was persisted only carry the scaled HT
+        level = bundle.getInt(STR_LEVEL).takeIf { it > 0 } ?: max(1, ht / 5)
+        setLevel(level)
+
+        HT = ht
+        HP = hp
+        SHLD = shield
+        enemySeen = seen
+    }
+
+    // setLevel scales MaxLevel with the dungeon depth, but the seed is a
+    // guaranteed drop and must not disappear just because the hero outlevels it
+    override fun canDropLoot(): Boolean = true
 
     override fun act(): Boolean {
         if (enemy == null || !Dungeon.level.adjacent(pos, enemy!!.pos))
@@ -71,6 +99,8 @@ class RotLasher : Mob() {
     private inner class Waiting : Mob.Wandering()
 
     companion object {
+        private const val STR_LEVEL = "level"
+
         private val IMMUNITIES: HashSet<Class<*>> = hashSetOf(ToxicGas::class.java)
     }
 }
