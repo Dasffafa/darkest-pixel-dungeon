@@ -7,6 +7,8 @@ import com.egoal.darkestpixeldungeon.sprites.ItemSpriteSheet
 import com.watabou.utils.Random
 
 class HeaddressRegeneration: Helmet() {
+    override val drawId: Int get() = 7
+    override val replacesHead: Boolean get() = false
     init {
         image = ItemSpriteSheet.HEADDRESS_OF_REGENERATION
     }

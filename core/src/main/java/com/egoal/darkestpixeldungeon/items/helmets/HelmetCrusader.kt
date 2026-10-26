@@ -11,6 +11,9 @@ class HelmetCrusader : Helmet() {
         image = ItemSpriteSheet.HELMET_CRUSADER
     }
 
+    override val drawId: Int get() = 1
+    override val replacesHead: Boolean get() = true
+
     override fun desc(): String {
         var desc = super.desc()
         if (isIdentified) {

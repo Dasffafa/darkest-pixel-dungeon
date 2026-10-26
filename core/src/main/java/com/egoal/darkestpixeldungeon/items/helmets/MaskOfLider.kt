@@ -4,6 +4,8 @@ import com.egoal.darkestpixeldungeon.messages.Messages
 import com.egoal.darkestpixeldungeon.sprites.ItemSpriteSheet
 
 class MaskOfLider : Helmet() {
+    override val drawId: Int get() = 14
+    override val replacesHead: Boolean get() = true
     init {
         image = ItemSpriteSheet.RIDER_MASK
     }

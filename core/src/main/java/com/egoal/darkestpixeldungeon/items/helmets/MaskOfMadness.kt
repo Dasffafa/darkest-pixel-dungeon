@@ -10,6 +10,8 @@ import com.egoal.darkestpixeldungeon.utils.GLog
 import com.watabou.utils.Bundle
 
 class MaskOfMadness : Helmet() {
+    override val drawId: Int get() = 13
+    override val replacesHead: Boolean get() = true
     init {
         image = ItemSpriteSheet.MASK_OF_MADNESS
 

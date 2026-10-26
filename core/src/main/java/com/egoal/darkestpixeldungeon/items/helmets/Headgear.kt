@@ -8,6 +8,8 @@ import com.egoal.darkestpixeldungeon.sprites.ItemSpriteSheet
 import kotlin.math.round
 
 class Headgear : Helmet() {
+    override val drawId: Int get() = 18
+    override val replacesHead: Boolean get() = true
     init {
         image = ItemSpriteSheet.HEADGEAR
     }

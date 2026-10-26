@@ -8,6 +8,8 @@ import com.watabou.utils.Random
 import kotlin.math.round
 
 class TurtleScarf : Helmet() {
+    override val drawId: Int get() = 15
+    override val replacesHead: Boolean get() = false
     init {
         image = ItemSpriteSheet.TURTLE_SCARF_BLUE + Random.Int(4)
     }

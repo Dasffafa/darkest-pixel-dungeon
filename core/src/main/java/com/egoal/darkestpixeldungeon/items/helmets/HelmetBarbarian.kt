@@ -7,6 +7,8 @@ import com.egoal.darkestpixeldungeon.sprites.ItemSpriteSheet
 import com.watabou.utils.Random
 
 class HelmetBarbarian : Helmet() {
+    override val drawId: Int get() = 9
+    override val replacesHead: Boolean get() = true
     init {
         image = ItemSpriteSheet.HELMET_BARBARIAN
     }

@@ -4,6 +4,8 @@ import com.egoal.darkestpixeldungeon.messages.Messages
 import com.egoal.darkestpixeldungeon.sprites.ItemSpriteSheet
 
 class CircletEmerald : Helmet() {
+    override val drawId: Int get() = 5
+    override val replacesHead: Boolean get() = false
     init {
         image = ItemSpriteSheet.HELMET_EMERALD
     }

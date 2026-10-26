@@ -4,6 +4,8 @@ import com.egoal.darkestpixeldungeon.messages.M
 import com.egoal.darkestpixeldungeon.sprites.ItemSpriteSheet
 
 class CollarOfSlave : Helmet() {
+    override val drawId: Int get() = 16
+    override val replacesHead: Boolean get() = false
     init {
         image = ItemSpriteSheet.SLAVE_COLLAR;
     }

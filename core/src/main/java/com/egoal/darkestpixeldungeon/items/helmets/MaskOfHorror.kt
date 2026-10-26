@@ -6,6 +6,8 @@ import com.egoal.darkestpixeldungeon.sprites.ItemSpriteSheet
 import com.watabou.utils.Random
 
 class MaskOfHorror : Helmet() {
+    override val drawId: Int get() = 12
+    override val replacesHead: Boolean get() = true
     init {
         image = ItemSpriteSheet.HELMET_HORROR
     }

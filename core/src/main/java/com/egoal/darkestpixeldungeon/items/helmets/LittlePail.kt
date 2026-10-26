@@ -7,6 +7,8 @@ import com.egoal.darkestpixeldungeon.sprites.ItemSpriteSheet
 import com.watabou.utils.Random
 
 class LittlePail : Helmet() {
+    override val drawId: Int get() = 10
+    override val replacesHead: Boolean get() = true
     init {
         image = ItemSpriteSheet.LITTLE_PAIL
     }

@@ -6,6 +6,7 @@ import com.egoal.darkestpixeldungeon.items.EquipableItem
 import com.egoal.darkestpixeldungeon.items.Item
 import com.egoal.darkestpixeldungeon.messages.Messages
 import com.egoal.darkestpixeldungeon.utils.GLog
+import com.egoal.darkestpixeldungeon.sprites.HeroSprite
 import com.watabou.utils.Bundle
 import com.watabou.utils.Random
 
@@ -13,6 +14,9 @@ import com.watabou.utils.Random
 open class Helmet(private var ticksToKnow: Int = TICKS_TO_KNOW) : EquipableItem() {
     override val isUpgradable: Boolean
         get() = false
+
+    open val drawId: Int get() = -1
+    open val replacesHead: Boolean get() = false
 
     //todo:
     open fun uncurse() {}
@@ -30,6 +34,7 @@ open class Helmet(private var ticksToKnow: Int = TICKS_TO_KNOW) : EquipableItem(
             }
 
             activate(hero)
+            (hero.sprite as? HeroSprite)?.updateHelmet()
 
             hero.spendAndNext(time2equip(hero))
             return true
@@ -52,6 +57,7 @@ open class Helmet(private var ticksToKnow: Int = TICKS_TO_KNOW) : EquipableItem(
     override fun doUnequip(hero: Hero, collect: Boolean, single: Boolean): Boolean =
             if (super.doUnequip(hero, collect, single)) {
                 hero.belongings.helmet = null
+                (hero.sprite as? HeroSprite)?.updateHelmet()
                 true
             } else
                 false

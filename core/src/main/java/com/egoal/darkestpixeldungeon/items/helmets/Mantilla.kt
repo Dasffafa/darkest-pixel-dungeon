@@ -4,6 +4,8 @@ import com.egoal.darkestpixeldungeon.messages.Messages
 import com.egoal.darkestpixeldungeon.sprites.ItemSpriteSheet
 
 class Mantilla : Helmet() {
+    override val drawId: Int get() = 17
+    override val replacesHead: Boolean get() = false
     init {
         image = ItemSpriteSheet.MANTILLA
     }
