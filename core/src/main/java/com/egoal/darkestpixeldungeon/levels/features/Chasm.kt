@@ -83,6 +83,8 @@ object Chasm : SilentDeath {
 
     fun MobFall(mob: Mob) {
         val sprite = mob.sprite as MobSprite
+        if (Dungeon.hero.isAlive)
+            GLog.i(Messages.capitalize(Messages.get(Char::class.java, "defeat", mob.name)))
         mob.die(Chasm::class.java)
         sprite.fall()
     }
