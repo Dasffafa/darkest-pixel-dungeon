@@ -470,7 +470,7 @@ abstract class Level : Bundlable {
     fun removeLuminary(lum: Luminary) {
         if (!luminaries.remove(lum)) return
         invalidateLightMap()
-        val lv = lum.visual()
+        val lv = lum.peekVisual()
         if (lv != null) visuals.remove(lv)
     }
 

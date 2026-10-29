@@ -17,15 +17,25 @@ open class Luminary(var pos: Int = -1) {
     }
 
     fun visual(): LightVisual? {
-        if (visual == null)
+        if (visual == null || visual!!.destroyed)
             visual = createVisual()
         return visual
     }
 
+    fun peekVisual(): LightVisual? = visual?.takeIf { !it.destroyed }
+
     protected open fun createVisual(): LightVisual? = TorchLight(pos)
 
     // 
-    abstract class LightVisual(val cell: Int) : Emitter()
+    abstract class LightVisual(val cell: Int) : Emitter() {
+        var destroyed = false
+            private set
+
+        override fun destroy() {
+            destroyed = true
+            super.destroy()
+        }
+    }
 
     open class TorchLight(cell: Int) : LightVisual(cell) {
         init {
