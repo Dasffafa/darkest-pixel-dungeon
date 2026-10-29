@@ -42,7 +42,7 @@ import com.watabou.noosa.audio.Sample;
 public class WndSettings extends WndTabbed {
 
   private static final int WIDTH = 112;
-  private static final int HEIGHT = 124;
+  private static final int HEIGHT = 128;
   private static final int SLIDER_HEIGHT = 25;
   private static final int BTN_HEIGHT = 20;
   private static final int GAP_TINY = 2;
@@ -58,10 +58,6 @@ public class WndSettings extends WndTabbed {
   private static int last_index = 0;
 
   public WndSettings() {
-    this(false);
-  }
-
-  public WndSettings(boolean settableLanguage) {
     super();
 
     game = new GameTab();
@@ -70,7 +66,7 @@ public class WndSettings extends WndTabbed {
     screen = new ScreenTab();
     add(screen);
 
-    ui = new UITab(settableLanguage);
+    ui = new UITab();
     add(ui);
 
     audio = new AudioTab();
@@ -385,7 +381,7 @@ public class WndSettings extends WndTabbed {
 
   private class UITab extends Group {
 
-    public UITab(boolean lang) {
+    public UITab() {
       super();
 
       RenderedText barDesc = PixelScene.renderText(Messages.get(this, "mode")
@@ -428,26 +424,21 @@ public class WndSettings extends WndTabbed {
       add(btnCentered);
       btnCentered.enable(false);
 
-      float btm = btnCentered.bottom();
-      if (lang) {
-        RedButton btnLanguage = new RedButton(Messages.get(this, "language")) {
-          @Override
-          public void onClick() {
-            com.watabou.noosa.Group p = WndSettings.this.parent;
-            if (p != null) {
-              p.add(new WndLangs());
-            } else if (Game.scene() != null) {
-              Game.scene().add(new WndLangs());
-            }
-            WndSettings.this.hide();
+      RedButton btnLanguage = new RedButton(Messages.get(this, "language")) {
+        @Override
+        public void onClick() {
+          com.watabou.noosa.Group p = WndSettings.this.parent;
+          if (p != null) {
+            p.add(new WndLangs());
+          } else if (Game.scene() != null) {
+            Game.scene().add(new WndLangs());
           }
-        };
-        btnLanguage.setRect(0, btnCentered.bottom() + GAP_TINY, WIDTH,
-                BTN_HEIGHT);
-        add(btnLanguage);
-
-        btm = btnLanguage.bottom();
-      }
+          WndSettings.this.hide();
+        }
+      };
+      btnLanguage.setRect(0, btnCentered.bottom() + GAP_TINY, WIDTH,
+              BTN_HEIGHT);
+      add(btnLanguage);
 
       OptionSlider slots = new OptionSlider(Messages.get(this, "quickslots"),
               "0", "8", 0, 8) {
@@ -458,7 +449,7 @@ public class WndSettings extends WndTabbed {
         }
       };
       slots.setSelectedValue(DarkestPixelDungeon.quickSlots());
-      slots.setRect(0, btm + GAP_TINY, WIDTH, SLIDER_HEIGHT);
+      slots.setRect(0, btnLanguage.bottom() + GAP_TINY, WIDTH, SLIDER_HEIGHT);
       add(slots);
 
       CheckBox chkMoreSlots = new CheckBox(M.INSTANCE.L(this, "more_slots")){
