@@ -24,8 +24,10 @@ import com.egoal.darkestpixeldungeon.DarkestPixelDungeon;
 import com.egoal.darkestpixeldungeon.ui.RenderedTextMultiline;
 import com.egoal.darkestpixeldungeon.messages.Languages;
 import com.egoal.darkestpixeldungeon.messages.Messages;
+import com.egoal.darkestpixeldungeon.scenes.GameScene;
 import com.egoal.darkestpixeldungeon.scenes.PixelScene;
 import com.egoal.darkestpixeldungeon.scenes.TitleScene;
+import com.egoal.darkestpixeldungeon.ui.GameLog;
 import com.egoal.darkestpixeldungeon.ui.RedButton;
 import com.egoal.darkestpixeldungeon.ui.Window;
 import com.watabou.noosa.ColorBlock;
@@ -66,18 +68,36 @@ public class WndLangs extends Window {
         @Override
         public void onClick() {
           super.onClick();
-          Messages.setup(langs.get(langIndex));
-          DarkestPixelDungeon.switchNoFade(TitleScene.class, new Game
+
+          final Languages picked = langs.get(langIndex);
+          if (picked == currLang) return;
+          final boolean inGame = Game.scene() instanceof GameScene;
+
+          Class<? extends PixelScene> target =
+                  inGame ? GameScene.class : TitleScene.class;
+
+          DarkestPixelDungeon.switchNoFade(target, new Game
                   .SceneChangeCallback() {
             @Override
             public void beforeCreate() {
-              DarkestPixelDungeon.language(langs.get(langIndex));
+              try {
+                Messages.setup(picked);
+              } catch (Throwable t) {
+                Messages.setup(currLang);
+                DarkestPixelDungeon.language(currLang);
+                DarkestPixelDungeon.reportException(t);
+              }
+              GameLog.wipe();
               RenderedText.clearCache();
             }
 
             @Override
             public void afterCreate() {
-              Game.scene().add(new WndLangs());
+              if (inGame) {
+                Game.scene().add(new WndSettings());
+              } else {
+                Game.scene().add(new WndLangs());
+              }
             }
           });
         }
