@@ -407,11 +407,11 @@ public class GameScene extends PixelScene {
       Dungeon.INSTANCE.getDroppedItems().remove(Dungeon.INSTANCE.getDepth());
     }
 
-    Dungeon.INSTANCE.getHero().next();
-
     Camera.main.target = hero;
 
     if (InterlevelScene.Companion.getMode() != InterlevelScene.Mode.NONE) {
+      Dungeon.INSTANCE.getHero().next();
+
       if (Dungeon.INSTANCE.getDepth() < Statistics.INSTANCE.getDeepestFloor()) {
         GLog.h(Messages.get(this, "welcome_back"), Dungeon.INSTANCE.getDepth());
       } else {
@@ -444,13 +444,18 @@ public class GameScene extends PixelScene {
 
       fadeIn();
     }
+    if (PixelScene.noFade) PixelScene.noFade = false;
   }
 
   public void destroy() {
 
     // Stop the actor thread mid-action before tearing the scene down, so no
     // level/actor state is mutated while we serialize or discard it.
-    if (!waitForActorThread(4500, true)) {
+    boolean heroIdle = Actor.Companion.processing()
+            && !Actor.Companion.isThreadActive()
+            && Actor.Companion.currentActor() == Dungeon.INSTANCE.getHero();
+
+    if (!heroIdle && !waitForActorThread(4500, true)) {
       Throwable stack = new Throwable();
       if (actorThread != null) stack.setStackTrace(actorThread.getStackTrace());
       throw new RuntimeException("timeout waiting for actor thread! ", stack);
@@ -491,7 +496,7 @@ public class GameScene extends PixelScene {
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
       }
-      return !Actor.Companion.processing();
+      return !Actor.Companion.isThreadActive();
     }
   }
 
