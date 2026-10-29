@@ -28,7 +28,6 @@ import com.egoal.darkestpixeldungeon.ui.OptionSlider;
 import com.egoal.darkestpixeldungeon.ui.RedButton;
 import com.egoal.darkestpixeldungeon.Assets;
 import com.egoal.darkestpixeldungeon.messages.Messages;
-import com.egoal.darkestpixeldungeon.scenes.GameScene;
 import com.egoal.darkestpixeldungeon.scenes.PixelScene;
 import com.egoal.darkestpixeldungeon.ui.CheckBox;
 import com.egoal.darkestpixeldungeon.ui.Toolbar;
@@ -429,37 +428,7 @@ public class WndSettings extends WndTabbed {
       add(btnCentered);
       btnCentered.enable(false);
 
-      CheckBox chkFlipToolbar = new CheckBox(Messages.get(this,
-              "flip_toolbar")) {
-        @Override
-        public void onClick() {
-          super.onClick();
-          DarkestPixelDungeon.flipToolbar(checked());
-          Toolbar.updateLayout();
-        }
-      };
-      chkFlipToolbar.setRect(0, btnGrouped.bottom() + GAP_TINY, WIDTH / 2 -
-              1, BTN_HEIGHT);
-      chkFlipToolbar.checked(DarkestPixelDungeon.flipToolbar());
-      add(chkFlipToolbar);
-      chkFlipToolbar.enable(false);
-
-      final CheckBox chkFlipTags = new CheckBox(Messages.get(this,
-              "flip_indicators")) {
-        @Override
-        public void onClick() {
-          super.onClick();
-          DarkestPixelDungeon.flipTags(checked());
-          GameScene.layoutTags();
-        }
-      };
-      chkFlipTags.setRect(WIDTH / 2 + 1, chkFlipToolbar.top(), WIDTH / 2 - 1,
-              BTN_HEIGHT);
-      chkFlipTags.checked(DarkestPixelDungeon.flipTags());
-      add(chkFlipTags);
-      chkFlipTags.enable(false);
-
-      float btm = chkFlipTags.bottom();
+      float btm = btnCentered.bottom();
       if (lang) {
         RedButton btnLanguage = new RedButton(Messages.get(this, "language")) {
           @Override
@@ -473,7 +442,7 @@ public class WndSettings extends WndTabbed {
             WndSettings.this.hide();
           }
         };
-        btnLanguage.setRect(0, chkFlipToolbar.bottom() + GAP_TINY, WIDTH,
+        btnLanguage.setRect(0, btnCentered.bottom() + GAP_TINY, WIDTH,
                 BTN_HEIGHT);
         add(btnLanguage);
 

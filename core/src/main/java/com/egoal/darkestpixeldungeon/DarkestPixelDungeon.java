@@ -439,22 +439,6 @@ public class DarkestPixelDungeon extends Game {
     return Preferences.INSTANCE.getBoolean(Preferences.KEY_AUTO_PICKUP_DOOR, true);
   }
 
-  public static void flipToolbar(boolean value) {
-    Preferences.INSTANCE.put(Preferences.KEY_FLIPTOOLBAR, value);
-  }
-
-  public static boolean flipToolbar() {
-    return Preferences.INSTANCE.getBoolean(Preferences.KEY_FLIPTOOLBAR, false);
-  }
-
-  public static void flipTags(boolean value) {
-    Preferences.INSTANCE.put(Preferences.KEY_FLIPTAGS, value);
-  }
-
-  public static boolean flipTags() {
-    return Preferences.INSTANCE.getBoolean(Preferences.KEY_FLIPTAGS, false);
-  }
-
   public static void toolbarMode(String value) {
     Preferences.INSTANCE.put(Preferences.KEY_BARMODE, value);
   }
