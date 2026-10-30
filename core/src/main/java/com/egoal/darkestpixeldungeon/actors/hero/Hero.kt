@@ -1022,6 +1022,16 @@ class Hero : Char() {
 
         checkVisibleMobs()
 
+        // Auto blink when cloak is ready during the way to dst
+        // tryAutoBlink returns when cd != 0
+        (curAction as? HeroAction.Move)?.let { move ->
+            if (move.dst != pos &&
+                    belongings.getItem(CloakOfSheep::class.java)?.tryAutoBlink(this, move.dst) == true) {
+                path = null      // find a new path
+                return false
+            }
+        }
+
         if (curAction == null) {
             if (resting) {
                 spend(TIME_TO_REST)

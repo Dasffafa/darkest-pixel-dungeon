@@ -75,7 +75,7 @@ class CloakOfSheep : Artifact() {
 
     private fun cd(): Int = 20
     private fun range(): Int = 5 + level() / 2
-    private fun requireExp(): Int = (level() + 1) * (level() + 2) * 2
+    private fun requireExp(): Int = (level() + 1) * (level() + 2)
 
     private fun blink(hero: Hero, cell: Int, auto: Boolean) {
         cooldown = cd()
