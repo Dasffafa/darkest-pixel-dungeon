@@ -179,14 +179,21 @@ public class RenderedTextMultiline extends Component {
       } else {
         if (word.height() > height) height = word.baseLine();
 
-        if ((x - this.x) + word.width() > maxWidth) {
+        // optical compensation: 'le' has a tight left bearing, give it a little air.
+        // Round to whole pixels so PixelScene.align() below does not quantise it away.
+        float leadIn = (chinese && "了".equals(word.text()))
+            ? Math.max(1f, Math.round(word.width() * 0.1f)) : 0f;
+
+        // Count the pad in the wrap test, so a padded glyph cannot overflow maxWidth.
+        if ((x - this.x) + leadIn + word.width() > maxWidth) {
           y += height + 0.5f;
           x = this.x;
           nLines++;
         }
+        // Nothing to its left at the start of a line: no air needed.
+        if (x <= this.x) leadIn = 0f;
 
-        // optical compensation: 了 has a tight left bearing, give it a little air
-        if (chinese && "了".equals(word.text())) x += word.width() * 0.1f;
+        x += leadIn;
 
         word.x = x;
         word.y = y;
