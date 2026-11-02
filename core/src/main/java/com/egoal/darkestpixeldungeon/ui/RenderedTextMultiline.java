@@ -200,7 +200,6 @@ public class RenderedTextMultiline extends Component {
         PixelScene.align(word);
         x += word.width();
         if (!chinese) x++;
-        else x--;
 
         if ((x - this.x) > width) width = (x - this.x);
 
