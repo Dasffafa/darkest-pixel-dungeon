@@ -43,7 +43,9 @@ class AssassinsBlade : MeleeWeapon() {
     override fun giveDamage(hero: Hero, target: Char): Damage {
         if (target is Mob && target.surprisedBy(hero)) {
             // assassin, deals avg damage to max on surprise, instead of min to max.
-            val dmg = Damage(imbue.damageFactor(Random.NormalIntRange((min() + max()) / 2, max())),
+            val dmg = Damage(imbue.damageFactor(
+                    if (hero.isDoingLuckyAttack) max()
+                    else Random.NormalIntRange((min() + max()) / 2, max())),
                     hero, target)
             val exStr = hero.STR() - STRReq()
             if (exStr > 0)

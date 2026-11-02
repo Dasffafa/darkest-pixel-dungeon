@@ -39,7 +39,7 @@ class Fadeleaf : Plant(6) {
         if (ch is Hero) {
             ScrollOfTeleportation.teleportHero(ch)
             ch.curAction = null
-        } else if (ch is Mob && !ch.properties().contains(Char.Property.IMMOVABLE) && !Dungeon.bossLevel()) {
+        } else if (ch is Mob && !ch.properties().contains(Char.Property.IMMOVABLE) && !Dungeon.isBossAlive()) {
             var count = 10
             var newPos: Int
             do {

@@ -102,7 +102,7 @@ class UnstableSpellbook : Artifact() {
 
     override fun actions(hero: Hero): ArrayList<String> {
         val actions = super.actions(hero)
-        if (isEquipped(hero) && charge > 0 && !cursed)
+        if (isEquipped(hero) && (charge > 0 || cachedScroll != null) && !cursed)
             actions.add(AC_READ)
         if (isEquipped(hero) && level() < levelCap && !cursed)
             actions.add(AC_ADD)
@@ -116,7 +116,7 @@ class UnstableSpellbook : Artifact() {
         if (action == AC_READ) {
             if (!isEquipped(hero))
                 GLog.i(Messages.get(Artifact::class.java, "need_to_equip"))
-            else if (charge == 0)
+            else if (charge == 0 && cachedScroll == null)
                 GLog.i(Messages.get(this, "no_charge"))
             else if (cursed)
                 GLog.i(Messages.get(this, "cursed"))
@@ -135,12 +135,14 @@ class UnstableSpellbook : Artifact() {
                         cachedScroll = null
                     } else if (Random.Int(80 + 10 * soudorps) <= if (isFullyUpgraded) 2 else 1) {
                         charge--
+                        updateQuickslot()
                         // todo: scroll of enchanting cannot be constructed, fixme
 //                        val scroll = if (Random.Int(3) == 0) ScrollOfUpgrade() else ScrollOfEnchanting()
                         val scroll = ScrollOfUpgrade()
                         useScroll(scroll)
                     } else {
                         charge--
+                        updateQuickslot()
 
                         var scroll: Scroll?
                         do {
@@ -183,7 +185,7 @@ class UnstableSpellbook : Artifact() {
             desc += "\n\n" + Messages.get(this, "desc_cursed")
         }
 
-        cachedScroll?.let { desc += M.L(this, "desc_cache", it.name()) }
+        cachedScroll?.let { desc += "\n\n" + M.L(this, "desc_cache", it.name()) }
 
         if (level() < levelCap) {
             if (scrolls.size > 0) {

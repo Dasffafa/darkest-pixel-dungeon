@@ -36,7 +36,7 @@ class ResistanceIndicator(val char: Char) : Component() {
             icon.y = elementalText.y + elementalText.height() + GAP + ICON_HEIGHT * r
             add(icon)
 
-            val txt = makePercentText(char.elementalResistance[i])
+            val txt = makePercentText(char.elementalResistance(Damage.Element.values()[i]))
             txt.x = icon.x + icon.width + GAP
             txt.y = icon.y + (icon.height - txt.baseLine()) / 2f
             add(txt)

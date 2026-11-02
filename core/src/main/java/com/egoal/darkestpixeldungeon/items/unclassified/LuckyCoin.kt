@@ -36,7 +36,18 @@ class LuckyCoin : Item() {
         super.execute(hero, action)
         if (action == AC_USE) {
             detach(hero.belongings.backpack)
-            Buff.prolong(hero, Lucky::class.java, 150f)
+
+            val lucky = hero.buff(Lucky::class.java)
+            if (lucky == null) {
+                Buff.affect(hero, Lucky::class.java).apply {
+                    level = 1
+                    spend(Lucky.DURATION)
+                }
+            } else {
+                lucky.level = (lucky.level + 1).coerceAtMost(Lucky.MAX_LEVEL)
+                lucky.spend(5f - lucky.cooldown() / 2f)
+            }
+
             Game.runOnRenderThread {
                 GameScene.effect(Flare(7, 32f).color(0xffc203, true).show(
                         hero.sprite.parent, DungeonTilemap.tileCenterToWorld(hero.pos), 2f))

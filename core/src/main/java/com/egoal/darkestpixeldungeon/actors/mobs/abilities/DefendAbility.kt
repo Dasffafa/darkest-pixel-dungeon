@@ -31,7 +31,7 @@ open class EnchantDefend(private val prob: Float, private val enchantClass: Clas
             val hero = damage.from as Hero
             if (Dungeon.level.adjacent(hero.pos, belonger.pos) && Random.Float() < prob) {
                 val weapon = hero.belongings.weapon
-                if (weapon is MeleeWeapon && weapon.enchantment == null) weapon.enchant(enchantClass, duration)
+                if (weapon is MeleeWeapon && weapon.enchantments.size < weapon.maxEnchantments) weapon.enchant(enchantClass, duration)
             }
         }
     }

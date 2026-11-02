@@ -41,6 +41,9 @@ import com.egoal.darkestpixeldungeon.ui.RedButton;
 import com.egoal.darkestpixeldungeon.ui.RenderedTextMultiline;
 import com.egoal.darkestpixeldungeon.ui.ScrollPane;
 import com.egoal.darkestpixeldungeon.ui.Window;
+import com.watabou.input.ScrollEvent;
+import com.watabou.input.Touchscreen;
+import com.watabou.noosa.Camera;
 import com.watabou.noosa.ColorBlock;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.Group;
@@ -48,7 +51,12 @@ import com.watabou.noosa.Image;
 import com.watabou.noosa.RenderedText;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.noosa.ui.Button;
+import com.watabou.noosa.ui.Component;
+import com.watabou.utils.Point;
+import com.watabou.utils.PointF;
+import com.watabou.utils.Signal;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Locale;
 
@@ -239,59 +247,236 @@ public class WndRanking extends WndTabbed {
 
   private class ItemsTab extends Group {
 
-    private float pos;
+    private static final int COLUMNS = 4;
+    private static final float SLOT = 22;
+    private static final float SLOT_GAP = 1;
+    private static final float QUICKSLOT_TOP_GAP = 6;
 
     public ItemsTab() {
       super();
 
-      Belongings stuff = Dungeon.INSTANCE.getHero().getBelongings();
-      if (stuff.getWeapon() != null) {
-        addItem(stuff.getWeapon());
-      }
-      if (stuff.getArmor() != null) {
-        addItem(stuff.getArmor());
-      }
-      if (stuff.getHelmet() != null)
-        addItem(stuff.getHelmet());
-      if (stuff.getMisc1() != null) {
-        addItem(stuff.getMisc1());
-      }
-      if (stuff.getMisc2() != null) {
-        addItem(stuff.getMisc2());
-      }
-      if (stuff.getMisc3() != null) {
-        addItem(stuff.getMisc3());
-      }
+      // WndTabbed builds every page before adding it to the window, so there
+      // is no parent yet and camera() would return null.
+      camera = WndRanking.this.camera;
 
-      // quickslots
-      pos = 0;
-      for (int i = 0; i < QuickSlot.SIZE; i++) {
-        float posx = i % 4 * (22 + 1);
-        float posy = i / 4 * (22 + 1) + 22 * 6 + 6;
-        if (Dungeon.INSTANCE.getQuickslot().getItem(i) != null) {
-          QuickSlotButton slot = new QuickSlotButton(Dungeon.INSTANCE.getQuickslot()
-                  .getItem(i));
+      ScrollableList list = new ScrollableList(new Content());
+      add(list);
+      list.setRect(0, 0, WIDTH, HEIGHT);
+    }
 
-          slot.setRect(posx, posy, 22, 22);
+    // Hand-rolled instead of ScrollPane: its TouchController sits in front of
+    // the cells on Touchscreen.event (a stack-mode signal), so it swallowed
+    // every touch and the cells could no longer be tapped or highlighted.
+    private class ScrollableList extends Component implements Signal.Listener<ScrollEvent> {
 
-          add(slot);
+      private static final float DRAG_SLOP = 8;
 
-        } else {
-          ColorBlock bg = new ColorBlock(22, 22, 0x9953564D);
-          bg.x = posx;
-          bg.y = posy;
-          add(bg);
+      private final Component content;
+      private final ColorBlock thumb;
+
+      private Touchscreen.Touch tracked;
+      private float dragStartY;
+      private float dragStartScroll;
+      private boolean dragged;
+
+      // Separate object because Signal.Listener is generic, and a class cannot
+      // implement both Listener<ScrollEvent> and Listener<Touch>.
+      private final Signal.Listener<Touchscreen.Touch> dragListener =
+              new Signal.Listener<Touchscreen.Touch>() {
+        @Override
+        public boolean onSignal(Touchscreen.Touch touch) {
+          return handleTouch(touch);
         }
-        // pos += 22+1;
+      };
+
+      ScrollableList(Component content) {
+        super();
+
+        this.content = content;
+
+        // Not addToBack(): Group.addToBack reads members.get(0) before
+        // checking for an empty list, so it throws when the group is empty.
+        add(content);
+
+        width = content.width();
+        height = content.height();
+
+        // Own camera so the content is clipped to the pane instead of spilling
+        // over the tab bar.
+        content.camera = new Camera(0, 0, 1, 1, PixelScene.defaultZoom);
+        Camera.add(content.camera);
+
+        ScrollEvent.addScrollListener(this);
+
+        // Nothing here consumes a touch, so the cells keep their own press
+        // feedback and clicking.
+        Touchscreen.event.add(dragListener);
+
+        thumb = new ColorBlock(2, 1, 0xFF7b8073);
+        thumb.am = 0.5f;
+        add(thumb);
+      }
+
+      @Override
+      public void destroy() {
+        ScrollEvent.removeScrollListener(this);
+        Touchscreen.event.remove(dragListener);
+        Camera.remove(content.camera);
+        super.destroy();
+      }
+
+      @Override
+      protected void layout() {
+        content.setPos(0, 0);
+
+        Point p = camera().cameraToScreen(x, y);
+        Camera cs = content.camera;
+        cs.x = p.x;
+        cs.y = p.y;
+        cs.resize((int) width, (int) height);
+
+        boolean scrollable = height < content.height();
+        thumb.visible = scrollable;
+        if (scrollable) {
+          thumb.scale.set(2, height * height / content.height());
+          thumb.x = right() - thumb.width();
+          thumb.y = y + height * content.camera.scroll.y / content.height();
+        }
+      }
+
+      @Override
+      public boolean onSignal(ScrollEvent event) {
+        if (!isActive() || !containsScreenPoint(event.pos.x, event.pos.y)) {
+          return false;
+        }
+        scrollBy(event.amount * 10);
+        return true;
+      }
+
+      // Never consumes an event: the cells' hot areas need the UP to clear 
+      // their pressed state, and the drag geometry already rules out a click.
+      private boolean handleTouch(Touchscreen.Touch touch) {
+        if (!isActive()) {
+          return false;
+        }
+
+        // A null touch is a drag frame for the pointer already down.
+        if (touch == null) {
+          if (tracked == null) {
+            return false;
+          }
+
+          if (!dragged
+                  && PointF.distance(tracked.current, tracked.start) <= DRAG_SLOP) {
+            return false;
+          }
+          dragged = true;
+          thumb.am = 1f;
+
+          float dy = (dragStartY - tracked.current.y) / content.camera.zoom;
+          setScroll(dragStartScroll + dy);
+          return false;
+        }
+
+        if (touch.down) {
+          if (tracked == null && containsScreenPoint(touch.current.x, touch.current.y)) {
+            tracked = touch;
+            dragStartY = touch.current.y;
+            dragStartScroll = content.camera.scroll.y;
+            dragged = false;
+          }
+          return false;
+        }
+
+        tracked = null;
+        if (dragged) {
+          dragged = false;
+          thumb.am = 0.5f;
+        }
+        return false;
+      }
+
+      private boolean containsScreenPoint(float sx, float sy) {
+        Camera c = camera();
+        if (c == null) {
+          return false;
+        }
+        float px = (sx - c.x) / c.zoom + c.scroll.x;
+        float py = (sy - c.y) / c.zoom + c.scroll.y;
+        return px >= x && px < x + width && py >= y && py < y + height;
+      }
+
+      private void scrollBy(float dy) {
+        setScroll(content.camera.scroll.y + dy);
+      }
+
+      private void setScroll(float sy) {
+        Camera c = content.camera;
+        c.scroll.y = Math.max(0, Math.min(sy,
+                Math.max(0, content.height() - height)));
+        thumb.y = y + height * c.scroll.y / content.height();
       }
     }
 
-    private void addItem(Item item) {
-      ItemButton slot = new ItemButton(item);
-      slot.setRect(0, pos, width, ItemButton.HEIGHT);
-      add(slot);
+    // Component so it has a size for the list to clip & scroll
+    private class Content extends Component {
 
-      pos += slot.height() + 1;
+      private float pos;
+
+      public Content() {
+        super();
+
+        Belongings stuff = Dungeon.INSTANCE.getHero().getBelongings();
+        if (stuff.getWeapon() != null) {
+          addItem(stuff.getWeapon());
+        }
+        if (stuff.getArmor() != null) {
+          addItem(stuff.getArmor());
+        }
+        if (stuff.getHelmet() != null)
+          addItem(stuff.getHelmet());
+        if (stuff.getMisc1() != null) {
+          addItem(stuff.getMisc1());
+        }
+        if (stuff.getMisc2() != null) {
+          addItem(stuff.getMisc2());
+        }
+        if (stuff.getMisc3() != null) {
+          addItem(stuff.getMisc3());
+        }
+
+        ArrayList<Item> quickItems = new ArrayList<Item>();
+        for (int i = 0; i < QuickSlot.SIZE; i++) {
+          Item item = Dungeon.INSTANCE.getQuickslot().getItem(i);
+          if (item != null) {
+            quickItems.add(item);
+          }
+        }
+        if (quickItems.isEmpty()) {
+          setSize(WIDTH, pos);
+          return;
+        }
+
+        float baseY = pos + QUICKSLOT_TOP_GAP;
+        for (int i = 0; i < quickItems.size(); i++) {
+          float posx = (i % COLUMNS) * (SLOT + SLOT_GAP);
+          float posy = baseY + (i / COLUMNS) * (SLOT + SLOT_GAP);
+
+          QuickSlotButton slot = new QuickSlotButton(quickItems.get(i));
+          slot.setRect(posx, posy, SLOT, SLOT);
+          add(slot);
+        }
+
+        setSize(WIDTH, baseY + ((quickItems.size() - 1) / COLUMNS + 1) * (SLOT + SLOT_GAP));
+      }
+
+      private void addItem(Item item) {
+        ItemButton slot = new ItemButton(item);
+        slot.setRect(0, pos, WIDTH, ItemButton.HEIGHT);
+        add(slot);
+
+        pos += slot.height() + 1;
+      }
     }
   }
 

@@ -20,25 +20,28 @@
  */
 package com.egoal.darkestpixeldungeon.items.weapon.inscriptions
 
+import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.actors.Damage
+import com.egoal.darkestpixeldungeon.actors.hero.Hero
 import com.egoal.darkestpixeldungeon.items.weapon.Inscription
 import com.egoal.darkestpixeldungeon.items.weapon.Weapon
-import com.egoal.darkestpixeldungeon.sprites.ItemSprite.Glowing
 import com.watabou.utils.Random
 import kotlin.math.max
+import kotlin.math.round
 
 class Lucky : Inscription(4) {
     private var chanceFix = 0f // no need to store.
 
     override fun proc(weapon: Weapon, damage: Damage): Damage {
         val level = max(0, weapon.level())
-        val ratio = .55f + chanceFix
+        val wealth = (damage.from as? Hero)?.wealthBonus() ?: if (!Dungeon.isHeroNull) Dungeon.hero.wealthBonus() else 0
+        val baseChance = 0.55f + 0.05f * wealth
+        val ratio = (baseChance + chanceFix).coerceIn(0f, 1f)
 
-        if(Random.Float()< ratio) {
-            damage.value *= 2
+        if (Random.Float() < ratio) {
+            damage.value = round(damage.value * 2.5).toInt()
             chanceFix = 0f
-        }
-        else {
+        } else {
             damage.value = 0
             chanceFix += 0.01f * level
         }

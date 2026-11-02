@@ -26,6 +26,7 @@ import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.Statistics
 import com.egoal.darkestpixeldungeon.actors.Actor
 import com.egoal.darkestpixeldungeon.actors.Char
+import com.egoal.darkestpixeldungeon.actors.hero.Hero
 import com.egoal.darkestpixeldungeon.actors.blobs.Blob
 import com.egoal.darkestpixeldungeon.actors.blobs.WellWater
 import com.egoal.darkestpixeldungeon.actors.buffs.*
@@ -59,6 +60,7 @@ import com.egoal.darkestpixeldungeon.levels.features.Chasm
 import com.egoal.darkestpixeldungeon.levels.features.Door
 import com.egoal.darkestpixeldungeon.levels.features.HighGrass
 import com.egoal.darkestpixeldungeon.levels.features.Luminary
+import com.egoal.darkestpixeldungeon.levels.traps.PrizeTrap
 import com.egoal.darkestpixeldungeon.levels.traps.Trap
 import com.egoal.darkestpixeldungeon.mechanics.ShadowCaster
 import com.egoal.darkestpixeldungeon.messages.Messages
@@ -96,6 +98,7 @@ abstract class Level : Bundlable {
 
     //when a boss level has become locked.
     var locked = false
+    open var bossDefeated = false
 
     // The actor thread spawns/kills mobs while the render thread iterates them
     // (field-of-view, sprite visibility). A concurrent set gives weakly
@@ -111,6 +114,18 @@ abstract class Level : Bundlable {
     private var lightMapDirty = true
 
     protected var itemsToSpawn = ArrayList<Item>()
+
+    // limited drops whose wealth-dependent roll is deferred to the moment the
+    // hero first sees them; filled by createStationaryItems(), consumed by createItems().
+    val pendingLimitedDrops = ArrayList<Heap.PendingKind>()
+
+    // prize traps: one is placed statically by RegularLevel; further traps may
+    // be converted into prize traps with the hero's real-time luck, up to the cap.
+    var prizeTrapCount = 0
+
+    // Later levels contain more traps by default， use this variable as a division to make prize
+    // trap numbers consistent by default.
+    var prizeRolls = 1
 
     // visuals is added each time the scene is created,
     // so, no need to keep track on them in the bundle
@@ -270,13 +285,18 @@ abstract class Level : Bundlable {
         exit = bundle.getInt(EXIT)
 
         locked = bundle.getBoolean(LOCKED)
+        if (bundle.contains(BOSS_DEFEATED)) {
+            bossDefeated = bundle.getBoolean(BOSS_DEFEATED)
+        }
 
         weakFloorCreated = false
 
         var collection = bundle.getCollection(HEAPS)
         for (h in collection) {
             val heap = h as Heap
-            if (!heap.empty())
+            // unresolved pending heaps are legitimately empty; keep them so their reserved
+            // contents can still be rolled when the hero first sees them
+            if (!heap.empty() || heap.isPending)
                 heaps.put(heap.pos, heap)
         }
 
@@ -290,6 +310,12 @@ abstract class Level : Bundlable {
         for (p in collection) {
             val trap = p as Trap
             traps.put(trap.pos, trap)
+        }
+        if (bundle.contains(PRIZE_TRAP_COUNT)) {
+            prizeTrapCount = bundle.getInt(PRIZE_TRAP_COUNT)
+        }
+        if (bundle.contains(PRIZE_ROLLS)) {
+            prizeRolls = bundle.getInt(PRIZE_ROLLS)
         }
 
         collection = bundle.getCollection(CUSTOM_TILES)
@@ -323,9 +349,12 @@ abstract class Level : Bundlable {
         bundle.put(ENTRANCE, entrance)
         bundle.put(EXIT, exit)
         bundle.put(LOCKED, locked)
+        bundle.put(BOSS_DEFEATED, bossDefeated)
         bundle.put(HEAPS, heaps.values())
         bundle.put(PLANTS, plants.values())
         bundle.put(TRAPS, traps.values())
+        bundle.put(PRIZE_TRAP_COUNT, prizeTrapCount)
+        bundle.put(PRIZE_ROLLS, prizeRolls)
         bundle.put(CUSTOM_TILES, customTiles)
         bundle.put(MOBS, mobs)
         bundle.put(BLOBS, blobs.values)
@@ -519,24 +548,21 @@ abstract class Level : Bundlable {
 
     @JvmOverloads
     fun findPrizeItem(match: Class<out Item>? = null): Item? {
-        if (itemsToSpawn.size == 0)
+        // special rooms must never take the key limited drops (upgrade scrolls, strength
+        // potions) -- those have to stay somewhere the player can actually find them.
+        val eligible = itemsToSpawn.filter { !isProtectedDrop(it) }
+        if (eligible.isEmpty())
             return null
 
-        if (match == null) {
-            val item = Random.element(itemsToSpawn)
-            itemsToSpawn.remove(item)
-            return item
-        }
+        val item = if (match == null) Random.element(eligible)
+        else eligible.firstOrNull { match.isInstance(it) } ?: return null
 
-        for (item in itemsToSpawn) {
-            if (match.isInstance(item)) {
-                itemsToSpawn.remove(item)
-                return item
-            }
-        }
-
-        return null
+        itemsToSpawn.remove(item)
+        return item
     }
+
+    private fun isProtectedDrop(item: Item): Boolean =
+            item is ScrollOfUpgrade || item is PotionOfStrength || item is PotionOfMight
 
     fun invalidateLightMap() {
         lightMapDirty = true
@@ -686,6 +712,21 @@ abstract class Level : Bundlable {
         }
     }
 
+    open fun dropEmpty(cell: Int, type: Heap.Type = Heap.Type.HEAP): Heap {
+        var heap: Heap? = heaps.get(cell)
+        if (heap == null) {
+            heap = Heap()
+            heap.type = type
+            heap.seen = false
+            heap.pos = cell
+            heaps.put(cell, heap)
+            GameScene.add(heap)
+        } else {
+            heap.type = type
+        }
+        return heap
+    }
+
     open fun drop(item: Item, cell: Int): Heap {
         var cell = cell
 
@@ -781,10 +822,73 @@ abstract class Level : Bundlable {
         GameScene.updateMap(pos)
     }
 
+    /** Whether another trap may secretly become a prize trap, judged with the hero's real-time luck. And not on boss levels. */
+    fun rollPrizeTrapUpgrade(pos: Int): Boolean {
+        if (prizeTrapCount >= MAX_PRIZE_TRAPS || Dungeon.isHeroNull || Dungeon.bossLevel()) return false
+        // a trap room is dense: do not turn a trap into treasure when it is already surrounded by traps
+        if (PathFinder.NEIGHBOURS8.count { traps.get(pos + it) != null } >= 2) return false
+        if (Random.Float() >= prizeChance()) return false
+
+        ++prizeTrapCount
+        return true
+    }
+
+    /** Chance for one candidate trap to convert; divided by the floor's candidate count so the per-floor expectation stays depth-independent. */
+    private fun prizeChance(): Float =
+            (0.25f + 0.45f * Dungeon.hero.wealthBonus()).coerceAtLeast(0f) / prizeRolls
+
+    /** Replaces a trap with a prize trap in place, preserving visibility; the sprite is reused. */
+    fun convertTrapToPrize(trap: Trap): PrizeTrap {
+        val prize = PrizeTrap()
+        prize.pos = trap.pos
+        prize.visible = trap.visible
+        traps.put(trap.pos, prize)
+        if (trap.hasSprite) {
+            prize.sprite = trap.sprite
+            prize.sprite.reset(prize)
+            prize.sprite.visible = prize.visible
+        } else {
+            GameScene.add(prize)
+        }
+        return prize
+    }
+
+    /** Resolves a pending trap on first sight: the hero's luck decides whether it becomes treasure, otherwise it is gone. */
+    private fun resolvePendingTrap(trap: Trap) {
+        trap.pending = false
+        if (prizeTrapCount < MAX_PRIZE_TRAPS && !Dungeon.isHeroNull && Random.Float() < prizeChance()) {
+            ++prizeTrapCount
+            // a reserved trap is secret: the treasure it hides must not show before it is stepped on
+            convertTrapToPrize(trap).hide()
+        } else {
+            vanishTrap(trap)
+        }
+    }
+
+    /** Removes a trap and restores its tile to plain floor. */
+    private fun vanishTrap(trap: Trap) {
+        set(trap.pos, Terrain.EMPTY)
+        if (trap.hasSprite) trap.sprite.kill()
+        GameScene.updateMap(trap.pos)
+    }
+
     fun discover(cell: Int) {
         set(cell, Terrain.discover(map[cell]))
-        val trap = traps.get(cell)
-        trap?.reveal()
+        var trap = traps.get(cell)
+        if (trap != null) {
+            // a reserved trap is judged the moment it is uncovered, before it is shown
+            if (trap.pending) {
+                resolvePendingTrap(trap)
+                trap = traps.get(cell)
+            }
+            if (trap != null) {
+                // a hidden trap may secretly be treasure: judge with the hero's real-time luck
+                if (!trap.visible && trap.active && trap !is PrizeTrap && rollPrizeTrapUpgrade(cell))
+                    convertTrapToPrize(trap).reveal()
+                else
+                    trap.reveal()
+            }
+        }
         GameScene.updateMap(cell)
     }
 
@@ -947,15 +1051,61 @@ abstract class Level : Bundlable {
                 .forEach { observeN9(it.pos) }
 
         if (c === Dungeon.hero) {
-            for (heap in heaps.values())
-                if (!heap.seen && fieldOfView[heap.pos])
-                    heap.seen = true
+            for (heap in heaps.values()) {
+                if (fieldOfView[heap.pos] || visited[heap.pos]) {
+                    if (heap.isPending) {
+                        heap.resolvePending(Dungeon.hero)
+                    }
+                    if (heaps.get(heap.pos) === heap) {
+                        heap.seen = true
+                        heap.checkItemsSeen(Dungeon.hero)
+                    }
+                }
+            }
+
+            for (trap in traps.values()) {
+                if (fieldOfView[trap.pos] || visited[trap.pos]) {
+                    if (!trap.seen) {
+                        trap.seen = true
+                        if (trap.pending) {
+                            // a reserved trap is judged on first sight: treasure, or nothing at all
+                            resolvePendingTrap(trap)
+                        } else if (trap.visible && trap.active && trap !is PrizeTrap && rollPrizeTrapUpgrade(trap.pos)) {
+                            // a visible trap is judged before its first view: it may secretly be treasure
+                            convertTrapToPrize(trap)
+                        }
+                    }
+                }
+            }
         }
 
     }
 
+    /** Rolls one reserved limited drop using the hero's real-time luck. */
+    open fun createPendingLimitedDrop(kind: Heap.PendingKind, hero: Hero): List<Item> {
+        val p = 0.925f.pow(hero.wealthBonus())
+        return when (kind) {
+            Heap.PendingKind.POS ->
+                listOf<Item>(if (Random.Float() > p) PotionOfMight() else PotionOfStrength())
+            Heap.PendingKind.ARCANE_STYLUS -> buildList<Item> {
+                if (Random.Float() > p) add(Stylus())
+                add(Stylus())
+            }
+            Heap.PendingKind.WINE -> buildList<Item> {
+                if (Random.Float() > p) add(Wine())
+                add(if (Random.Float() < 0.6f) Wine() else BrownAle())
+            }
+            Heap.PendingKind.LULLABY -> buildList<Item> {
+                if (Random.Float() > p) add(ScrollOfLullaby())
+                add(ScrollOfLullaby())
+            }
+            Heap.PendingKind.NONE -> emptyList()
+        }
+    }
+
     private fun createStationaryItems(): ArrayList<Item> {
         val items = ArrayList<Item>()
+        pendingLimitedDrops.clear()
         if (Dungeon.depth == 0 || Dungeon.depth == 21 || Dungeon.bossLevel())
             return items
 
@@ -963,9 +1113,10 @@ abstract class Level : Bundlable {
         items.add(Food())
         if (Random.Float() < 0.12f) items.add(Generator.FOOD.generate())
 
-        val p = 0.925f.pow(Dungeon.hero.wealthBonus())
+        // wealth-dependent drops: reserve the quota now, but roll the actual
+        // result when the hero first sees the heap (see createPendingLimitedDrop).
         if (Dungeon.posNeeded()) {
-            items.add(if (Random.Float() > p) PotionOfMight() else PotionOfStrength())
+            pendingLimitedDrops.add(Heap.PendingKind.POS)
             Dungeon.limitedDrops.strengthPotions.count++
         }
         if (Dungeon.souNeeded()) {
@@ -973,18 +1124,15 @@ abstract class Level : Bundlable {
             Dungeon.limitedDrops.upgradeScrolls.count++
         }
         if (Dungeon.asNeeded()) {
-            if (Random.Float() > p) items.add(Stylus())
-            items.add(Stylus())
+            pendingLimitedDrops.add(Heap.PendingKind.ARCANE_STYLUS)
             Dungeon.limitedDrops.arcaneStyli.count++
         }
         if (Dungeon.wineNeeded()) {
-            if (Random.Float() > p) items.add(Wine())
-            items.add(if (Random.Float() < 0.6f) Wine() else BrownAle())
+            pendingLimitedDrops.add(Heap.PendingKind.WINE)
             Dungeon.limitedDrops.wine.count++
         }
         if (Dungeon.scrollOfLullabyNeed()) {
-            if (Random.Float() > p) items.add(ScrollOfLullaby())
-            items.add(ScrollOfLullaby())
+            pendingLimitedDrops.add(Heap.PendingKind.LULLABY)
             Dungeon.limitedDrops.lullabyScrolls.count++
         }
 
@@ -1168,9 +1316,13 @@ abstract class Level : Bundlable {
         private const val ENTRANCE = "entrance"
         private const val EXIT = "exit"
         private const val LOCKED = "locked"
+        private const val BOSS_DEFEATED = "boss_defeated"
         private const val HEAPS = "heaps"
         private const val PLANTS = "plants"
         private const val TRAPS = "traps"
+        private const val PRIZE_TRAP_COUNT = "prize_trap_count"
+        private const val PRIZE_ROLLS = "prize_rolls"
+        const val MAX_PRIZE_TRAPS = 8
         private const val CUSTOM_TILES = "customTiles"
         private const val MOBS = "mobs"
         private const val BLOBS = "blobs"

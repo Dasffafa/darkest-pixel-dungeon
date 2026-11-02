@@ -161,7 +161,7 @@ class FastRegeneration : Perk.Additional(5) {
         Dungeon.hero.regeneration -= extraReg()
     }
 
-    private fun extraReg(): Float = 0.25f * level
+    private fun extraReg(): Float = 0.33f * level
 }
 
 class Fearless : Perk() {

@@ -42,7 +42,6 @@ class PrisonBossLevel : Level() {
     var isLighted = true
 
     private var bossAppeared = false
-    private var bossDefeated = false
 
     init {
         color1 = 0x6a723d
@@ -219,8 +218,13 @@ class PrisonBossLevel : Level() {
         return super.drop(item, cell)
     }
 
-    override fun randomRespawnCell(): Int =
-            PathFinder.NEIGHBOURS8.map { it + entrance }.filter { passable[it] }.random()
+    override fun randomRespawnCell(): Int {
+        val valid = PathFinder.NEIGHBOURS8.map { it + entrance }.filter { passable[it] }
+        val unoccupied = valid.filter { Actor.findChar(it) == null }
+        if (unoccupied.isNotEmpty()) return unoccupied.random()
+        if (valid.isNotEmpty()) return valid.random()
+        return entrance
+    }
 
     private fun buildHall() {
         rtHall = run {
@@ -399,7 +403,9 @@ class PrisonBossLevel : Level() {
         rtHall.restoreFromBundle(bundle.getBundle(HALL))
         hallLights = bundle.getIntArray(HALL_LIGHTS).toMutableList()
         bossAppeared = bundle.getBoolean(BOSS_APPEARED)
-        bossDefeated = bundle.getBoolean(BOSS_DEFEATED)
+        if (bundle.contains(BOSS_DEFEATED)) {
+            bossDefeated = bundle.getBoolean(BOSS_DEFEATED) || bossDefeated
+        }
     }
 
     companion object {

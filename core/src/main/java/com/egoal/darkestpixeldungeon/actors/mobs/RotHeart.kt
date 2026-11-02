@@ -23,6 +23,7 @@ package com.egoal.darkestpixeldungeon.actors.mobs
 import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.actors.Damage
 import com.egoal.darkestpixeldungeon.actors.buffs.Bleeding
+import com.egoal.darkestpixeldungeon.actors.buffs.Poison
 import com.egoal.darkestpixeldungeon.actors.buffs.Terror
 import com.egoal.darkestpixeldungeon.actors.mobs.abilities.ReleaseGasDefend_Toxic
 import com.egoal.darkestpixeldungeon.plants.Rotberry
@@ -35,7 +36,7 @@ class RotHeart : Mob() {
 
         state = PASSIVE
 
-        immunities.addAll(listOf(Terror::class.java, Bleeding::class.java))
+        immunities.addAll(listOf(Terror::class.java, Bleeding::class.java, Poison::class.java))
         abilities.add(ReleaseGasDefend_Toxic())
     }
 

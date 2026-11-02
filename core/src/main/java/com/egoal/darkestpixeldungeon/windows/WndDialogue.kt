@@ -75,6 +75,10 @@ abstract class WndDialogue(image: Image?, text: String, what: String, vararg opt
 
     abstract fun onSelect(idx: Int)
 
+    override fun onEnterPressed() {
+        if (optionButtons.isEmpty()) hide()
+    }
+
     override fun onSignal(key: Keys.Key): Boolean {
         if (key.pressed && optionButtons.isNotEmpty()) {
             when (key.code) {
@@ -104,9 +108,29 @@ abstract class WndDialogue(image: Image?, text: String, what: String, vararg opt
         private const val MARGIN = 2f
 
         fun Show(mob: Mob, content: String, vararg options: String, callback: (Int) -> Unit) {
+            show(mob, content, options, null, callback)
+        }
+
+        /** like [Show], but the back button runs [onCancel] instead of closing silently */
+        fun Show(mob: Mob, content: String, vararg options: String,
+                 onCancel: (() -> Unit)?, callback: (Int) -> Unit) {
+            show(mob, content, options, onCancel, callback)
+        }
+
+        private fun show(mob: Mob, content: String, options: Array<out String>,
+                         onCancel: (() -> Unit)?, callback: (Int) -> Unit) {
             GameScene.show { object : WndDialogue(mob.sprite(), mob.name, content, *options) {
                 override fun onSelect(idx: Int) {
                     callback(idx)
+                }
+
+                override fun onBackPressed() {
+                    if (onCancel == null) {
+                        super.onBackPressed()
+                    } else {
+                        hide()
+                        onCancel()
+                    }
                 }
             } }
         }
@@ -159,7 +183,7 @@ abstract class WndDialogue(image: Image?, text: String, what: String, vararg opt
         }
 
         fun select(value: Boolean) {
-            if (active) text.hardlight(if (value) Window.TITLE_COLOR else 0xFFFFFF)
+            if (active) text.hardlight(if (value && showOptionHighlight()) Window.TITLE_COLOR else 0xFFFFFF)
         }
     }
 }

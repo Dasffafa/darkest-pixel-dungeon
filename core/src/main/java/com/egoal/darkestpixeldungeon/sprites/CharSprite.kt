@@ -152,17 +152,43 @@ open class CharSprite : MovieClip(), Tweener.Listener, MovieClip.Listener {
 
     fun showStatus(color: Int, text: String, vararg args: Any) {
         val message = if (args.isNotEmpty()) Messages.format(text, *args) else text
+        emit { px, py, key ->
+            FloatingText.showDmg(
+                    px, py, key,
+                    listOf(FloatingText.Entry(message, color, FloatingText.NO_ICON, 0, true)),
+                    0, 0f, 0f, FloatingText.SIZE_STATUS)
+        }
+    }
 
-        // Floating text recycles/creates render objects and reads camera state,
-        // so it must run on the render thread. This can be reached from the
-        // actor thread (buffs, damage status).
+    fun showStatusWithIcon(color: Int, text: String, icon: Int, value: Int, vararg args: Any) {
+        val message = if (args.isNotEmpty()) Messages.format(text, *args) else text
+        emit { px, py, key ->
+            FloatingText.showDmg(
+                    px, py, key,
+                    listOf(FloatingText.Entry(message, color, icon, value)),
+                    value, 0f, 0f, FloatingText.SIZE_NUMERIC)
+        }
+    }
+
+    fun showDamage(entries: List<FloatingText.Entry>, total: Int, shake: Float, shakeDuration: Float) {
+        emit { px, py, key ->
+            FloatingText.showDmg(
+                    px, py, key, entries, total, shake, shakeDuration, FloatingText.SIZE_NUMERIC)
+        }
+    }
+
+    // Floating text recycles/creates render objects and reads camera state,
+    // so it must run on the render thread. This can be reached from the actor
+    // thread (buffs, damage status).
+    private inline fun emit(crossinline build: (x: Float, y: Float, key: Int) -> Unit) {
         Game.runOnRenderThread {
             if (!visible) return@runOnRenderThread
-
             if (hasChar) {
                 val tile = DungeonTilemap.tileCenterToWorld(ch.pos)
-                FloatingText.show(tile.x, tile.y - width * 0.5f, ch.pos, message, color)
-            } else FloatingText.show(x + width * 0.5f, y, message, color)
+                build(tile.x, tile.y - width * 0.5f, ch.pos)
+            } else {
+                build(x + width * 0.5f, y, -1)
+            }
         }
     }
 
@@ -270,13 +296,19 @@ open class CharSprite : MovieClip(), Tweener.Listener, MovieClip.Listener {
         emo?.killAndErase()
     }
 
-    fun emitter(): Emitter = GameScene.emitter().apply { pos(this@CharSprite) }
+    // Sprites can be built while no GameScene is active (the catalog runs on the
+    // title screen), where GameScene has no emitter pool to hand out. Hand those
+    // sprites a detached emitter instead of failing: it stays invisible because
+    // a sprite built outside the game is never added to a level.
+    private fun sceneEmitter(): Emitter = GameScene.emitter() ?: Emitter()
 
-    fun centerEmitter(): Emitter = GameScene.emitter().apply { pos(this@CharSprite.center()) }
+    fun emitter(): Emitter = sceneEmitter().apply { pos(this@CharSprite) }
+
+    fun centerEmitter(): Emitter = sceneEmitter().apply { pos(this@CharSprite.center()) }
 
     fun bottomEmitter(): Emitter {
-        val emitter = GameScene.emitter()
-        emitter!!.pos(x, y + height, width, 0f)
+        val emitter = sceneEmitter()
+        emitter.pos(x, y + height, width, 0f)
         return emitter
     }
 

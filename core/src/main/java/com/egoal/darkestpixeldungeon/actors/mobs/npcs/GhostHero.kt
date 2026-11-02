@@ -46,7 +46,9 @@ class GhostHero(var roseLevel: Int = 0) : NPC(), Callback {
 
         camp = Camp.HERO
 
-        defSkill = (Dungeon.hero.lvl + 4) * 2f
+        // with no run (catalog) there is no hero to copy, so use a fresh one
+        val lvl = Dungeon.heroOrNull?.lvl ?: 1
+        defSkill = (lvl + 4) * 2f
         atkSkill = defSkill / 2f + 5f
         HT = 10 + roseLevel * 5
         HP = HT

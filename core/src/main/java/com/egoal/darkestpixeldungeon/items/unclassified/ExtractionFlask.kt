@@ -187,8 +187,8 @@ class ExtractionFlask : Item(), GreatBlueprint.Enchantable {
                     if (it.STRReq() <= curUser.STR() && !it.cursed) {
                         val i = Random.Int(10)
                         val echt = when {
-                            (i == 0 && it.enchantment !is Venomous) -> Venomous::class.java
-                            (i == 1 && it.enchantment !is Unstable) -> Unstable::class.java
+                            (i == 0 && !it.hasEnchant(Venomous::class.java)) -> Venomous::class.java
+                            (i == 1 && !it.hasEnchant(Unstable::class.java)) -> Unstable::class.java
                             else -> Enchantment.ForPotion(if (Random.Int(2) == 0) s1.alchemyClass else s2.alchemyClass)
                         }
                         it.enchant(echt, 10f + refined) // 10, 11, 12 ...

@@ -25,6 +25,11 @@ import com.egoal.darkestpixeldungeon.messages.Messages;
 
 public class WndQuest extends WndTitledMessage {
 
+  @Override
+  public void onEnterPressed() {
+    onBackPressed();
+  }
+
   public WndQuest(NPC questgiver, String text) {
     super(questgiver.sprite(), Messages.titleCase(questgiver.getName()), text);
   }

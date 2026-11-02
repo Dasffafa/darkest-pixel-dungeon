@@ -323,7 +323,7 @@ class WndHero : WndTabbed() {
                 icon.y = rt.y + rt.height() + ((GAP + ICON_SIZE) * i).toFloat()
                 add(icon)
 
-                val txt = PixelScene.renderText(String.format("%+2d%%", (hero.elementalResistance[i] * 100).toInt()), FONT_SIZE)
+                val txt = PixelScene.renderText(String.format("%+2d%%", (hero.elementalResistance(Damage.Element.values()[i]) * 100).toInt()), FONT_SIZE)
                 txt.x = icon.width + GAP
                 txt.y = (icon.height - txt.baseLine()) / 2 + icon.y
                 add(txt)

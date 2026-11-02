@@ -189,7 +189,8 @@ class StatusPane : Component() {
         depth!!.x = width - 50.5f - depth!!.width() / 2f
         depth!!.y = 8f - depth!!.baseLine() / 2f
         PixelScene.align(depth)
-        version!!.x = 2f
+        //kept clear of the busy indicator and the turn counter drawn around it
+        version!!.x = 11f
         version!!.y = bg!!.height + 2
         PixelScene.align(version)
         danger!!.setPos(width - danger!!.width(), 20f)

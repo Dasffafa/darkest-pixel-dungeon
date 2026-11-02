@@ -31,6 +31,7 @@ import com.watabou.noosa.Game;
 import com.watabou.noosa.Group;
 import com.watabou.noosa.NinePatch;
 import com.watabou.noosa.TouchArea;
+import com.watabou.utils.DeviceCompat;
 import com.watabou.utils.Signal;
 
 public class Window extends Group implements Signal.Listener<Key> {
@@ -47,6 +48,10 @@ public class Window extends Group implements Signal.Listener<Key> {
   public static final int SHPX_COLOR = 0x33BB33;
 
   public static final int DPD_COLOR = 0x6C34A8;
+
+  public static boolean showOptionHighlight() {
+    return DeviceCompat.isDesktop();
+  }
 
   public Window() {
     this(0, 0, Chrome.get(Chrome.Type.WINDOW));

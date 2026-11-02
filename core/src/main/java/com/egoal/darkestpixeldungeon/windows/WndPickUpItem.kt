@@ -71,7 +71,7 @@ class WndPickUpItem(private val heap: Heap, private val hero: Hero) : Window() {
 
     private fun updateSelection() {
         buttons.forEachIndexed { index, button ->
-            button.textColor(if (index == selected) TITLE_COLOR else 0xFFFFFF)
+            button.textColor(if (index == selected && showOptionHighlight()) TITLE_COLOR else 0xFFFFFF)
         }
     }
 

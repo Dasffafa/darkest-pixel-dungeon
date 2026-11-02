@@ -17,6 +17,8 @@ class SeventhDart(number: Int = 1) : MissileWeapon(3) {
 
     override fun breakChance(): Float = super.breakChance() * 0.8f
 
+    override fun baseBreakChance(): Float = super.baseBreakChance() * 0.8f
+
     override fun proc(dmg: Damage): Damage {
         Buff.affect(dmg.to as Char, Bleeding::class.java).set((dmg.to as Char).HT / 10)
         return super.proc(dmg)

@@ -100,9 +100,10 @@ class WandOfCorruption : DamageWand.NoDamage(true) {
     private fun debuffEnemy(enemy: Mob, category: HashMap<Class<out FlavourBuff>, Float>) {
         val candidates = category.filter { enemy.buff(it.key) == null && !enemy.immunizedBuffs().contains(it.key) }
         val cls = KRandom.Chances(candidates)
-        if (cls != null)
-            Buff.append(enemy, cls, 6f + level() * 3f)
-        else
+        if (cls != null) {
+            val buff = Buff.append(enemy, cls, 6f + level() * 3f)
+            if (buff is Terror) buff.objectid = Item.curUser.id()
+        } else
             if (category === MINOR_DEBUFFS) debuffEnemy(enemy, MAJOR_DEBUFFS)
             else if (category === MAJOR_DEBUFFS) corruptEnemy(enemy)
     }

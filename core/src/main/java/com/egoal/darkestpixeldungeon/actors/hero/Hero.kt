@@ -22,6 +22,7 @@ import com.egoal.darkestpixeldungeon.items.armor.MageArmor
 import com.egoal.darkestpixeldungeon.items.armor.glyphs.*
 import com.egoal.darkestpixeldungeon.items.artifacts.*
 import com.egoal.darkestpixeldungeon.items.bags.SkillTree
+import com.egoal.darkestpixeldungeon.items.Catalog
 import com.egoal.darkestpixeldungeon.items.helmets.*
 import com.egoal.darkestpixeldungeon.items.rings.*
 import com.egoal.darkestpixeldungeon.items.scrolls.ScrollOfMagicMapping
@@ -202,10 +203,24 @@ class Hero : Char() {
 
         if (buff(Berserk::class.java)?.berserking() == true) return 0f
 
+        var reg = baseRegeneration()
+
+        if (hlvl >= Hunger.HUNGRY && heroClass != HeroClass.SORCERESS && reg > 0f) reg *= 0.5f
+
+        return reg
+    }
+
+    // the rate the hero would regenerate at while fed. hunger damage scales off this,
+    // so it deliberately skips the starving/berserk gating applied by regenerateSpeed().
+    fun fedRegeneration(): Float = max(0f, baseRegeneration())
+
+    private fun baseRegeneration(): Float {
         var reg = regeneration
 
+        // the healing glyph goes inert while starving, so it neither regenerates the
+        // hero nor inflates the starvation damage that scales off this rate
         val glp = belongings.armor?.glyph
-        if (glp is Healing)
+        if (glp is Healing && buff(Hunger::class.java)!!.hunger() < Hunger.STARVING)
             reg += glp.speed(belongings.armor!!)
 
         // heart
@@ -231,8 +246,6 @@ class Hero : Char() {
                 reg += if (it.cursed) -0.1f else (0.05f + reg * 0.2f)
         }
 
-        if (hlvl >= Hunger.HUNGRY && heroClass != HeroClass.SORCERESS && reg > 0f) reg *= 0.5f
-
         return reg
     }
 
@@ -251,7 +264,7 @@ class Hero : Char() {
         factor *= heroPerk.get(WandCharger::class.java)?.factor() ?: 1f
         belongings.helmet?.let {
             if (it is WizardHat)
-                factor = if (it.cursed) 0.9f else 1.15f
+                factor *= if (it.cursed) 0.9f else 1.15f
         }
         val bonus = Ring.getBonus(this, RingOfArcane.Arcane::class.java)
         factor *= 1.06f.pow(bonus)
@@ -287,12 +300,21 @@ class Hero : Char() {
     }
 
     fun wealthBonus(): Int {
-//        = min(10, Ring.getBonus(this, RingOfWealth.Wealth::class.java) + if (subClass == HeroSubClass.LANCER) -1 else 0)
         var n = Ring.getBonus(this, RingOfWealth.Wealth::class.java)
         if (subClass == HeroSubClass.LANCER) --n
-        if (buff(Lucky::class.java) != null) ++n
+        buff(Lucky::class.java)?.let { n += it.level }
 
-        return min(10, n)
+        return n
+    }
+
+    /** armed by a lucky strike: the next weapon damage roll takes its maximum */
+    var isDoingLuckyAttack = false
+
+    /** Lucky strike: roll 0.8888% once per wealth bonus level. and can be naturally produced. */
+    fun rollLuckyStrike(): Boolean {
+        val n = wealthBonus() + 1
+        for (i in 0 until n) if (Random.Float() < 0.00889f) return true
+        return false
     }
 
     // followers
@@ -451,6 +473,11 @@ class Hero : Char() {
     override fun giveDamage(enemy: Char): Damage {
         var dmg = Damage(0, this, enemy)
 
+        // lucky strike: roll 1% once per wealth bonus level; a lucky attack always
+        // hits, crits and rolls the damage dice at maximum.
+        val luckyStrike = rollLuckyStrike()
+        if (luckyStrike) isDoingLuckyAttack = true
+
         // weapon
         val bonus = Ring.getBonus(this, RingOfForce.Force::class.java)
 
@@ -467,7 +494,19 @@ class Hero : Char() {
         } else {
             // bare hand
             dmg.value = if (bonus != 0) RingOfForce.damageRoll(Dungeon.hero)
+            else if (isDoingLuckyAttack) Math.max(STR() - 8, 1)
             else Random.NormalIntRange(1, Math.max(STR() - 8, 1))
+        }
+        isDoingLuckyAttack = false
+
+        if (luckyStrike) dmg.addFeature(Damage.Feature.ACCURATE)
+
+        // blood rage: extra dark elemental damage, added before the helmet proc
+        // so it is amplified by the mask. It is reduced by the target's shadow
+        // resistance rather than ignored, unlike a pure segment.
+        buff(BloodRage::class.java)?.let {
+            val bonus = it.bonus()
+            if (bonus > 0) dmg.setAdditionalDamage(Damage.Element.Shadow, bonus)
         }
 
         // helmet
@@ -476,7 +515,7 @@ class Hero : Char() {
         heroPerk.get(BaredAngry::class.java)?.procGivenDamage(dmg, this)
 
         // critical
-        if (!dmg.isFeatured(Damage.Feature.CRITICAL) && Random.Float() < criticalChance()) {
+        if (!dmg.isFeatured(Damage.Feature.CRITICAL) && (luckyStrike || Random.Float() < criticalChance())) {
             val ratio = if (heroClass == HeroClass.EXILE) 1.75f else 1.5f
 
             dmg.value = (dmg.value * ratio).toInt()
@@ -695,7 +734,12 @@ class Hero : Char() {
             GLog.n(M.L(this, "almost_dead"))
         }
 
+        val hpBefore = HP
         val dmgToken = super.takeDamage(dmg)
+        // Actual HP lost, i.e. the damage left after the existing shield absorbed
+        // its part. Shield-absorbed damage must not count towards the max-HP-scaled
+        // mental pressure of ambushes and crits.
+        val hpLost = (hpBefore - HP).coerceAtLeast(0)
         if (dmg.from is Hunger && HP <= HT / 4) {
             interrupt()
             resting = false
@@ -713,14 +757,48 @@ class Hero : Char() {
 
             // extra mental damage
             var value = 0f
-            if (dmg.from is Char && !Dungeon.visible[(dmg.from as Char).pos]) { // attack from nowhere
-                value += Random.Float(1f, 7f)
-                maySay(0.2f, HeroLines.WHAT)
+
+            val isSurpriseAttack = dmg.from is Char && !Dungeon.visible[(dmg.from as Char).pos] && hpLost > 0
+            val isCritical = dmg.isFeatured(Damage.Feature.CRITICAL) && hpLost > 0
+
+            // Mask of Madness wearers ignore the HP-ratio scaling of the crit/
+            // ambush pressure and instead gain Blood Rage on very high damage.
+            val masked = belongings.helmet is MaskOfMadness
+
+            // very high damage warning: the first hit in a 100-turn window that
+            // takes more than 40% of max HP adds a little mental damage (not
+            // stacked with the crit/ambush toll) and a line.
+            val isVeryHighDamage = !masked && dmgToken > 0 && HT > 0 && dmgToken * 5 > HT * 2 && closeCallCooldown <= 0f
+            if (isVeryHighDamage) {
+                closeCallCooldown = 100f
+                tag = HeroLines.HIGH_DAMAGE + "_" + Random.IntRange(1, 3)
+                if (!isSurpriseAttack && !isCritical) value += Random.Float(1f, 5f)
             }
-            if (dmg.isFeatured(Damage.Feature.CRITICAL) && dmgToken > 0) {
-                value += Random.Float(2f, 8f)
-                maySay(0.2f, HeroLines.DAMN)
+
+            if (masked && dmgToken > 0 && HT > 0 && dmgToken * 5 > HT * 2) {
+                val rage = round(dmgToken / 5f).toInt()
+                if (rage > 0) {
+                    Buff.prolong(this, BloodRage::class.java, 10f).setValue(rage)
+                }
             }
+
+            // crit/ambush pressure grows with the damage's share of max HP,
+            // switching to a quadratic curve past 20% (100% HT ~= 30 expected),
+            // and is capped by that share. Shield-absorbed damage does not count.
+            // Mask wearers always take the plain, unscaled pressure.
+            var critAmbush = 0f
+            if (isSurpriseAttack) critAmbush += Random.Float(1f, 7f)
+            if (isCritical) critAmbush += Random.Float(2f, 8f)
+            if (!masked && critAmbush > 0f && dmg.from is Mob && HT > 0) {
+                val p = hpLost * 100f / HT
+                val expected = if (p <= 20f) min(5f, p)
+                else 0.000917f * p * p + 0.2025f * p + 0.583f
+                critAmbush = min(max(expected + Random.Float(-5f, 5f), 0f), p)
+            }
+            value += critAmbush
+
+            if (isSurpriseAttack) maySay(0.2f, HeroLines.WHAT)
+            if (isCritical) maySay(0.2f, HeroLines.DAMN)
 
             if (dmgToken > 0 && HP < HT / 4 && dmg.from is Mob && !heroPerk.has(Fearless::class.java)) {
                 value += Random.Float(1f, 5f)
@@ -731,7 +809,7 @@ class Hero : Char() {
             if (tag != null) sayShort(tag!!)
 
             // todo: this is fragile
-            val mentaldmg = Damage(min(round(value).toInt(), 15), dmg.from, dmg.to).type(Damage.Type.MENTAL)
+            val mentaldmg = Damage(round(value).toInt(), dmg.from, dmg.to).type(Damage.Type.MENTAL)
             drunk?.procTakenDamage(mentaldmg)
             takeMentalDamage(mentaldmg)
         }
@@ -800,6 +878,11 @@ class Hero : Char() {
     // auto-search runs on the actor thread (with a fresh FOV) instead of the
     // render thread.
     private var pendingStepSearch = false
+
+    // Turns remaining before a very-high-damage warning may trigger again. The
+    // first hit in each 100-turn window that takes more than 40% of max HP
+    // gives the warning.
+    private var closeCallCooldown = 0f
 
     fun stopContinuousMoving() {
         continuousMoving = false
@@ -912,6 +995,8 @@ class Hero : Char() {
 
     override fun act(): Boolean {
         super.act()
+
+        if (closeCallCooldown > 0f) closeCallCooldown -= 1f
 
         // Field-of-view/fog refresh belongs on the actor thread. It used to run
         // from onMotionComplete (render thread), racing with actor mutations of
@@ -1026,7 +1111,10 @@ class Hero : Char() {
 
         curAction = defineAction(cell)
         if (curAction !is HeroAction.Move) stopContinuousMoving()
-        if (curAction is HeroAction.Move) lastAction = null // move cancel last action
+        if (curAction is HeroAction.Move) {
+            lastAction = null // move cancel last action
+            belongings.getItem(CloakOfSheep::class.java)?.tryAutoBlink(this, cell)
+        }
 
         return true
     }
@@ -1191,7 +1279,7 @@ class Hero : Char() {
         super.recoverHP(adhp, src)
         if (buff(TorsoOfTheElder.HealthChecker::class.java) != null) HP = min(HP, (HT * .3f).toInt())
 
-        if (!isAlive) Dungeon.fail(src?.javaClass)
+        if (!isAlive) Dungeon.fail(src)
     }
 
     override fun die(src: Any?) {
@@ -1320,7 +1408,7 @@ class Hero : Char() {
                 if (Dungeon.visible[p]) {
                     if (intentional) sprite.parent?.addToBack(CheckedCell(p))
 
-                    if (Level.secret[p] && (intentional || Random.Float() < level)) {
+                    if (Level.secret[p] && (intentional || passiveDetects(p, level))) {
                         GameScene.discoverTile(p, Dungeon.level.map[p])
                         Dungeon.level.discover(p)
 
@@ -1350,6 +1438,19 @@ class Hero : Char() {
         }
 
         return smthFound
+    }
+
+    private fun passiveDetects(p: Int, level: Float): Boolean {
+        if (Random.Float() < level) return true
+
+        if (Dungeon.level.map[p] != Terrain.SECRET_DOOR) return false
+
+        val extra = wealthBonus() / 2
+        for (i in 0 until extra) {
+            if (Random.Float() < level) return true
+        }
+
+        return false
     }
 
     fun resurrect(resetLevel: Int) {
@@ -1534,6 +1635,10 @@ class Hero : Char() {
             }
 
             Bones.leave()
+
+            // if a dark spirit struck the killing blow, tell the server whom it claimed
+            if (src is DarkSpirit) DarkSpirit.ReportKilledHero(src, Dungeon.hero.userName)
+
             val spiritRecord = DarkSpirit.PrepareDeath(deathRegeneration, deathCritChance)
             deathRegeneration = null
             deathCritChance = null
@@ -1563,13 +1668,15 @@ class Hero : Char() {
 
             if (src is Doom) src.onDeath()
 
+            Catalog.Save()
+
             Dungeon.deleteGame(true, true)
 
             // let the player leave last words; fallback to default if dismissed or blank
-            val default = Rankings.deathDescription(src?.javaClass)
+            val default = Rankings.deathDescription(src)
             InputDialog.GetStringWithResult(Epitaphs.deathTitle(), default) { accepted, text ->
                 val epitaph = if (accepted) text.ifBlank { default } else default
-                DarkSpirit.CommitDeath(spiritRecord, epitaph)
+                DarkSpirit.CommitDeath(spiritRecord)
                 Epitaphs.addOwn(epitaphUser, epitaph)
             }
         }
@@ -1592,6 +1699,7 @@ class Hero : Char() {
         private const val USER_NAME = "username"
         private const val POH_DRUNK = "poh_drunk"
         private const val ARCANE_FACTOR = "arcane_factor"
+        private const val CLOSE_CALL_CD = "close-call-cd"
     }
 
     // store
@@ -1624,6 +1732,8 @@ class Hero : Char() {
         bundle.put(POH_DRUNK, pohDrunk)
 
         bundle.put(ARCANE_FACTOR, arcaneFactor)
+
+        bundle.put(CLOSE_CALL_CD, closeCallCooldown)
 
         bundle.put(CHALLENGES, challenges.map { it.toString() }.toTypedArray())
 
@@ -1660,13 +1770,15 @@ class Hero : Char() {
         arcaneFactor = bundle.getFloat(ARCANE_FACTOR)
         if (arcaneFactor < 0.1f) arcaneFactor = 1f // compatible
 
+        closeCallCooldown = bundle.getFloat(CLOSE_CALL_CD)
+
         spawnedPerks.clear()
         if (bundle.contains(SPAWNED_PERKS))
             for (p in bundle.getCollection(SPAWNED_PERKS)) if (p is Perk) spawnedPerks.add(p)
         belongings.restoreFromBundle(bundle)
 
-        val pre = buff(Pressure::class.java)
-        if (pre != null) pressure = pre
+        // ensure Pressure always exists, even for old savers that predate it
+        pressure = Buff.affect(this, Pressure::class.java)
 
         val a = bundle.getStringArray(CHALLENGES)
         if (a != null) {

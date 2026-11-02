@@ -36,6 +36,7 @@ import com.egoal.darkestpixeldungeon.messages.Messages
 import com.egoal.darkestpixeldungeon.ui.BuffIndicator
 import com.watabou.utils.Bundle
 import com.watabou.utils.Random
+import kotlin.math.max
 
 class Hunger : Buff(), Hero.Doom {
 
@@ -71,53 +72,74 @@ class Hunger : Buff(), Hero.Doom {
             val hero = target as Hero
 
             if (isStarving) {
-                val dhp = if (hero.heroPerk.get(RavenousAppetite::class.java) != null) target.HT / 50f
-                else target.HT / 75f
+                // hunger costs 1/4 of the hero's fed regeneration rate per turn. the rate is
+                // accumulated every STEP and only settled once it passes 1: the whole number pops
+                // while the fraction is carried over to the next settle. a cursed-regen hero would
+                // never starve, so the rate is floored at MIN_REGEN.
+                var dhp = HUNGER_DAMAGE_PER_TURN * STEP * max(hero.fedRegeneration(), MIN_REGEN)
+                if (hero.heroPerk.get(RavenousAppetite::class.java) != null) dhp *= 1.5f
                 partialDamage += dhp
 
-                if (partialDamage > 1) {
-                    target.takeDamage(Damage(partialDamage.toInt(), this, target)
-                            .type(Damage.Type.MAGICAL).addFeature(Damage.Feature.PURE))
+                if (partialDamage > 1f) {
+                    val dmg = partialDamage.toInt()
+                    partialDamage -= dmg.toFloat()
+
+                    target.takeDamage(Damage(dmg, this, target)
+                            .type(Damage.Type.MAGICAL)
+                            .addFeature(Damage.Feature.PURE or Damage.Feature.HUNGER))
                     if (target.isAlive) {
-                        target.takeDamage(Damage(Random.Int(0, partialDamage.toInt() + 1), this, target)
+                        // mental damage does not scale with the pop
+                        target.takeDamage(Damage(Random.Int(0, 2), this, target)
                                 .type(Damage.Type.MENTAL).addFeature(Damage.Feature.PURE))
                         if (Random.Float() < 0.2f)
                             (target as Hero).sayShort(HeroLines.WHY_NOT_EAT)
 
-                        // 
-                        if (dmgTokenInTotal < 100) {
-                            dmgTokenInTotal += partialDamage.toInt()
-                            if (dmgTokenInTotal >= 100 && !hero.heroPerk.has(Dieting::class.java)) {
-                                val diet = Dieting()
+                        // 2026/9/29 made this change to make sure rogue get lvl 2 of this after taking 80 dmg
+                        val diet = hero.heroPerk.get(Dieting::class.java)
+                        if (diet == null || diet.level < 2) {
+                            dmgTokenInTotal += dmg
+                            if (diet == null && dmgTokenInTotal >= 100) {
+                                val newDiet = Dieting()
+                                hero.heroPerk.add(newDiet)
+                                PerkGain.Show(hero, newDiet)
+                                GLog.w(M.L(this, "dieting"))
+                                dmgTokenInTotal = 0
+                            } else if (diet != null && dmgTokenInTotal >= 80) {
                                 hero.heroPerk.add(diet)
                                 PerkGain.Show(hero, diet)
-                                GLog.w(M.L(this, "dieting"))
+                                GLog.w(M.L(this, "dieting2"))
+                                dmgTokenInTotal = 0
                             }
                         }
                     }
-                    partialDamage -= partialDamage.toInt().toFloat()
                 }
 
             } else {
 
-                val newLevel = level + HUNGER_PER_STEP
-                var statusUpdated = false
-                if (newLevel >= STARVING) {
+                // level 2 dieting: the hunger has a chance to hold this step
+                val diet = hero.heroPerk.get(Dieting::class.java)
+                val holdHunger = diet != null && diet.level >= 2 && Random.Float() < 0.2f
 
-                    GLog.n(Messages.get(this, "onstarving"))
-                    hero.resting = false
-                    target.takeDamage(Damage(1, this, target).type(Damage.Type
-                            .MAGICAL).addFeature(Damage.Feature.PURE))
-                    statusUpdated = true
+                if (!holdHunger) {
+                    val newLevel = level + HUNGER_PER_STEP
+                    var statusUpdated = false
+                    if (newLevel >= STARVING) {
 
-                } else if (newLevel >= HUNGRY && level < HUNGRY) {
-                    GLog.w(Messages.get(this, "onhungry"))
-                    statusUpdated = true
-                }
-                level = newLevel
+                        GLog.n(Messages.get(this, "onstarving"))
+                        hero.resting = false
+                        target.takeDamage(Damage(1, this, target).type(Damage.Type
+                                .MAGICAL).addFeature(Damage.Feature.PURE or Damage.Feature.HUNGER))
+                        statusUpdated = true
 
-                if (statusUpdated) {
-                    BuffIndicator.refreshHero()
+                    } else if (newLevel >= HUNGRY && level < HUNGRY) {
+                        GLog.w(Messages.get(this, "onhungry"))
+                        statusUpdated = true
+                    }
+                    level = newLevel
+
+                    if (statusUpdated) {
+                        BuffIndicator.refreshHero()
+                    }
                 }
             }
 
@@ -194,6 +216,12 @@ class Hunger : Buff(), Hero.Doom {
     companion object {
         private const val STEP = 10f
         private const val HUNGER_PER_STEP = 11f
+
+        // starving damage per turn, as a fraction of the hero's fed regeneration rate
+        private const val HUNGER_DAMAGE_PER_TURN = 0.25f
+
+        // fed regeneration is floored here so cursed gear cannot make the hero starve-proof
+        private const val MIN_REGEN = 0.05f
 
         const val HUNGRY = 350f
         const val STARVING = 500f

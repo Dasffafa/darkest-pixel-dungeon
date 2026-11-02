@@ -115,7 +115,10 @@ abstract class Actor : Bundlable {
 
         private val ids = SparseArray<Actor>()
 
-        private var now = 0f
+        // game time in turns, updated whenever the actor thread picks the next actor to act.
+        // read-only outside, and written from the actor thread without synchronization.
+        var now = 0f
+            private set
 
         @Synchronized
         fun clear() {

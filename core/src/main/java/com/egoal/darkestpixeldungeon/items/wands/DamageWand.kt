@@ -57,11 +57,28 @@ abstract class DamageWand(isMissile: Boolean) : Wand(isMissile) {
 
     abstract fun max(lvl: Int): Int
 
-    open fun giveDamage(enemy: Char): Damage = Damage(damageRoll(), curUser, enemy).type(Damage.Type.MAGICAL)
+    open fun giveDamage(enemy: Char): Damage {
+        // lucky strike: roll 1% once per wealth bonus level; a lucky zap always
+        // hits, crits and rolls the damage dice at maximum.
+        val luckyStrike = curUser.rollLuckyStrike()
+        if (luckyStrike) curUser.isDoingLuckyAttack = true
+        val dmg = Damage(damageRoll(), curUser, enemy).type(Damage.Type.MAGICAL)
+        curUser.isDoingLuckyAttack = false
+        if (luckyStrike) {
+            dmg.addFeature(Damage.Feature.ACCURATE)
+            if (!dmg.isFeatured(Damage.Feature.CRITICAL)) {
+                dmg.value = (dmg.value * 1.5f).toInt()
+                dmg.addFeature(Damage.Feature.CRITICAL)
+            }
+        }
+        return dmg
+    }
 
-    private fun damageRoll(): Int = round(Random.NormalIntRange(min(), max()) * Dungeon.hero.arcaneFactor()).toInt()
+    private fun damageRoll(): Int = round((if (curUser.isDoingLuckyAttack) max()
+            else Random.NormalIntRange(min(), max())) * Dungeon.hero.arcaneFactor()).toInt()
 
-    fun damageRoll(lvl: Int): Int = round(Random.NormalIntRange(min(lvl), max(lvl)) * Dungeon.hero.arcaneFactor()).toInt()
+    fun damageRoll(lvl: Int): Int = round((if (curUser.isDoingLuckyAttack) max(lvl)
+            else Random.NormalIntRange(min(lvl), max(lvl))) * Dungeon.hero.arcaneFactor()).toInt()
 
     override fun statsDesc(): String = if (levelKnown) M.L(this, "stats_desc", min(), max())
     else M.L(this, "stats_desc", min(0), max(0))

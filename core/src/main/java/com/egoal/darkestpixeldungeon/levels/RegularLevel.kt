@@ -157,6 +157,27 @@ abstract class RegularLevel : Level() {
         while (diggers.size < total)
             diggers.add(Random.chances(NormalDiggers).newInstance())
 
+        // bonus rooms judged by the hero's real-time luck: each of the two slots opens
+        // with 10% per wealth bonus level (expected increment 0.2 * luck, at most 2),
+        // drawn from the shared pool of 20% secret rooms and 80% special rooms.
+        if (!Dungeon.bossLevel() && !Dungeon.isHeroNull) {
+            val secretChances = HashMap(SecretDiggers)
+            val luck = Dungeon.hero.wealthBonus()
+            for (i in 1..MAX_BONUS_ROOMS) {
+                if (Random.Float() >= 0.1f * luck) continue
+
+                if (Random.Float() < SECRET_BONUS_CHANCE) {
+                    val cls = Random.chances(secretChances) ?: continue
+                    secretChances[cls] = 0f // unique.
+                    diggers.add(cls.newInstance())
+                } else {
+                    val cls = Random.chances(probs) ?: continue
+                    probs[cls] = 0f // unique.
+                    diggers.add(cls.newInstance())
+                }
+            }
+        }
+
         return diggers
     }
 
@@ -299,19 +320,29 @@ abstract class RegularLevel : Level() {
             else Generator.generate()
         }
 
-        var nItems = 3
-
-        // bonus from wealth
-        while (nItems <= 6 && Random.Float() < .25f + Dungeon.hero.wealthBonus() * 0.05f)
-            ++nItems
-
-        for (i in 1..nItems) {
+        // 3 guaranteed heaps
+        for (i in 1..3) {
             val heap = when (Random.Int(10)) {
                 0 -> Heap.Type.SKELETON
                 in 1..4 -> if (Dungeon.depth > 1 && Random.Float() < 0.25f) Heap.Type.MIMIC else Heap.Type.CHEST
                 else -> Heap.Type.HEAP
             }
-            drop(random_item(), randomDropCell()).type = heap
+            var cell = randomDropCell()
+            while (heaps.get(cell) != null) cell = randomDropCell()
+            drop(random_item(), cell).type = heap
+        }
+
+        // 4 pending empty heaps resolved in real-time when seen, depending on player's luck
+        for (i in 1..4) {
+            val heapType = when (Random.Int(10)) {
+                0 -> Heap.Type.SKELETON
+                in 1..4 -> if (Dungeon.depth > 1 && Random.Float() < 0.25f) Heap.Type.MIMIC else Heap.Type.CHEST
+                else -> Heap.Type.HEAP
+            }
+            var cell = randomDropCell()
+            while (heaps.get(cell) != null) cell = randomDropCell()
+            val heap = dropEmpty(cell, heapType)
+            heap.isPending = true
         }
 
         // extra missile weapon
@@ -334,6 +365,15 @@ abstract class RegularLevel : Level() {
                     c = randomDropCell()
 
             drop(item, c).type = Heap.Type.HEAP
+        }
+
+        // reserved limited drops: contents are rolled when the hero first sees them
+        for (kind in pendingLimitedDrops) {
+            var cell = randomDropCell()
+            while (heaps.get(cell) != null) cell = randomDropCell()
+            val heap = dropEmpty(cell, Heap.Type.HEAP)
+            heap.isPending = true
+            heap.pendingKind = kind
         }
 
         // hero remains
@@ -428,11 +468,9 @@ abstract class RegularLevel : Level() {
         val validCells = (1 until length).filter { map[it] == Terrain.EMPTY && findMobAt(it) == null }.shuffled()
         val traps = min(nTraps(), (validCells.size * 0.15).toInt())
 
-        // todo:
-        // bonus from wealth
-        var nPrize = 1
-        val bonus = Dungeon.hero.wealthBonus()
-        while (Random.Float() < .2f + bonus * 0.05f) if (++nPrize >= 5) break
+        // 1 guaranteed prize trap are spawned by default
+        val nPrize = if (Dungeon.bossLevel()) 0 else 1
+        prizeTrapCount = nPrize
 
         val trapsToSpawn = List(min(traps + nPrize, validCells.size)) {
             if (it < traps)
@@ -450,6 +488,30 @@ abstract class RegularLevel : Level() {
             setTrap(trap, cell)
             map[cell] = if (trap.visible) Terrain.TRAP else Terrain.SECRET_TRAP
         }
+
+        // boss levels: stop spawning pending traps
+        if (Dungeon.bossLevel()) return
+
+        // ~5 extra hidden traps are reserved and judged when their cell is first seen:
+        // each either becomes a prize trap or vanishes entirely (see Level.resolvePendingTrap).
+        // skip cells already surrounded by traps so prizes do not pile up inside a trap room.
+        var index = trapsToSpawn.size
+        var spawned = 0
+        val nPending = Random.NormalIntRange(4, 6)
+        while (spawned < nPending && index < validCells.size) {
+            val cell = validCells[index++]
+            if (PathFinder.NEIGHBOURS8.count { this.traps.get(cell + it) != null } >= 2) continue
+
+            val trap = trapClasses[Random.chances(trapChances)].newInstance().hide()
+            trap.pending = true
+            // some traps (worn, grim) override hide() to reveal themselves; a reserved trap must stay secret
+            trap.visible = false
+            setTrap(trap, cell)
+            map[cell] = Terrain.SECRET_TRAP
+            ++spawned
+        }
+
+        prizeRolls = (traps + spawned).coerceAtLeast(1)
     }
 
     protected fun randomSpace(type: DigResult.Type, tries: Int = Int.MAX_VALUE): Space? {
@@ -524,6 +586,12 @@ abstract class RegularLevel : Level() {
 
         /** Share of tombstones whose inscription has worn away to nothing. */
         private const val WORN_TOMB_CHANCE = 1f / 3f
+
+        /** At most this many extra secret/special rooms luck may add to a floor. */
+        private const val MAX_BONUS_ROOMS = 2
+
+        /** Each extra room is a secret room with this chance, a special room otherwise. */
+        private const val SECRET_BONUS_CHANCE = 0.2f
 
         val SpecialDiggers: Map<Class<out Digger>, Float> = mapOf(
                 ArmoryDigger::class.java to 0.5f,

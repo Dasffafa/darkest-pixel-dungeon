@@ -9,6 +9,7 @@ import com.egoal.darkestpixeldungeon.items.armor.Armor
 import com.egoal.darkestpixeldungeon.items.armor.ClothArmor
 import com.egoal.darkestpixeldungeon.items.armor.PlateArmor
 import com.egoal.darkestpixeldungeon.items.artifacts.CloakOfShadows
+import com.egoal.darkestpixeldungeon.items.artifacts.CloakOfSheep
 import com.egoal.darkestpixeldungeon.items.artifacts.SandalsOfNature
 import com.egoal.darkestpixeldungeon.items.artifacts.UnstableSpellbook
 import com.egoal.darkestpixeldungeon.items.bags.SeedPouch
@@ -341,7 +342,7 @@ enum class HeroClass(private val title: String, vararg subclasses: HeroSubClass)
             regeneration += 0.03f
 
             recoverSanity(min(Random.NormalIntRange(1, lvl * 3 / 4).toFloat(),
-                    buff(Pressure::class.java)!!.pressure * 0.3f))
+                    (buff(Pressure::class.java)?.pressure ?: 0f) * 0.3f))
         }
 
         hero.heroPerk.get(StrongConstitution::class.java)?.upgradeHero(hero)
@@ -367,9 +368,10 @@ enum class HeroClass(private val title: String, vararg subclasses: HeroSubClass)
         hero.HT = 1000
         hero.HP = hero.HT
 
-        LongSpear().identify().collect()
+        Stylus().quantity(6).collect()
         Nunchakus().identify().collect()
         MeadWine().identify().collect()
+        Kusarigama().identify().upgrade(6).collect()
 
         hero.heroPerk.add(IntendedTransportation())
         Dungeon.quickslot.setSlot(6, ScrollOfUpgrade().apply {
@@ -398,13 +400,19 @@ enum class HeroClass(private val title: String, vararg subclasses: HeroSubClass)
         PlateArmor().identify().upgrade(6).collect()
         Claymore().identify().upgrade(6).collect()
 
-        Headgear().collect()
+        CloakOfSheep().collect()
+        CloakOfSheep().identify().upgrade(10).collect()
 
         Amulet().collect()
+
     }
 
     companion object {
         private const val CLASS = "class"
+
+        private val CHINESE_HEROES = setOf(EXILE)
+
+        fun isChineseHero(hero: Hero): Boolean = CHINESE_HEROES.contains(hero.heroClass)
 
         fun RestoreFromBundle(bundle: Bundle): HeroClass {
             val value = bundle.getString(CLASS)

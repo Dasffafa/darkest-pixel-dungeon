@@ -56,10 +56,10 @@ class Ooze : Buff() {
             if (Dungeon.depth > 4)
             // targetpos.damage( Dungeon.depth/5, this );
                 target.takeDamage(Damage(Dungeon.depth / 5, this, target)
-                        .type(Damage.Type.MAGICAL).addFeature(Damage.Feature.PURE))
+                        .type(Damage.Type.MAGICAL))
             else if (Random.Int(2) == 0)
                 target.takeDamage(Damage(1, this, target)
-                        .type(Damage.Type.MAGICAL).addFeature(Damage.Feature.PURE))
+                        .type(Damage.Type.MAGICAL))
             if (!target.isAlive && target === Dungeon.hero) {
                 Dungeon.fail(javaClass)
                 GLog.n(Messages.get(this, "ondeath"))

@@ -23,12 +23,14 @@ package com.egoal.darkestpixeldungeon.actors.hero
 import com.egoal.darkestpixeldungeon.Assets
 import com.egoal.darkestpixeldungeon.DarkestPixelDungeon
 import com.egoal.darkestpixeldungeon.Dungeon
+import com.egoal.darkestpixeldungeon.Statistics
 import com.egoal.darkestpixeldungeon.actors.Char
 import com.egoal.darkestpixeldungeon.actors.buffs.Disarm
 import com.egoal.darkestpixeldungeon.actors.buffs.Hunger
 import com.egoal.darkestpixeldungeon.actors.buffs.Invisibility
 import com.egoal.darkestpixeldungeon.actors.mobs.Mob
 import com.egoal.darkestpixeldungeon.actors.mobs.npcs.NPC
+import com.egoal.darkestpixeldungeon.items.Catalog
 import com.egoal.darkestpixeldungeon.items.Heap
 import com.egoal.darkestpixeldungeon.items.artifacts.DriedRose
 import com.egoal.darkestpixeldungeon.items.artifacts.TimekeepersHourglass
@@ -173,6 +175,7 @@ abstract class HeroAction(var dst: Int = 0) {
             if (Dungeon.level.adjacent(hero.pos, npc.pos)) {
                 hero.ready()
                 hero.sprite.turnTo(hero.pos, npc.pos)
+                Catalog.SetSeen(npc)
                 return npc.interact()
             }
 
@@ -288,7 +291,9 @@ abstract class HeroAction(var dst: Int = 0) {
                         Dungeon.deleteGame(true, true)
                         Game.switchScene(SurfaceScene::class.java)
                     }
-                } else if (Dungeon.depth == 1 && hero.belongings.getItem(Amulet::class.java) == null) {
+                } else if (Dungeon.depth == 1
+                        && hero.belongings.getItem(Amulet::class.java) == null
+                        && !Statistics.AmuletObtained) {
                     GameScene.show { WndMessage(Messages.get(hero, "leave")) }
                     hero.ready()
                 } else {
@@ -339,6 +344,10 @@ abstract class HeroAction(var dst: Int = 0) {
     class Attack(var target: Char) : HeroAction() {
         override fun act(hero: Hero): Boolean {
             hero.enemy = target
+
+            val weapon = hero.belongings.weapon
+            if (weapon != null && !weapon.beforeAttack(hero, target, this)) return false
+
             if (target.isAlive && hero.canAttack(target) && !hero.isCharmedBy(target) && hero.buff(Disarm::class.java) == null) {
                 Invisibility.dispel()
                 hero.spend(hero.attackDelay())

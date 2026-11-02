@@ -118,7 +118,6 @@ class Combo : Special() {
 
         override fun Execute() {
             Execute(Dungeon.hero)
-            updateQuickslot()
         }
 
         protected abstract fun Execute(hero: Hero)
@@ -144,7 +143,7 @@ class Combo : Special() {
                 override fun onSelected(cell: Int) {
                     cd = cooldown
                     adrenaline -= cost
-
+                    updateQuickslot()
                     hero.sprite.attack(cell) {
                         val enemy = Actor.findChar(cell)!!
                         Char.ProcessAttackDamage(hero.giveDamage(enemy).addFeature(Damage.Feature.CRITICAL or Damage.Feature.ACCURATE))
@@ -178,7 +177,7 @@ class Combo : Special() {
 
             cd = cooldown
             adrenaline -= cost
-
+            updateQuickslot()
             val route = Ballistica(hero.pos, cell, Ballistica.PROJECTILE)
             Actor.addDelayed(Pushing(hero, hero.pos, cell) {
                 //todo: throw & damage all n8 chars
@@ -221,7 +220,7 @@ class Combo : Special() {
                 override fun onSelected(cell: Int) {
                     cd = cooldown
                     adrenaline -= cost
-
+                    updateQuickslot()
                     count = 10 // at most 10 times
                     doAttack(hero, Actor.findChar(cell)!!)
                 }

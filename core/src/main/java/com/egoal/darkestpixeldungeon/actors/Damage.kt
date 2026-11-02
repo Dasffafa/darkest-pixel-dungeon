@@ -41,6 +41,7 @@ class Damage(var value: Int, var from: Any, var to: Any) {
         const val PURE = 0x0004
         const val DEATH = 0x0008
         const val RANGED = 0x0010
+        const val HUNGER = 0x0020
     }
 
     // attributes
@@ -58,8 +59,13 @@ class Damage(var value: Int, var from: Any, var to: Any) {
     }
 
     fun setAdditionalDamage(e: Element, value: Int): Damage {
-        element = e
-        add_value = max(add_value, value)
+        // same-element additions stack, so a weapon that triggers an enchantment
+        // twice (CarvedStaff) really adds its elemental damage twice
+        if (add_value > 0 && element == e) add_value += value
+        else {
+            element = e
+            add_value = max(add_value, value)
+        }
         return this
     }
 
@@ -71,6 +77,11 @@ class Damage(var value: Int, var from: Any, var to: Any) {
 
     fun addFeature(f: Int): Damage {
         feature = feature or f
+        return this
+    }
+
+    fun removeFeature(f: Int): Damage {
+        feature = feature and f.inv()
         return this
     }
 

@@ -39,6 +39,7 @@ import com.watabou.utils.Random
 
 import java.util.ArrayList
 import java.util.HashMap
+import java.util.HashSet
 
 open abstract class Ring : KindofMisc() {
 
@@ -64,6 +65,11 @@ open abstract class Ring : KindofMisc() {
     override fun activate(ch: Char) {
         buff = buff()
         buff!!.attachTo(ch)
+    }
+
+    override fun onFirstSeen(hero: Hero) {
+        // cursed rings carry negative levels; deepening the curse pays off once uncursed
+        if (!isIdentified) rollRareQuality(hero, inverted = cursed)
     }
 
     override fun doUnequip(hero: Hero, collect: Boolean, single: Boolean): Boolean {
@@ -204,11 +210,28 @@ open abstract class Ring : KindofMisc() {
                 "agate" to ItemSpriteSheet.RING_AGATE,
                 "diamond" to ItemSpriteSheet.RING_DIAMOND)
 
-        private lateinit var handler: ItemStatusHandler<Ring>
+        private var gemHandler: ItemStatusHandler<Ring>? = null
+
+        // gems are set up when a run starts. The catalog can be opened from the
+        // title screen, so fall back to a fresh, fully unknown gem set.
+        private val handler: ItemStatusHandler<Ring>
+            get() {
+                if (gemHandler == null) initGems()
+                return gemHandler!!
+            }
 
         fun initGems() {
-            handler = ItemStatusHandler(rings, gems)
+            gemHandler = ItemStatusHandler(rings, gems)
         }
+
+        /** a fresh, complete gem set: the catalog rolls its own, never a run's */
+        fun catalogLabels(): ItemStatusHandler<Ring> = ItemStatusHandler(rings, gems)
+
+        val known: HashSet<Class<out Ring>>
+            get() = handler.known()
+
+        val unknown: HashSet<Class<out Ring>>
+            get() = handler.unknown()
 
         fun save(bundle: Bundle) {
             handler.save(bundle)
@@ -219,7 +242,7 @@ open abstract class Ring : KindofMisc() {
         }
 
         fun restore(bundle: Bundle) {
-            handler = ItemStatusHandler(rings, gems, bundle)
+            gemHandler = ItemStatusHandler(rings, gems, bundle)
         }
 
         fun getBonus(target: Char, type: Class<out RingBuff>): Int = target.buffs(type).sumBy { it.level() }

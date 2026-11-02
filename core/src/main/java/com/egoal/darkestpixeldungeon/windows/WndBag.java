@@ -43,6 +43,7 @@ import com.egoal.darkestpixeldungeon.items.bags.WandHolster;
 import com.egoal.darkestpixeldungeon.items.food.Blandfruit;
 import com.egoal.darkestpixeldungeon.items.food.Food;
 import com.egoal.darkestpixeldungeon.items.food.MysteryMeat;
+import com.egoal.darkestpixeldungeon.items.food.Wine;
 import com.egoal.darkestpixeldungeon.items.potions.Potion;
 import com.egoal.darkestpixeldungeon.items.rings.Ring;
 import com.egoal.darkestpixeldungeon.items.scrolls.Scroll;
@@ -143,6 +144,9 @@ public class WndBag extends WndTabbed {
     private Listener listener;
     private Filter filter = null;// compatible for  lambda
 
+    // the bag whose window this is; placed as its own first slot when it is not the root backpack
+    private Bag openedBag;
+
     private WndBag.Mode mode;
     private String title;
 
@@ -156,6 +160,7 @@ public class WndBag extends WndTabbed {
     private static Mode lastMode;
     private static Bag lastBag;
     private static Filter lastFilter;
+    private static WndBag lastInstance;
 
     public WndBag(Bag bag, Listener listener, Mode mode, String title) {
         super();
@@ -179,6 +184,11 @@ public class WndBag extends WndTabbed {
         lastMode = mode;
         lastFilter = filter;
         lastBag = bag;
+
+        openedBag = bag;
+
+        if (lastInstance != null && lastInstance.parent != null) lastInstance.hide();
+        lastInstance = this;
 
         nCols = DarkestPixelDungeon.landscape() ? COLS_L : COLS_P;
         // +6+1 equipments and gold
@@ -221,7 +231,7 @@ public class WndBag extends WndTabbed {
 
     public static WndBag lastBag(Listener listener, Mode mode, String title) {
 
-        if (mode == lastMode && lastBag != null &&
+        if ((mode == lastMode || mode == Mode.FOR_SALE) && lastBag != null &&
                 Dungeon.INSTANCE.getHero().getBelongings().getBackpack().contains(lastBag)) {
             return new WndBag(lastBag, listener, mode, title);
         } else {
@@ -255,12 +265,12 @@ public class WndBag extends WndTabbed {
                 (ItemSpriteSheet.RING_HOLDER));
 
         boolean backpack = (container == Dungeon.INSTANCE.getHero().getBelongings().getBackpack());
-        if (!backpack && DarkestPixelDungeon.landscape()) {
-            count = nCols;
-            col = 0;
-            row = 1;
-        }
 
+        //container itself is the 1st item if it is not the root backpack
+        if(!backpack) {
+            placeItem(container);
+            count--; 
+        }
         // Items in the bag
         // todo: fix the size bug because of golden-claw
         Item goldClaw = null;
@@ -336,6 +346,12 @@ public class WndBag extends WndTabbed {
     @Override
     protected int tabHeight() {
         return 20;
+    }
+
+    @Override
+    public void hide() {
+        if (lastInstance == this) lastInstance = null;
+        super.hide();
     }
 
     private class BagTab extends Tab {
@@ -512,13 +528,16 @@ public class WndBag extends WndTabbed {
         @Override
         public void onClick() {
             // todo: refactor this, the gold can just be a normal item actually
-            if (!(item instanceof Gold) && !lastBag.contains(item) && !item.isEquipped(Dungeon.INSTANCE.getHero())) {
+            // the bag shown in its own window is not contained in itself, so it must bypass
+            // the "is this item still in the bag" guard and be opened as a normal item
+            boolean selfBag = (listener == null || mode == Mode.QUICKSLOT) && item == openedBag;
+            if (!(item instanceof Gold) && !lastBag.contains(item)
+                    && !item.isEquipped(Dungeon.INSTANCE.getHero()) && !selfBag) {
 
                 hide();
 
             } else if (listener != null) {
-
-                hide();
+                if (mode != Mode.FOR_SALE) hide();
                 listener.onSelect(item);
 
             } else {
@@ -553,7 +572,7 @@ public class WndBag extends WndTabbed {
     public static boolean FilterByMode(Item item, Mode mode) {
         switch (mode) {
             case FOR_SALE:
-                return item.price() > 0 && !(item.isEquipped(Dungeon.INSTANCE.getHero()) && item.getCursed());
+                return item.price() > 0 && !(item.isEquipped(Dungeon.INSTANCE.getHero()) && item.getCursed()) && !(item instanceof Bag);
             case UPGRADEABLE:
                 return item.isUpgradable();
             case UNIDENTIFED:
@@ -587,6 +606,7 @@ public class WndBag extends WndTabbed {
             case ALCHEMY:
                 return item instanceof Plant.Seed || item instanceof MysteryMeat || item instanceof FishBone ||
                         item.getClass() == Food.class ||
+                        item instanceof Wine ||
                         item instanceof Honeypot.ShatteredPot ||
                         (item instanceof Blandfruit && ((Blandfruit) item).getPotionAttrib() == null);
 //          case SMEARABLE:

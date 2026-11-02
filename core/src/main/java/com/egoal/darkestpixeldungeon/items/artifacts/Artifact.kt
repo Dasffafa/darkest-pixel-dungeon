@@ -33,7 +33,6 @@ import com.egoal.darkestpixeldungeon.messages.Messages
 import com.egoal.darkestpixeldungeon.utils.GLog
 import com.watabou.utils.Bundle
 import com.watabou.utils.Random
-import kotlin.math.round
 
 abstract class Artifact : KindofMisc() {
     protected var passiveBuff: Buff? = null
@@ -107,7 +106,7 @@ abstract class Artifact : KindofMisc() {
     }
 
     override fun visiblyUpgraded(): Int {
-        return if (levelKnown) round(level() * 10f / levelCap.toFloat()).toInt() else 0
+        return if (levelKnown) (level() * 10f / levelCap.toFloat()).toInt() else 0
     }
 
     // transfers upgrades from another artifact, transfer level will equal the

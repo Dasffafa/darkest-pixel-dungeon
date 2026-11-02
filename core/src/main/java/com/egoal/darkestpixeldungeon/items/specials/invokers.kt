@@ -154,7 +154,7 @@ class pardon : SelectInvoker(true, maxlevel = 3) {
     override fun onInvoked(hero: Hero, astrolabe: Astrolabe, char: Char?) {
         if (isOther(char)) {
             char!!.recoverHP(char.HP / 4 + 1)
-            Buff.prolong(char, Vulnerable::class.java, Vulnerable.DURATION).ratio = 1.5f + 0.5f * level
+            Vulnerable.add(char, 1.5f + 0.5f * level, Damage.Type.NORMAL, Vulnerable.DURATION)
         } else hero.sayShort(HeroLines.I_CANT)
     }
 }

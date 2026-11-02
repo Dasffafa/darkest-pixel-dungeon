@@ -30,10 +30,16 @@ import com.egoal.darkestpixeldungeon.actors.hero.Hero
 import com.egoal.darkestpixeldungeon.actors.hero.perks.Knowledgeable
 import com.egoal.darkestpixeldungeon.effects.Speck
 import com.egoal.darkestpixeldungeon.items.bags.Bag
+import com.egoal.darkestpixeldungeon.items.potions.Potion
+import com.egoal.darkestpixeldungeon.items.rings.Ring
+import com.egoal.darkestpixeldungeon.items.scrolls.Scroll
+import com.egoal.darkestpixeldungeon.items.armor.Armor
+import com.egoal.darkestpixeldungeon.items.weapon.Weapon
 import com.egoal.darkestpixeldungeon.items.weapon.missiles.Boomerang
 import com.egoal.darkestpixeldungeon.items.weapon.missiles.MissileWeapon
 import com.egoal.darkestpixeldungeon.mechanics.Ballistica
 import com.egoal.darkestpixeldungeon.messages.M
+import com.egoal.darkestpixeldungeon.messages.MessageVariants
 import com.egoal.darkestpixeldungeon.messages.Messages
 import com.egoal.darkestpixeldungeon.scenes.CellSelector
 import com.egoal.darkestpixeldungeon.scenes.GameScene
@@ -46,6 +52,7 @@ import com.watabou.noosa.particles.Emitter
 import com.watabou.utils.Bundlable
 import com.watabou.utils.Bundle
 import com.watabou.utils.Callback
+import com.watabou.utils.Random
 import java.util.*
 
 open class Item : Bundlable {
@@ -65,6 +72,7 @@ open class Item : Bundlable {
     var cursedKnown = false
 
     var everPicked = false // if is the first time get picked
+    var everSeen = false // if is the first time seen by hero
     var unique = false // Unique items persist through revival
     var bones = false // whether an item can be included in heroes remains
 
@@ -77,7 +85,14 @@ open class Item : Bundlable {
     open fun actions(hero: Hero): ArrayList<String> = arrayListOf(AC_DROP, AC_THROW)
 
     open fun doPickUp(hero: Hero): Boolean {
+        val firstSeen = !everSeen
         if (collect(hero.belongings.backpack)) {
+            // silent cleanse has top priority: before the quality roll and Knowledgeable
+            if (!everPicked) trySilentCleanse(hero)
+
+            if (firstSeen) onFirstSeen(hero)
+            everSeen = true
+
             if (!everPicked) onFirstPick(hero)
             everPicked = true
 
@@ -91,12 +106,59 @@ open class Item : Bundlable {
     }
 
     protected open fun onFirstPick(hero: Hero) {
-        hero.heroPerk.get(Knowledgeable::class.java)?.affectItem(this)
+        hero.heroPerk.get(Knowledgeable::class.java)?.affectItem(this, hero)
+    }
+
+    open fun onFirstSeen(hero: Hero) {}
+
+    /** Base chance of the rare quality roll, shared by every unidentified item. */
+    protected open fun rareQualityBaseChance(): Float = 0.02f
+
+    /** How strongly the hero's real-time luck (wealth bonus) feeds the rare quality roll. */
+    protected open fun rareQualityLuckCoef(): Float = 0.1f
+
+    /**
+     * Rare quality boost for unidentified gear: rolls extra levels with the hero's
+     * real-time luck (wealth bonus). The chance starts at
+     * [rareQualityBaseChance] + [rareQualityLuckCoef] * luck; while p >= 1 the roll is a
+     * guaranteed success, and each success grants one level and halves the chance for
+     * the next roll, until a roll fails. [inverted] grants levels down instead (cursed
+     * rings), so that a later uncursing turns the negative level into a stronger
+     * positive one.
+     */
+    fun rollRareQuality(hero: Hero, inverted: Boolean = false) {
+        var p = rareQualityBaseChance() + rareQualityLuckCoef() * hero.wealthBonus()
+        while (Random.Float() < p) {
+            level(level() + if (inverted) -1 else 1)
+            p /= 2f
+        }
+    }
+
+    /** Whether this item may be silently cleansed on first pickup; the Elder artifacts opt out. */
+    protected open fun canCleanseSilently(): Boolean = true
+
+    /**
+     * Silent curse cleansing on first pickup: a fully unidentified cursed item
+     * (both level and curse unknown) has a 2% * luck chance to be cleansed in
+     * secret, staying unidentified. Runs before the first-seen quality roll
+     * and before Knowledgeable.
+     */
+    protected open fun trySilentCleanse(hero: Hero) {
+        if (!cursed || levelKnown || cursedKnown || !canCleanseSilently()) return
+        if (Random.Float() >= 0.02f * hero.wealthBonus()) return
+
+        when (this) {
+            is Weapon -> clearCurseInscription()
+            is Armor -> if (hasCurseGlyph()) inscribe(null)
+        }
+        cursed = false
     }
 
     open fun doDrop(hero: Hero) {
         hero.spendAndNext(TIME_TO_DROP)
-        Dungeon.level.drop(detachAll(hero.belongings.backpack), hero.pos).sprite.drop(hero.pos)
+        val dropped = detachAll(hero.belongings.backpack)
+        dropped.everSeen = true
+        Dungeon.level.drop(dropped, hero.pos).sprite.drop(hero.pos)
     }
 
     // resets an item's properties, to ensure consistency between runs
@@ -130,6 +192,7 @@ open class Item : Bundlable {
     }
 
     protected open fun onThrow(cell: Int) {
+        everSeen = true
         val heap = Dungeon.level.drop(this, cell)
         if (!heap.empty()) {
             heap.sprite.drop(cell)
@@ -167,6 +230,19 @@ open class Item : Bundlable {
             Badges.validateItemLevelAquired(this)
         }
         items.add(this)
+        everSeen = true
+
+        // potions, scrolls and rings normally enter the catalog on
+        // identification (see ItemStatusHandler.know); one whose class is
+        // already known when picked up is catalogued right away
+        val catalogued = when (this) {
+            is Potion -> isKnown
+            is Scroll -> isKnown
+            is Ring -> isKnown
+            else -> true
+        }
+        if (catalogued)
+            Catalog.SetSeen(javaClass)
 
         if (stackable || this is Boomerang)
             Dungeon.quickslot.replaceSimilar(this)
@@ -298,11 +374,12 @@ open class Item : Bundlable {
         return name
     }
 
-    open fun name(): String = name
+    // 风格变体优先; 无变体时沿用构造时/子类赋值的 name
+    open fun name(): String = Messages.getVariant(this, "name") ?: name
 
-    fun trueName(): String = name
+    fun trueName(): String = Messages.getVariant(this, "name") ?: name
 
-    open fun image(): Int = image
+    open fun image(): Int = MessageVariants.spriteFor(this) ?: image
 
     open fun glowing(): ItemSprite.Glowing? = null
 
@@ -341,6 +418,7 @@ open class Item : Bundlable {
         bundle.put(CURSED, cursed)
         bundle.put(CURSED_KNOWN, cursedKnown)
         bundle.put(EVER_PICKED, everPicked)
+        bundle.put(EVER_SEEN, everSeen)
         if (Dungeon.quickslot.contains(this)) {
             bundle.put(QUICKSLOT, Dungeon.quickslot.getSlot(this))
         }
@@ -351,6 +429,7 @@ open class Item : Bundlable {
         levelKnown = bundle.getBoolean(LEVEL_KNOWN)
         cursedKnown = bundle.getBoolean(CURSED_KNOWN)
         everPicked = bundle.getBoolean(EVER_PICKED)
+        everSeen = bundle.getBoolean(EVER_SEEN)
 
         val level = bundle.getInt(LEVEL)
         if (level > 0) {
@@ -443,6 +522,7 @@ open class Item : Bundlable {
         private const val CURSED_KNOWN = "cursedKnown"
         private const val QUICKSLOT = "quickslotpos"
         private const val EVER_PICKED = "everpicked"
+        private const val EVER_SEEN = "everseen"
 
         lateinit var curUser: Hero
         lateinit var curItem: Item

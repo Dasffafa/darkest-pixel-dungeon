@@ -21,19 +21,28 @@
 package com.egoal.darkestpixeldungeon.windows
 
 import com.egoal.darkestpixeldungeon.actors.mobs.Mob
+import com.egoal.darkestpixeldungeon.items.Catalog
 import com.egoal.darkestpixeldungeon.messages.M
 import com.egoal.darkestpixeldungeon.scenes.PixelScene
-import com.egoal.darkestpixeldungeon.sprites.CharSprite
+import com.egoal.darkestpixeldungeon.sprites.ItemSprite
+import com.egoal.darkestpixeldungeon.sprites.ItemSpriteSheet
 import com.egoal.darkestpixeldungeon.ui.BuffIndicator
 import com.egoal.darkestpixeldungeon.ui.HealthBar
 import com.egoal.darkestpixeldungeon.ui.ResistanceIndicator
+import com.watabou.noosa.Image
 import com.watabou.noosa.RenderedText
 import com.watabou.noosa.ui.Component
+import com.watabou.utils.Log
 
 class WndInfoMob(mob: Mob) : WndTitledMessage(MobTitle(mob),
         mob.description() + "\n\n" + mob.state.status()) {
-    private class MobTitle(mob: Mob) : Component() {
-        private val image: CharSprite
+
+    init {
+        Catalog.SetSeen(mob)
+    }
+
+    class MobTitle(mob: Mob) : Component() {
+        private val image: Image
         private val name: RenderedText
         private val health: HealthBar
         private val buffs: BuffIndicator
@@ -55,13 +64,22 @@ class WndInfoMob(mob: Mob) : WndTitledMessage(MobTitle(mob),
 
         companion object {
             private const val GAP = 2
+
+            // the catalog opens with no run, where a sprite may need state that
+            // only exists in game: fall back to a placeholder icon
+            private fun spriteOf(mob: Mob): Image = try {
+                mob.sprite()
+            } catch (e: Exception) {
+                Log.w("dpd", "mob sprite failed: " + mob.javaClass.simpleName + ": " + e)
+                ItemSprite(ItemSpriteSheet.SOMETHING, null)
+            }
         }
 
         init {
             name = PixelScene.renderText(M.T(mob.name), 9)
             name.hardlight(TITLE_COLOR)
             add(name)
-            image = mob.sprite()
+            image = spriteOf(mob)
             add(image)
             health = HealthBar()
             health.level(mob)

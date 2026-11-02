@@ -29,6 +29,8 @@ import com.egoal.darkestpixeldungeon.actors.buffs.*
 import com.egoal.darkestpixeldungeon.actors.hero.Hero
 import com.egoal.darkestpixeldungeon.actors.hero.HeroSubClass
 import com.egoal.darkestpixeldungeon.actors.mobs.Mob
+import com.egoal.darkestpixeldungeon.effects.DamagePalette
+import com.egoal.darkestpixeldungeon.effects.FloatingText
 import com.egoal.darkestpixeldungeon.items.artifacts.TimekeepersHourglass
 import com.egoal.darkestpixeldungeon.levels.Level
 import com.egoal.darkestpixeldungeon.levels.Terrain
@@ -37,14 +39,13 @@ import com.egoal.darkestpixeldungeon.messages.M
 import com.egoal.darkestpixeldungeon.scenes.GameScene
 import com.egoal.darkestpixeldungeon.sprites.CharSprite
 import com.egoal.darkestpixeldungeon.utils.GLog
-import com.watabou.noosa.Camera
 import com.watabou.noosa.audio.Sample
 import com.watabou.utils.Bundle
-import com.watabou.utils.GameMath
 import com.watabou.utils.PathFinder
 import com.watabou.utils.Random
 import java.util.*
 import java.util.concurrent.CopyOnWriteArraySet
+import kotlin.math.log10
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.round
@@ -214,6 +215,7 @@ abstract class Char : Actor() {
         }
 
         if (dmg.from is Char && isCharmedBy(dmg.from as Char)) Buff.detach(this, Charm::class.java)
+        Terror.recover(this)
 
         // immunities, resistance
         if (!dmg.isFeatured(Damage.Feature.PURE)) resistDamage(dmg)
@@ -259,21 +261,45 @@ abstract class Char : Actor() {
                 HP = 0 //note: this is a important setting
         }
 
-        // show damage value
+        // show damage value; main and elemental parts share one line, and any
+        // zero-valued part is simply omitted from it
         if (buff(Ignorant::class.java) == null) {
-            if (dmg.value > 0 || dmg.from is Char) {
-                var number = "${dmg.value}"
-                if (dmg.isFeatured(Damage.Feature.CRITICAL)) number += "!"
+            val entries = ArrayList<FloatingText.Entry>()
 
-                var color = 0x8c8c8c // gray
-                if (dmg.type == Damage.Type.MAGICAL) color = 0x3b94ff // blue for magical damage.
-//                if (HP < HT / 4) color = CharSprite.NEGATIVE
-
-                sprite.showStatus(color, number)
+            if (dmg.value > 0) {
+                val icon = floatingIcon(dmg)
+                entries.add(FloatingText.Entry(
+                        "${dmg.value}", DamagePalette.colorFor(icon), icon, dmg.value))
             }
+
             if (dmg.add_value > 0) {
                 sprite.burst(dmg.element.color, Random.Int(2, min(dmg.add_value / 2, 6)))
-                sprite.showStatus(0xFF8800, "${dmg.add_value}")
+                entries.add(FloatingText.Entry(
+                        "${dmg.add_value}", DamagePalette.colorFor(dmg.element),
+                        dmg.element.ordinal, dmg.add_value, elementIcon = true))
+            }
+
+            if (entries.isNotEmpty()) {
+                val total = dmg.value + dmg.add_value
+
+                // big hits shake the camera; this replaces the old hero-only
+                // shake in attack(). The hero keeps the HP%-relative feedback,
+                // other targets need a big absolute hit so weak mobs don't
+                // rattle the screen constantly.
+                var shake = 0f
+                var shakeDuration = 0.3f
+                if (total > 0 && HT > 0) {
+                    if (this === Dungeon.hero) {
+                        val ratio = total * 4f / HT
+                        if (ratio > 1f) shake = ratio.coerceIn(1f, 5f)
+                    } else if (total >= 500) {
+                        val l = log10(total / 500f)
+                        shake = (1f + 0.6f * l).coerceIn(1f, 2.5f)
+                        shakeDuration = (0.15f + 0.15f * l).coerceIn(0.15f, 0.35f)
+                    }
+                }
+
+                sprite.showDamage(entries, total, shake, shakeDuration)
             }
         }
 
@@ -282,8 +308,31 @@ abstract class Char : Actor() {
         return dmg.value + dmg.add_value
     }
 
+    private fun floatingIcon(dmg: Damage): Int {
+        if (dmg.from is Bleeding) return FloatingText.BLEEDING
+        if (dmg.from is Ooze) return FloatingText.OOZE
+        if (dmg.isFeatured(Damage.Feature.HUNGER)) return FloatingText.HUNGER
+        val critical = dmg.isFeatured(Damage.Feature.CRITICAL)
+        val pure = dmg.isFeatured(Damage.Feature.PURE)
+        if (critical) return if (pure) FloatingText.CRIT_NO_ARMOR else FloatingText.CRIT
+        if (pure) return FloatingText.PHYS_DMG_NO_ARMOR
+        return when (dmg.type) {
+            Damage.Type.MAGICAL -> FloatingText.MAGIC_DMG
+            Damage.Type.NORMAL -> FloatingText.PHYS_DMG
+            else -> FloatingText.NO_ICON
+        }
+    }
+
     fun addResistances(element: Damage.Element, r: Float) {
         elementalResistance[element.ordinal] = r
+    }
+
+    open fun elementalResistance(element: Damage.Element): Float {
+        var res = elementalResistance[element.ordinal]
+        buff(ElementBroken::class.java)?.let {
+            res -= it.resistanceReduction(element)
+        }
+        return res
     }
 
     protected open fun resistDamage(dmg: Damage): Damage {
@@ -297,7 +346,7 @@ abstract class Char : Actor() {
             dmg.value -= round(dmg.value * magicalResistance()).toInt()
 
         // elemental resistance
-        dmg.add_value -= round(dmg.add_value * elementalResistance[dmg.element.ordinal]).toInt()
+        dmg.add_value -= round(dmg.add_value * elementalResistance(dmg.element)).toInt()
 
         dmg.value = max(0, dmg.value)
         dmg.add_value = max(0, dmg.add_value)
@@ -348,7 +397,7 @@ abstract class Char : Actor() {
         // heal to death...
         if (HP < 0) HP = 0
 
-        if (dhp > 0) sprite.showStatus(CharSprite.POSITIVE, "+$dhp")
+        if (dhp > 0) sprite.showStatusWithIcon(CharSprite.POSITIVE, "+$dhp", FloatingText.HEALING, dhp)
         else sprite.showStatus(CharSprite.NEGATIVE, "$dhp")
 
         if (!isAlive) die(src)
@@ -558,24 +607,26 @@ abstract class Char : Actor() {
 
             dmg = defender.defenseProc(dmg)
 
+            // a hit reduced to zero by mitigation cannot be a critical: clear the
+            // flag here (the unified settlement point) so crit visuals, sounds
+            // and secondary effects never trigger on a 0-damage hit.
+            if (dmg.value + dmg.add_value <= 0)
+                dmg.removeFeature(Damage.Feature.CRITICAL)
+
             // sound
             if (visibleFight && !TimekeepersHourglass.IsTimeStopped()) {
                 if (dmg.type == Damage.Type.NORMAL && dmg.isFeatured(Damage.Feature.CRITICAL) && dmg.value > 0)
                     Sample.INSTANCE.play(Assets.SND_CRITICAL, 1f, 1f, 1f)
                 else {
-                    val snd = Assets.SND_HIT // if (Random.Float() < 0.7f) Assets.SND_HIT else Assets.SND_HIT2
+                    val weaponSound = (attacker as? Hero)?.let {
+                        (it.rangedWeapon ?: it.belongings.weapon)?.hitSound()
+                    }
                     val rate = Random.Float(0.8f, 1.25f)
-                    Sample.INSTANCE.play(snd, 1f, 1f, rate)
+                    Sample.INSTANCE.play(weaponSound ?: Assets.SND_HIT, 1f, 1f, rate)
                 }
             }
 
             if (!defender.isAlive) return // already died in procs
-
-            // camera shake
-            if (defenderIsHero) { //  || dmg.isFeatured(Damage.Feature.CRITICAL)
-                val shake = dmg.value * 4f / defender.HT
-                if (shake > 1f) Game.runOnRenderThread { Camera.main.shake(GameMath.clampf(shake, 1f, 5f), 0.3f) }
-            }
 
             // take
             val value = defender.takeDamage(dmg)
@@ -609,7 +660,7 @@ abstract class Char : Actor() {
 
                 if (visibleFight) {
                     if (defender === Dungeon.hero) {
-                        Dungeon.fail(attacker.javaClass)
+                        Dungeon.fail(attacker)
                         GLog.n(M.CL(Char::class.java, "kill", attacker.name))
                     } else if (attackerIsHero) {
                         (attacker as Hero).onKillChar(defender)

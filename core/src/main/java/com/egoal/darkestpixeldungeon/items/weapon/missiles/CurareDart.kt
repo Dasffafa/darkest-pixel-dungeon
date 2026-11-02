@@ -43,6 +43,8 @@ class CurareDart(number: Int = 1) : MissileWeapon(2, stick = true) {
 
     override fun breakChance(): Float = 1f
 
+    override fun baseBreakChance(): Float = 1f
+
     override fun random(): Item {
         quantity = Random.Int(2, 5)
         return this

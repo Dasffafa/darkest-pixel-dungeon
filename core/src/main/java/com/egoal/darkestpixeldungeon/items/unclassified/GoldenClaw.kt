@@ -57,7 +57,11 @@ open class GoldenClaw : Item() {
     override fun execute(hero: Hero, action: String) {
         super.execute(hero, action)
         if (action == AC_USE)
-            GameScene.selectItem(sellableSelector, WndBag.Mode.FOR_SALE, M.L(this, "select_to_convert"))
+            openSellWindow()
+    }
+
+    private fun openSellWindow() {
+        GameScene.selectItem(sellableSelector, WndBag.Mode.FOR_SALE, M.L(this, "select_to_convert"))
     }
 
     override fun doPickUp(hero: Hero): Boolean {
@@ -68,7 +72,7 @@ open class GoldenClaw : Item() {
 
     protected open fun gainGold(hero: Hero, q: Int) {
         val g = Gold(q, true)
-        hero.heroPerk.get(GreedyMidas::class.java)?.procGold(g)
+        hero.heroPerk.get(GreedyMidas::class.java)?.procGold(g, hero)
         if (g.quantity() > q) {
             Game.runOnRenderThread {
                 GameScene.effect(Flare(5, 32f).color(0xffdd00, true).show(
@@ -100,6 +104,8 @@ open class GoldenClaw : Item() {
                     if (index == options.size - 1) return
                     if (options.size == 3 && index == 0) sellOne(it)
                     else sell(it)
+
+                    this@GoldenClaw.openSellWindow()
                 }
 
                 private fun sell(item: Item) {

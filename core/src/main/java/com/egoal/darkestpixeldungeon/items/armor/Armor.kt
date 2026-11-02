@@ -28,6 +28,7 @@ import com.egoal.darkestpixeldungeon.actors.buffs.Buff
 import com.egoal.darkestpixeldungeon.actors.hero.Hero
 import com.egoal.darkestpixeldungeon.actors.hero.HeroClass
 import com.egoal.darkestpixeldungeon.effects.Speck
+import com.egoal.darkestpixeldungeon.items.Catalog
 import com.egoal.darkestpixeldungeon.items.EquipableItem
 import com.egoal.darkestpixeldungeon.items.Item
 import com.egoal.darkestpixeldungeon.items.armor.curses.*
@@ -53,6 +54,10 @@ open class Armor(var tier: Int) : EquipableItem() {
 
     var glyph: Glyph? = null
     private var seal: BrokenSeal? = null
+
+    override fun onFirstSeen(hero: Hero) {
+        if (!isIdentified) rollRareQuality(hero)
+    }
 
     override fun storeInBundle(bundle: Bundle) {
         super.storeInBundle(bundle)
@@ -329,6 +334,9 @@ open class Armor(var tier: Int) : EquipableItem() {
     fun inscribe(glyph: Glyph?): Armor {
         this.glyph = glyph
 
+        // only reveal once the hero knows about it, generation applies glyphs too
+        if (glyph != null && cursedKnown) Catalog.SetSeen(glyph.javaClass)
+
         return this
     }
 
@@ -343,6 +351,11 @@ open class Armor(var tier: Int) : EquipableItem() {
     }
 
     fun hasGlyph(type: Class<out Glyph>): Boolean = glyph?.javaClass == type
+
+    override fun identify(): Item {
+        glyph?.let { Catalog.SetSeen(it.javaClass) }
+        return super.identify()
+    }
 
     fun hasGoodGlyph(): Boolean = glyph?.curse() == false
 

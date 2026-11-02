@@ -1,13 +1,19 @@
 package com.egoal.darkestpixeldungeon.items.helmets
 
 import com.egoal.darkestpixeldungeon.Dungeon
+import com.egoal.darkestpixeldungeon.actors.Damage
 import com.egoal.darkestpixeldungeon.actors.hero.Hero
 import com.egoal.darkestpixeldungeon.messages.M
 import com.egoal.darkestpixeldungeon.sprites.ItemSpriteSheet
+import kotlin.math.round
 
 class Headgear : Helmet() {
     init {
         image = ItemSpriteSheet.HEADGEAR
+    }
+
+    override fun procTakenDamage(dmg: Damage) {
+        dmg.value = round(dmg.value * 1.15f).toInt()
     }
 
     override fun doEquip(hero: Hero): Boolean {

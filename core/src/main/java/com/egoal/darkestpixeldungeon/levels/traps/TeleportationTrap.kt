@@ -61,7 +61,7 @@ class TeleportationTrap : Trap() {
                 }
             } while (pos == -1)
 
-            if (pos == -1 || Dungeon.bossLevel()) {
+            if (pos == -1 || Dungeon.isBossAlive()) {
 
                 GLog.w(Messages.get(ScrollOfTeleportation::class.java, "no_tele"))
 

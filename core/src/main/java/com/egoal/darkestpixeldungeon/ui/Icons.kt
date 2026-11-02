@@ -72,7 +72,13 @@ enum class Icons {
 
     QQ,
 
-    LIX;
+    LIX,
+    NETWORK,
+    CLOVER,
+    RANKINGS,
+    SERVER,
+    KEYBOARD,
+    LANGS;
 
     fun get(): Image {
         return get(this)
@@ -127,6 +133,12 @@ enum class Icons {
                 ARROW_RIGHT -> icon.frame(icon.texture.uvRect(109, 47, 116, 59))
 
                 QQ-> icon.frame(icon.texture.uvRect(43, 64, 55, 77))
+                NETWORK -> icon.frame(icon.texture.uvRect(112, 96, 128, 112))
+                CLOVER -> icon.frame(icon.texture.uvRect(0, 96, 16, 112))
+                RANKINGS -> icon.frame(icon.texture.uvRect(16, 96, 33, 112))
+                SERVER -> icon.frame(icon.texture.uvRect(48, 96, 62, 111))
+                KEYBOARD -> icon.frame(icon.texture.uvRect(64, 96, 79, 108))
+                LANGS -> icon.frame(icon.texture.uvRect(80, 96, 94, 107))
 
                 PERK -> icon.frame(icon.texture.uvRect(0, 57, 8, 65))
                 TORCH -> icon.frame(icon.texture.uvRect(16, 64, 32, 80))

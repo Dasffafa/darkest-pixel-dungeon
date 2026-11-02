@@ -25,6 +25,7 @@ import com.watabou.utils.Log
 import com.egoal.darkestpixeldungeon.actors.Actor
 import com.egoal.darkestpixeldungeon.actors.Char
 import com.egoal.darkestpixeldungeon.actors.Resident
+import com.egoal.darkestpixeldungeon.actors.blobs.SacrificialFire
 import com.egoal.darkestpixeldungeon.actors.buffs.Amok
 import com.egoal.darkestpixeldungeon.actors.buffs.Awareness
 import com.egoal.darkestpixeldungeon.actors.buffs.MindVision
@@ -60,7 +61,7 @@ import java.util.HashSet
 object Dungeon {
 
     var initialDepth_ = -1
-    const val VERSION_STRING = "0.8.0b"
+    const val VERSION_STRING = "0.8.1b"
 
     lateinit var hero: Hero
     lateinit var level: Level
@@ -94,6 +95,7 @@ object Dungeon {
 
     val isHeroNull: Boolean get() = !::hero.isInitialized
     val isLevelNull: Boolean get() = !::level.isInitialized
+    val heroOrNull: Hero? get() = if (::hero.isInitialized) hero else null
 
     private fun nullField(fieldName: String) {
         with(javaClass.getDeclaredField(fieldName)) {
@@ -303,6 +305,9 @@ object Dungeon {
 
     fun bossLevel(depth: Int = Dungeon.depth): Boolean = depth in listOf(5, 10, 15, 20, 25)
 
+    fun isBossAlive(depth: Int = Dungeon.depth): Boolean =
+        bossLevel(depth) && (depth != Dungeon.depth || !::level.isInitialized || !level.bossDefeated)
+
     fun switchLevel(level: Level, spawnPos: Int) {
         Dungeon.level = level
 
@@ -312,19 +317,26 @@ object Dungeon {
 
         PathFinder.setMapSize(level.width(), level.height())
 
+        // set the new level's visible array and the hero's position before Actor.init():
+        // Actor.init re-adds the hero's buffs and calls their onAdd(), some of which
+        // (e.g. TempPathLight) run Dungeon.observe() and would otherwise use the
+        // previous level's position against the new level's dimensions.
+        visible = BooleanArray(level.length())
+        hero.pos = pos
+
         // add into level.mobs, then into actor.
         hero.restoreFollowers(level, pos)
         Actor.init()
 
-        visible = BooleanArray(level.length())
+        // the sacrificial fire's mark belongs to the fire that bestowed it; it always
+        // fades when the hero leaves that floor, no matter what the destination holds.
+        hero.buff(SacrificialFire.Marked::class.java)?.detach()
 
         val respawner = level.respawner()
         if (respawner != null) {
             Actor.add(respawner)
         }
         Actor.add(Resident())
-
-        hero.pos = pos
 
         observe()
         try {
@@ -687,7 +699,7 @@ object Dungeon {
         Hero.Preview(info, bundle.getBundle(HERO))
     }
 
-    fun fail(cause: Class<*>?) {
+    fun fail(cause: Any?) {
         if (hero.belongings.getItem(Ankh::class.java) == null) {
             Rankings.Submit(false, cause)
         }

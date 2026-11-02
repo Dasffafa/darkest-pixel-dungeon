@@ -79,6 +79,7 @@ object Statistics {
         PiranhasKilled = 0
         NightHunt = 0
         AnkhsUsed = 0
+        WineDrunk = 0
 
         Duration = 0f
         Clock.set(0, 9, 0f)

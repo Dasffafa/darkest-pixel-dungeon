@@ -36,6 +36,13 @@ public class DarkestPixelDungeon extends Game {
   private static final long STALL_THRESHOLD = 10000L;
   private static final long SUSPEND_THRESHOLD = 3000L;
 
+  // the latin classic font also points at the fusion pixel face: pixelfont.ttf
+  // is rendered with a tighter advance and its digits and symbols overlap
+  private static final String FONT_LATIN_CLASSIC = "fonts/fusion_pixel_12px_zh_hans.ttf";
+  private static final String FONT_LATIN_SMOOTH = "font.ttf";
+  private static final String FONT_CJK_CLASSIC = "fonts/fusion_pixel_12px_zh_hans.ttf";
+  private static final String FONT_CJK_SMOOTH = "droid_sans.ttf";
+
   private volatile long renderHeartbeat;
   private volatile boolean watchdogReported;
   private volatile long actorProcessingSince;
@@ -201,9 +208,11 @@ public class DarkestPixelDungeon extends Game {
             Assets.SND_HIT2);
 
     if (classicFont()) {
-      RenderedText.setFont("pixelfont.ttf");
+      RenderedText.setFont(FONT_LATIN_CLASSIC);
+      RenderedText.setCjkFont(FONT_CJK_CLASSIC);
     } else {
-      RenderedText.setFont("font.ttf");
+      RenderedText.setFont(FONT_LATIN_SMOOTH);
+      RenderedText.setCjkFont(FONT_CJK_SMOOTH);
     }
   }
 
@@ -233,6 +242,14 @@ public class DarkestPixelDungeon extends Game {
 
   public static boolean debug() {
     return Boolean.getBoolean("dpd.debug") || Preferences.INSTANCE.getBoolean(Preferences.KEY_DEBUG, false);
+  }
+
+  public static void catalogSpoilerWarning(boolean value) {
+    Preferences.INSTANCE.put(Preferences.KEY_CATALOG_SPOILER_WARNING, value);
+  }
+
+  public static boolean catalogSpoilerWarning() {
+    return Preferences.INSTANCE.getBoolean(Preferences.KEY_CATALOG_SPOILER_WARNING, true);
   }
 
   public static void changeListChecked(boolean value) {
@@ -365,9 +382,11 @@ public class DarkestPixelDungeon extends Game {
   public static void classicFont(boolean classic) {
     Preferences.INSTANCE.put(Preferences.KEY_CLASSICFONT, classic);
     if (classic) {
-      RenderedText.setFont("pixelfont.ttf");
+      RenderedText.setFont(FONT_LATIN_CLASSIC);
+      RenderedText.setCjkFont(FONT_CJK_CLASSIC);
     } else {
-      RenderedText.setFont("font.ttf");
+      RenderedText.setFont(FONT_LATIN_SMOOTH);
+      RenderedText.setCjkFont(FONT_CJK_SMOOTH);
     }
   }
 
@@ -475,20 +494,35 @@ public class DarkestPixelDungeon extends Game {
     return id;
   }
 
-  public static void uploadSpirits(boolean value) {
-    Preferences.INSTANCE.put(Preferences.KEY_SPIRIT_UPLOAD, value);
+  // 红灵与墓志铭同步原由 spirit_upload + spirit_download 两键共同控制;
+  // 新键缺失时回退旧值, 老玩家的选择不会丢失.
+  private static boolean legacySpiritConsent() {
+    return Preferences.INSTANCE.getBoolean(Preferences.KEY_SPIRIT_UPLOAD, false)
+            && Preferences.INSTANCE.getBoolean(Preferences.KEY_SPIRIT_DOWNLOAD, false);
   }
 
-  public static boolean uploadSpirits() {
-    return Preferences.INSTANCE.getBoolean(Preferences.KEY_SPIRIT_UPLOAD, false);
+  public static void spiritSync(boolean value) {
+    Preferences.INSTANCE.put(Preferences.KEY_SPIRIT_SYNC, value);
   }
 
-  public static void downloadSpirits(boolean value) {
-    Preferences.INSTANCE.put(Preferences.KEY_SPIRIT_DOWNLOAD, value);
+  public static boolean spiritSync() {
+    return Preferences.INSTANCE.getBoolean(Preferences.KEY_SPIRIT_SYNC, legacySpiritConsent());
   }
 
-  public static boolean downloadSpirits() {
-    return Preferences.INSTANCE.getBoolean(Preferences.KEY_SPIRIT_DOWNLOAD, false);
+  public static void epitaphSync(boolean value) {
+    Preferences.INSTANCE.put(Preferences.KEY_EPITAPH_SYNC, value);
+  }
+
+  public static boolean epitaphSync() {
+    return Preferences.INSTANCE.getBoolean(Preferences.KEY_EPITAPH_SYNC, legacySpiritConsent());
+  }
+
+  public static void specialStyleText(boolean value) {
+    Preferences.INSTANCE.put(Preferences.KEY_SPECIAL_STYLE, value);
+  }
+
+  public static boolean specialStyleText() {
+    return Preferences.INSTANCE.getBoolean(Preferences.KEY_SPECIAL_STYLE, true);
   }
 
   public static void spiritSyncDecided(boolean value) {
@@ -513,6 +547,22 @@ public class DarkestPixelDungeon extends Game {
 
   public static String epitaphNotice() {
     return Preferences.INSTANCE.getString(Preferences.KEY_EPITAPH_NOTICE, "");
+  }
+
+  public static void updateCheck(boolean value) {
+    Preferences.INSTANCE.put(Preferences.KEY_UPDATE_CHECK, value);
+  }
+
+  public static boolean updateCheck() {
+    return Preferences.INSTANCE.getBoolean(Preferences.KEY_UPDATE_CHECK, true);
+  }
+
+  public static void updateIgnored(int value) {
+    Preferences.INSTANCE.put(Preferences.KEY_UPDATE_IGNORED, value);
+  }
+
+  public static int updateIgnored() {
+    return Preferences.INSTANCE.getInt(Preferences.KEY_UPDATE_IGNORED, 0);
   }
 
   /*

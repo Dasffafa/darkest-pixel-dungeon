@@ -36,6 +36,7 @@ import com.egoal.darkestpixeldungeon.ui.ChangesButton;
 import com.egoal.darkestpixeldungeon.ui.ErrorButton;
 import com.egoal.darkestpixeldungeon.ui.ExitButton;
 import com.egoal.darkestpixeldungeon.ui.QQGroupButton;
+import com.egoal.darkestpixeldungeon.windows.CatalogUI;
 import com.egoal.darkestpixeldungeon.windows.WndCrashReportConsent;
 import com.egoal.darkestpixeldungeon.windows.WndDonate;
 import com.egoal.darkestpixeldungeon.windows.WndSettings;
@@ -149,6 +150,12 @@ public class TitleScene extends PixelScene {
                     @Override
                     public void onClick() {
                         parent.add(new WndDonate());
+                    }
+                },
+                new DashboardItem(M.INSTANCE.L(this, "catalog"), 7) {
+                    @Override
+                    public void onClick() {
+                        CatalogUI.INSTANCE.open();
                     }
                 }
         };

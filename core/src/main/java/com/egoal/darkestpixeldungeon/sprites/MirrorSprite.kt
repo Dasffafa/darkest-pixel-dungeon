@@ -22,12 +22,14 @@ package com.egoal.darkestpixeldungeon.sprites
 
 import com.egoal.darkestpixeldungeon.actors.Char
 import com.egoal.darkestpixeldungeon.Dungeon
+import com.egoal.darkestpixeldungeon.actors.hero.HeroClass
 import com.egoal.darkestpixeldungeon.actors.mobs.npcs.MirrorImage
 import com.watabou.noosa.TextureFilm
 
 class MirrorSprite : MobSprite() {
     init {
-        texture(Dungeon.hero.heroClass.spritesheet())
+        // the mirror copies the hero's sheet; with no run (catalog) show a warrior
+        texture((Dungeon.heroOrNull?.heroClass ?: HeroClass.WARRIOR).spritesheet())
         updateArmor(0)
         idle()
     }

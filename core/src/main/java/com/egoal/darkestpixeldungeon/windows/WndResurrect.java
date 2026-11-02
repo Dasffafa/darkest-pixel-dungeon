@@ -81,7 +81,7 @@ public class WndResurrect extends Window {
       public void onClick() {
         hide();
 
-        Rankings.INSTANCE.Submit(false, WndResurrect.causeOfDeath.getClass());
+        Rankings.INSTANCE.Submit(false, WndResurrect.causeOfDeath);
         Hero.Companion.ReallyDie(WndResurrect.causeOfDeath);
       }
     };

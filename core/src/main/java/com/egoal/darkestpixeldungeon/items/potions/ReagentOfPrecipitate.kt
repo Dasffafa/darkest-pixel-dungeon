@@ -28,11 +28,11 @@ class ReagentOfPrecipitate : Reagent(false) {
                 if(it!=null) {
                     detach(hero.belongings.backpack)
                     val weapon = it as Weapon
-                    weapon.enchantment!!.left += max(weapon.enchantment!!.left, 10f)
+                    for (enc in weapon.enchantments) enc.left += max(enc.left, 10f)
                     GLog.p(M.L(this, "smeared", weapon.name()))
                 }
             }, M.L(this, "select_item"), {
-                it is Weapon && it.enchantment != null && it.enchantment!!.left > 0f
+                it is Weapon && it.enchantments.any { e -> e.left > 0f }
             })
         }
     }

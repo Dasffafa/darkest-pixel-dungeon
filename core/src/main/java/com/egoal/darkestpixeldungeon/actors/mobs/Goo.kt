@@ -113,7 +113,7 @@ class Goo : Mob() {
     override fun attackProc(damage: Damage): Damage {
         val enemy = damage.to as Char
         if (!damage.isFeatured(Damage.Feature.CRITICAL) && Random.Int(3) == 0) {
-            Buff.prolong(enemy, Vulnerable::class.java, 3f).ratio = 1.25f
+            Vulnerable.add(enemy, 1.25f, Damage.Type.NORMAL, 3f)
             enemy.sprite.burst(0xFF0000, 5)
         }
 

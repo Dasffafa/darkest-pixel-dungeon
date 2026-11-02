@@ -124,18 +124,24 @@ class ItemStatusHandler<T : Item> {
 
     fun image(item: T): Int = labelImages[label(item)]!!
 
+    /** the whole class -> sprite assignment, for a caller that rolls its own set */
+    fun images(): Map<Class<*>, Int> =
+            itemLabels.entries.associate { (cls, label) -> cls as Class<*> to labelImages[label]!! }
+
     fun label(item: T): String = itemLabels[item.javaClass]!!
 
     fun isKnown(item: T): Boolean = known.contains(item.javaClass)
 
     fun know(item: T) {
         known.add(item.javaClass as Class<out T>)
+        Catalog.SetSeen(item.javaClass)
 
         // the last one
         if (known.size == items.size - 1) {
             for (i in items.indices) {
                 if (!known.contains(items[i])) {
                     known.add(items[i])
+                    Catalog.SetSeen(items[i])
                     break
                 }
             }

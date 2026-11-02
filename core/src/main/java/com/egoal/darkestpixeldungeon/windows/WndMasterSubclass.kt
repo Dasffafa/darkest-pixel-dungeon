@@ -35,7 +35,9 @@ class WndMasterSubclass(heroClass: HeroClass) : Window() {
             btn.setRect(0f, y, WIDTH, BTN_HEIGHT)
             add(btn)
             buttons += btn
-            if (buttons.size == 1) btn.textColor(TITLE_COLOR)
+            if (buttons.size == 1) 
+                if(showOptionHighlight())
+                    btn.textColor(TITLE_COLOR)
             y = btn.bottom() + GAP
         }
 
@@ -60,7 +62,7 @@ class WndMasterSubclass(heroClass: HeroClass) : Window() {
                 Input.Keys.ENTER -> { buttons[selected].onClick(); return true }
                 else -> return super.onSignal(key)
             }
-            buttons.forEachIndexed { i, b -> b.textColor(if (i == selected) TITLE_COLOR else 0xFFFFFF) }
+            buttons.forEachIndexed { i, b -> b.textColor(if (i == selected && showOptionHighlight()) TITLE_COLOR else 0xFFFFFF) }
             return true
         }
         return super.onSignal(key)

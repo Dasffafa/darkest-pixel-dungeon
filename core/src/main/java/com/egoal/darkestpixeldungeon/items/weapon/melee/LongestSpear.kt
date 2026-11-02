@@ -20,6 +20,10 @@ class LongestSpear : MeleeWeapon() {
         RCH = 3
     }
 
+    override fun STRReq(lvl: Int): Int {
+        return super.STRReq(lvl) + 1
+    }
+
     override fun max(lvl: Int): Int = round(super.max(lvl) * 1.2).toInt()
 
     override fun proc(dmg: Damage): Damage {

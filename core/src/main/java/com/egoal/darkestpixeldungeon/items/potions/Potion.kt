@@ -322,13 +322,24 @@ open class Potion : Item() {
             }
         }
 
-        private lateinit var handler: ItemStatusHandler<Potion>
+        private var labelHandler: ItemStatusHandler<Potion>? = null
+
+        // labels are set up when a run starts. The catalog can be opened from the
+        // title screen, so fall back to a fresh, fully unknown label set.
+        private val handler: ItemStatusHandler<Potion>
+            get() {
+                if (labelHandler == null) initColors()
+                return labelHandler!!
+            }
 
         private const val REINFORCED = "reinforced"
 
         fun initColors() {
-            handler = ItemStatusHandler(potions, colors)
+            labelHandler = ItemStatusHandler(potions, colors)
         }
+
+        /** a fresh, complete label set: the catalog rolls its own, never a run's */
+        fun catalogLabels(): ItemStatusHandler<Potion> = ItemStatusHandler(potions, colors)
 
         fun save(bundle: Bundle) {
             handler.save(bundle)
@@ -339,7 +350,7 @@ open class Potion : Item() {
         }
 
         fun restore(bundle: Bundle) {
-            handler = ItemStatusHandler(potions, colors, bundle)
+            labelHandler = ItemStatusHandler(potions, colors, bundle)
         }
 
         val known: HashSet<Class<out Potion>>

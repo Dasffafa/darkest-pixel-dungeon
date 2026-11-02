@@ -14,10 +14,7 @@ class CorrodeCyan : Plant(14) {
     override fun activate() {
         Actor.findChar(pos)?.let {
             val len = Random.Float(10f, 15f)
-            Buff.prolong(it, Vulnerable::class.java, len).apply {
-                dmgType = Damage.Type.MAGICAL
-                ratio = 1.2f
-            }
+            Vulnerable.add(it, 1.2f, Damage.Type.MAGICAL, len)
         }
 
         if (Dungeon.visible[pos])

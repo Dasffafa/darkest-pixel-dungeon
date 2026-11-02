@@ -27,10 +27,13 @@ abstract class Perk(val maxLevel: Int = 1, var level: Int = 1) : Bundlable {
         Viability
     }
 
-    private val tags = HashSet<Tag>()
+    private val _tags = HashSet<Tag>()
+
+    /** read-only view for the catalog, which groups its entries by tag */
+    val tags: Set<Tag> get() = _tags
 
     protected fun addTags(vararg thetags: Tag) {
-        tags.addAll(thetags)
+        _tags.addAll(thetags)
     }
 
     open fun description(): String = M.L(this, "desc")
@@ -91,7 +94,8 @@ abstract class Perk(val maxLevel: Int = 1, var level: Int = 1) : Bundlable {
             override fun onGain() {
                 super.onGain()
                 Buff.affect(Dungeon.hero, Relieve::class.java).prolong(100f) // 100* 0.3f
-                Buff.prolong(Dungeon.hero, Lucky::class.java, 100f)
+                val lucky = Buff.prolong(Dungeon.hero, Lucky::class.java, Lucky.DURATION)
+                lucky.level = maxOf(lucky.level, 3)
             }
         }
 
@@ -208,5 +212,14 @@ abstract class Perk(val maxLevel: Int = 1, var level: Int = 1) : Bundlable {
                 EnchantmentExtraDamage() to 1f,
                 FastMoveOnKilling() to 1f,
         )
+
+        /**
+         * Everything the hero can end up with, in the catalog's roster order. Derived
+         * from [positives] so a new perk cannot be forgotten here, plus the two that
+         * are only ever granted by the story and by hunger.
+         */
+        val catalogRoster: List<Class<out Perk>> by lazy {
+            positives.keys.map { it.javaClass } + listOf(Dieting::class.java, RavenousAppetite::class.java)
+        }
     }
 }

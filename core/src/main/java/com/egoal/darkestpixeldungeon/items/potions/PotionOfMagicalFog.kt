@@ -32,10 +32,7 @@ class PotionOfMagicalFog : Potion() {
             PathFinder.NEIGHBOURS9.forEach {
                 Actor.findChar(it + cell)?.let { ch ->
                     val len = Random.Float(10f, 15f)
-                    Buff.prolong(ch, Vulnerable::class.java, len).apply {
-                        dmgType = Damage.Type.MAGICAL
-                        ratio = 1.35f
-                    }
+                    Vulnerable.add(ch, 1.35f, Damage.Type.MAGICAL, len)
                 }
             }
         }

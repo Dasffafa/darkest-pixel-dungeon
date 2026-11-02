@@ -33,18 +33,20 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 public class PlatformSupport {
-    private static final String CJK_FONT_ASSET = "droid_sans.ttf";
     private static final Pattern CJK_TEXT = Pattern.compile(
             "[\\p{IsHan}\\p{InHiragana}\\p{InKatakana}\\p{InHangul_Syllables}"
                     + "\\p{InCJK_Symbols_and_Punctuation}"
                     + "\\p{InHalfwidth_and_Fullwidth_Forms}]");
 
     private String fontAsset = "font.ttf";
-    private FreeTypeFontGenerator fontGenerator;
-    private FreeTypeFontGenerator cjkFontGenerator;
+    private String cjkFontAsset = "droid_sans.ttf";
     private PixmapPacker fontPacker;
-    private final Map<Integer, BitmapFont> fonts = new HashMap<Integer, BitmapFont>();
-    private final Map<Integer, BitmapFont> cjkFonts = new HashMap<Integer, BitmapFont>();
+    private final Map<String, FontFace> fontFaces = new HashMap<String, FontFace>();
+
+    private static class FontFace {
+        FreeTypeFontGenerator generator;
+        final Map<Integer, BitmapFont> fonts = new HashMap<Integer, BitmapFont>();
+    }
     public void updateSystemUI() { }
     public boolean supportsSystemUI() { return false; }
     public void setLandscape(boolean landscape) { }
@@ -71,16 +73,27 @@ public class PlatformSupport {
         }
     }
 
+    public synchronized void setCjkFont(String asset) {
+        if (!asset.equals(cjkFontAsset)) {
+            cjkFontAsset = asset;
+            resetFonts();
+        }
+    }
+
     public synchronized BitmapFont getFont(int size, String text) {
-        if (fontGenerator == null) {
-            fontGenerator = new FreeTypeFontGenerator(Gdx.files.internal(fontAsset));
-            cjkFontGenerator = new FreeTypeFontGenerator(Gdx.files.internal(CJK_FONT_ASSET));
+        if (fontPacker == null) {
             fontPacker = new PixmapPacker(1024, 1024, Pixmap.Format.RGBA8888, 1, false);
         }
-        boolean useCjkFont = CJK_TEXT.matcher(text).find();
-        FreeTypeFontGenerator generator = useCjkFont ? cjkFontGenerator : fontGenerator;
-        Map<Integer, BitmapFont> fontCache = useCjkFont ? cjkFonts : fonts;
-        BitmapFont font = fontCache.get(size);
+        // an asset is generated once: the latin and CJK fonts may resolve to the
+        // same file, and that face must not be loaded twice
+        String asset = CJK_TEXT.matcher(text).find() ? cjkFontAsset : fontAsset;
+        FontFace face = fontFaces.get(asset);
+        if (face == null) {
+            face = new FontFace();
+            face.generator = new FreeTypeFontGenerator(Gdx.files.internal(asset));
+            fontFaces.put(asset, face);
+        }
+        BitmapFont font = face.fonts.get(size);
         if (font == null) {
             FreeTypeFontGenerator.FreeTypeFontParameter parameters =
                     new FreeTypeFontGenerator.FreeTypeFontParameter();
@@ -93,22 +106,19 @@ public class PlatformSupport {
             parameters.borderWidth = parameters.size / 10f;
             parameters.renderCount = 3;
             parameters.spaceX = -(int) parameters.borderWidth;
-            font = generator.generateFont(parameters);
-            fontCache.put(size, font);
+            font = face.generator.generateFont(parameters);
+            face.fonts.put(size, font);
         }
         return font;
     }
 
     public synchronized void resetFonts() {
-        for (BitmapFont font : fonts.values()) font.dispose();
-        for (BitmapFont font : cjkFonts.values()) font.dispose();
-        fonts.clear();
-        cjkFonts.clear();
-        if (fontGenerator != null) fontGenerator.dispose();
-        if (cjkFontGenerator != null) cjkFontGenerator.dispose();
+        for (FontFace face : fontFaces.values()) {
+            for (BitmapFont font : face.fonts.values()) font.dispose();
+            face.generator.dispose();
+        }
+        fontFaces.clear();
         if (fontPacker != null) fontPacker.dispose();
-        fontGenerator = null;
-        cjkFontGenerator = null;
         fontPacker = null;
     }
 }

@@ -23,6 +23,7 @@ package com.egoal.darkestpixeldungeon.windows;
 import com.egoal.darkestpixeldungeon.CrashReporting;
 import com.egoal.darkestpixeldungeon.DarkestPixelDungeon;
 import com.egoal.darkestpixeldungeon.messages.M;
+import com.egoal.darkestpixeldungeon.network.SpiritServer;
 import com.egoal.darkestpixeldungeon.ui.OptionSlider;
 import com.egoal.darkestpixeldungeon.ui.RedButton;
 import com.egoal.darkestpixeldungeon.Assets;
@@ -31,6 +32,8 @@ import com.egoal.darkestpixeldungeon.scenes.GameScene;
 import com.egoal.darkestpixeldungeon.scenes.PixelScene;
 import com.egoal.darkestpixeldungeon.ui.CheckBox;
 import com.egoal.darkestpixeldungeon.ui.Toolbar;
+import com.egoal.darkestpixeldungeon.update.Updates;
+import com.watabou.noosa.ColorBlock;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.Group;
 import com.watabou.noosa.RenderedText;
@@ -50,7 +53,7 @@ public class WndSettings extends WndTabbed {
   private ScreenTab screen;
   private UITab ui;
   private AudioTab audio;
-  private CrashTab crash;
+  private NetworkTab network;
   private GameTab game;
 
   private static int last_index = 0;
@@ -110,15 +113,16 @@ public class WndSettings extends WndTabbed {
       }
     });
 
-    if (CrashReporting.INSTANCE.getAvailable()) {
-      crash = new CrashTab();
-      add(crash);
+    if (CrashReporting.INSTANCE.getAvailable() || SpiritServer.INSTANCE
+            .isConfigured()) {
+      network = new NetworkTab();
+      add(network);
 
-      add(new LabeledTab(Messages.get(this, "crash_report")) {
+      add(new LabeledTab(Messages.get(this, "network")) {
         @Override
         protected void select(boolean value) {
           super.select(value);
-          crash.visible = crash.active = value;
+          network.visible = network.active = value;
           if (value) last_index = 4;
         }
       });
@@ -152,7 +156,7 @@ public class WndSettings extends WndTabbed {
         }
       };
       chkStacked.setRect(0, autoPickupDesc.y + autoPickupDesc.baseLine() +
-              GAP_SML, WIDTH, BTN_HEIGHT);
+              GAP_SML, WIDTH / 2 - 1, BTN_HEIGHT);
       chkStacked.checked(DarkestPixelDungeon.autoPickupStacked());
       add(chkStacked);
 
@@ -164,23 +168,47 @@ public class WndSettings extends WndTabbed {
           DarkestPixelDungeon.autoPickupOnDoor(checked());
         }
       };
-      chkOnDoor.setRect(0, chkStacked.bottom() + GAP_SML, WIDTH, BTN_HEIGHT);
+      chkOnDoor.setRect(WIDTH / 2 + 1, chkStacked.top(), WIDTH / 2 - 1, BTN_HEIGHT);
       chkOnDoor.checked(DarkestPixelDungeon.autoPickupOnDoor());
       add(chkOnDoor);
 
-      CheckBox chkSpiritSync = new CheckBox(Messages.get(this,
-              "spirit_sync")) {
+      ColorBlock divider = new ColorBlock(WIDTH, 1f, 0xff222222);
+      divider.x = 0;
+      divider.y = chkStacked.bottom() + GAP_SML;
+      add(divider);
+
+      CheckBox chkSpecialStyle = new CheckBox(Messages.get(this,
+              "special_style_text")) {
         @Override
         public void onClick() {
           super.onClick();
-          DarkestPixelDungeon.uploadSpirits(checked());
-          DarkestPixelDungeon.downloadSpirits(checked());
-          DarkestPixelDungeon.spiritSyncDecided(true);
+          DarkestPixelDungeon.switchNoFade((Class<? extends PixelScene>)
+                  DarkestPixelDungeon.scene().getClass(), new Game
+                  .SceneChangeCallback() {
+            @Override
+            public void beforeCreate() {
+              DarkestPixelDungeon.specialStyleText(checked());
+            }
+
+            @Override
+            public void afterCreate() {
+              Game.scene().add(new WndSettings());
+            }
+          });
         }
       };
-      chkSpiritSync.setRect(0, chkOnDoor.bottom() + GAP_SML, WIDTH, BTN_HEIGHT);
-      chkSpiritSync.checked(DarkestPixelDungeon.uploadSpirits() && DarkestPixelDungeon.downloadSpirits());
-      add(chkSpiritSync);
+      chkSpecialStyle.setRect(0, divider.y + GAP_SML, WIDTH, BTN_HEIGHT);
+      chkSpecialStyle.checked(DarkestPixelDungeon.specialStyleText());
+      add(chkSpecialStyle);
+
+      ColorBlock divider2 = new ColorBlock(WIDTH, 1f, 0xff222222);
+      divider2.x = 0;
+      divider2.y = chkSpecialStyle.bottom() + GAP_SML;
+      add(divider2);
+
+      CatalogSpoilerOption chkCatalogSpoiler = new CatalogSpoilerOption();
+      chkCatalogSpoiler.setRect(0, divider2.y + GAP_SML, WIDTH, BTN_HEIGHT);
+      add(chkCatalogSpoiler);
     }
   }
 
@@ -293,21 +321,66 @@ public class WndSettings extends WndTabbed {
     }
   }
 
-  private class CrashTab extends Group {
+  private class NetworkTab extends Group {
 
-    public CrashTab() {
+    public NetworkTab() {
       super();
 
-      CheckBox chkCrashReport = new CheckBox(Messages.get(this, "send")) {
+      float btm = 0;
+      if (CrashReporting.INSTANCE.getAvailable()) {
+        CheckBox chkCrashReport = new CheckBox(Messages.get(this, "send")) {
+          @Override
+          public void onClick() {
+            super.onClick();
+            CrashReporting.INSTANCE.setConsent(checked());
+          }
+        };
+        chkCrashReport.setRect(0, GAP_SML, WIDTH, BTN_HEIGHT);
+        chkCrashReport.checked(CrashReporting.INSTANCE.isConsented());
+        add(chkCrashReport);
+        btm = chkCrashReport.bottom();
+      }
+
+      CheckBox chkSpiritSync = new CheckBox(Messages.get(this,
+              "spirit_sync")) {
         @Override
         public void onClick() {
           super.onClick();
-          CrashReporting.INSTANCE.setConsent(checked());
+          DarkestPixelDungeon.spiritSync(checked());
+          DarkestPixelDungeon.spiritSyncDecided(true);
+          if (checked()) SpiritServer.INSTANCE.onStartup();
         }
       };
-      chkCrashReport.setRect(0, GAP_SML, WIDTH, BTN_HEIGHT);
-      chkCrashReport.checked(CrashReporting.INSTANCE.isConsented());
-      add(chkCrashReport);
+      chkSpiritSync.setRect(0, btm + GAP_SML, WIDTH, BTN_HEIGHT);
+      chkSpiritSync.checked(DarkestPixelDungeon.spiritSync());
+      add(chkSpiritSync);
+
+      CheckBox chkEpitaphSync = new CheckBox(Messages.get(this,
+              "epitaph_sync")) {
+        @Override
+        public void onClick() {
+          super.onClick();
+          DarkestPixelDungeon.epitaphSync(checked());
+          DarkestPixelDungeon.spiritSyncDecided(true);
+          if (checked()) SpiritServer.INSTANCE.onStartup();
+        }
+      };
+      chkEpitaphSync.setRect(0, chkSpiritSync.bottom() + GAP_SML, WIDTH,
+              BTN_HEIGHT);
+      chkEpitaphSync.checked(DarkestPixelDungeon.epitaphSync());
+      add(chkEpitaphSync);
+
+      CheckBox chkUpdateCheck = new CheckBox(Messages.get(this, "update_check")) {
+        @Override
+        public void onClick() {
+          super.onClick();
+          DarkestPixelDungeon.updateCheck(checked());
+          if (checked()) Updates.INSTANCE.checkForUpdate();
+        }
+      };
+      chkUpdateCheck.setRect(0, chkEpitaphSync.bottom() + GAP_SML, WIDTH, BTN_HEIGHT);
+      chkUpdateCheck.checked(DarkestPixelDungeon.updateCheck());
+      add(chkUpdateCheck);
     }
   }
 

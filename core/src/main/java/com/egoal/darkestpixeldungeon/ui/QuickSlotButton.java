@@ -22,6 +22,7 @@ package com.egoal.darkestpixeldungeon.ui;
 
 import com.egoal.darkestpixeldungeon.DungeonTilemap;
 import com.egoal.darkestpixeldungeon.Dungeon;
+import com.egoal.darkestpixeldungeon.actors.Actor;
 import com.egoal.darkestpixeldungeon.actors.Char;
 import com.egoal.darkestpixeldungeon.items.Item;
 import com.egoal.darkestpixeldungeon.messages.Messages;
@@ -194,6 +195,19 @@ public class QuickSlotButton extends Button implements WndBag.Listener {
   }
 
   @Override
+  public void update() {
+    super.update();
+
+    // Follow the locked target's sprite so the reticle stays on it while it
+    // moves, instead of freezing at the position it had when targeting began.
+    if (targeting && lastTarget != null && lastTarget.getHasSprite()
+            && lastTarget.getSprite().parent != null) {
+      targetCell = lastTarget.getPos();
+      crossM.center(lastTarget.getSprite().center());
+    }
+  }
+
+  @Override
   public void onClick() {
     GameScene.selectItem(this, WndBag.Mode.QUICKSLOT, Messages.get(this, 
             "select_item"));
@@ -257,18 +271,29 @@ public class QuickSlotButton extends Button implements WndBag.Listener {
   }
 
   private static void beginTargeting(Item item, int slotNum) {
-    List<Char> targets = availableTargets(item);
-    lastTarget = targets.isEmpty() ? null : targets.get(0);
     targeting = true;
     targetingSlot = slotNum;
     targetingItem = item;
-    if (lastTarget == null) {
-      targetCell = Dungeon.INSTANCE.getHero().getPos();
-      showTargetCell(targetCell);
-    } else {
+    // Lock onto the enemy the hero most recently attacked or targeted, as long
+    // as it is still a live, visible enemy the item can aim at. Only when there
+    // is no such target does targeting fall back to manual cell selection.
+    if (isValidTarget(lastTarget, item)) {
       targetCell = lastTarget.getPos();
       showTarget(lastTarget);
+    } else {
+      lastTarget = null;
+      targetCell = Dungeon.INSTANCE.getHero().getPos();
+      showTargetCell(targetCell);
     }
+  }
+
+  private static boolean isValidTarget(Char target, Item item) {
+    if (target == null || target == Dungeon.INSTANCE.getHero()) return false;
+    if (target.getCamp() != Char.Camp.ENEMY) return false;
+    if (!target.isAlive()) return false;
+    if (!Actor.Companion.chars().contains(target)) return false;
+    if (!Dungeon.INSTANCE.getVisible()[target.getPos()]) return false;
+    return autoAim(target, item) != -1;
   }
 
   public static boolean isTargeting() {
@@ -312,10 +337,12 @@ public class QuickSlotButton extends Button implements WndBag.Listener {
   private static void showTarget(Char target) {
     targetCell = target.getPos();
     crossM.remove();
-    if (target.getSprite() != null && target.getSprite().parent != null) {
-      target.getSprite().parent.add(crossM);
+    if (target.getHasSprite() && target.getSprite().parent != null) {
+      target.getSprite().parent.addToFront(crossM);
+      crossM.center(target.getSprite().center());
+    } else {
+      crossM.point(DungeonTilemap.tileToWorld(target.getPos()));
     }
-    crossM.point(DungeonTilemap.tileToWorld(target.getPos()));
     HealthIndicator.instance.target(target);
   }
 
@@ -337,8 +364,14 @@ public class QuickSlotButton extends Button implements WndBag.Listener {
   }
 
   private static void fireAtTarget(Item item) {
-    int cell = lastTarget == null ? targetCell : autoAim(lastTarget, item);
-    GameScene.handleCell(cell != -1 ? cell : targetCell);
+    int cell = targetCell;
+    if (lastTarget != null) {
+      int aimed = autoAim(lastTarget, item);
+      // If the item cannot be angled onto the target, fire at its position and
+      // hope for the best, matching the manual-targeting fallback.
+      cell = aimed != -1 ? aimed : lastTarget.getPos();
+    }
+    GameScene.handleCell(cell);
   }
 
   public static int autoAim(Char target) {
@@ -377,11 +410,18 @@ public class QuickSlotButton extends Button implements WndBag.Listener {
   }
 
   public static void target(Char target) {
-    if (target != Dungeon.INSTANCE.getHero()) {
-      lastTarget = target;
-
-      HealthIndicator.instance.target(target);
+    if (target == null) {
+      lastTarget = null;
+      HealthIndicator.instance.target(null);
+      return;
     }
+    if (target == Dungeon.INSTANCE.getHero()) return;
+    // Only real enemies become the locked target: an ally or neutral char must
+    // never displace the enemy the hero last attacked.
+    if (target.getCamp() == Char.Camp.ENEMY) {
+      lastTarget = target;
+    }
+    HealthIndicator.instance.target(target);
   }
 
   public static void cancel() {

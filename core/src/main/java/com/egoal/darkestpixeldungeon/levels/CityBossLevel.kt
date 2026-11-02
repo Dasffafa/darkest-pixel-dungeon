@@ -68,8 +68,13 @@ class CityBossLevel : Level() {
         }
     }
 
-    override fun randomRespawnCell(): Int =
-            PathFinder.NEIGHBOURS8.map { it + entrance }.filter { passable[it] }.random()
+    override fun randomRespawnCell(): Int {
+        val valid = PathFinder.NEIGHBOURS8.map { it + entrance }.filter { passable[it] }
+        val unoccupied = valid.filter { Actor.findChar(it) == null }
+        if (unoccupied.isNotEmpty()) return unoccupied.random()
+        if (valid.isNotEmpty()) return valid.random()
+        return entrance
+    }
 
     override fun press(cell: Int, ch: Char?) {
         super.press(cell, ch)
@@ -113,6 +118,7 @@ class CityBossLevel : Level() {
     override fun drop(item: Item, cell: Int): Heap {
         if (!keyDropped && item is SkeletonKey) {
             keyDropped = true
+            bossDefeated = true
             unseal()
 
             set(arenaDoor, Terrain.DOOR)
@@ -138,6 +144,9 @@ class CityBossLevel : Level() {
         arenaDoor = bundle.getInt(DOOR)
         enteredArena = bundle.getBoolean(ENTERED)
         keyDropped = bundle.getBoolean(DROPPED)
+        if (keyDropped) {
+            bossDefeated = true
+        }
     }
 
     override fun tileName(tile: Int): String = when (tile) {
