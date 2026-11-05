@@ -33,7 +33,7 @@ import com.egoal.darkestpixeldungeon.messages.M
 import com.egoal.darkestpixeldungeon.messages.Messages
 import com.egoal.darkestpixeldungeon.scenes.GameScene
 import com.egoal.darkestpixeldungeon.scenes.PixelScene
-import com.egoal.darkestpixeldungeon.sprites.HeroSprite
+import com.egoal.darkestpixeldungeon.sprites.DollSprite
 import com.egoal.darkestpixeldungeon.ui.*
 import com.watabou.gltextures.SmartTexture
 import com.watabou.gltextures.TextureCache
@@ -123,8 +123,8 @@ class WndHero : WndTabbed() {
 
             val hero = Dungeon.hero
 
-            val title = IconTitle(HeroSprite.avatar(hero.heroClass, hero.tier()), hero.userName)
-//            title.icon(HeroSprite.avatar(hero.heroClass, hero.tier()))
+            val title = IconTitle(DollSprite.Avatar(hero.heroClass, hero.tier()), hero.userName)
+//            title.icon(DollSprite.Avatar(hero.heroClass, hero.tier()))
 //            if (hero.givenName() == hero.className())
 //                title.label(Messages.get(this, "title", hero.lvl, hero.className())
 //                        .toUpperCase(Locale.ENGLISH))

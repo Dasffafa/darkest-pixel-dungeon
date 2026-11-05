@@ -35,7 +35,7 @@ import com.egoal.darkestpixeldungeon.messages.M
 import com.egoal.darkestpixeldungeon.messages.Messages
 import com.egoal.darkestpixeldungeon.scenes.CellSelector
 import com.egoal.darkestpixeldungeon.scenes.GameScene
-import com.egoal.darkestpixeldungeon.sprites.HeroSprite
+import com.egoal.darkestpixeldungeon.sprites.DollSprite
 import com.egoal.darkestpixeldungeon.utils.GLog
 import com.watabou.noosa.audio.Sample
 import com.watabou.noosa.tweeners.AlphaTweener
@@ -115,7 +115,7 @@ class ScrollOfTeleportation : Scroll() {
                     // read animation...
                     Item.curUser.spend(Scroll.TIME_TO_READ)
                     Item.curUser.busy()
-                    (Item.curUser.sprite as HeroSprite).read()
+                    (Item.curUser.sprite as DollSprite).read()
                 }
             }
 

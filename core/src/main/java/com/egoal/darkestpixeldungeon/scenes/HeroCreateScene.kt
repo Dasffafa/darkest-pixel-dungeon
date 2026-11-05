@@ -5,7 +5,7 @@ import com.egoal.darkestpixeldungeon.actors.hero.HeroClass
 import com.egoal.darkestpixeldungeon.items.Generator
 import com.egoal.darkestpixeldungeon.items.unclassified.*
 import com.egoal.darkestpixeldungeon.messages.M
-import com.egoal.darkestpixeldungeon.sprites.HeroSprite
+import com.egoal.darkestpixeldungeon.sprites.DollSprite
 import com.egoal.darkestpixeldungeon.ui.Archs
 import com.egoal.darkestpixeldungeon.ui.InputButton
 import com.egoal.darkestpixeldungeon.ui.RedButton
@@ -132,7 +132,7 @@ class HeroCreateScene : PixelScene() {
             PixelScene.align(portraitBg)
             add(portraitBg)
 
-            portrait = HeroSprite.Portrait(heroClass(), 0)
+            portrait = DollSprite.Portrait(heroClass(), 0)
             portrait.x = portraitBg.x + (portraitBg.width - portrait.width) / 2f
             portrait.y = portraitBg.y + (portraitBg.height - portrait.height) / 2f
             PixelScene.align(portrait)
@@ -192,7 +192,7 @@ class HeroCreateScene : PixelScene() {
         override fun onBackPressed() {} // do nothing
 
         fun onHeroClassChanged() {
-            portrait.copy(HeroSprite.Portrait(heroClass(), 0))
+            portrait.copy(DollSprite.Portrait(heroClass(), 0))
 
             tabDesc.refresh(heroClass())
             tabPerk.refresh(heroClass())

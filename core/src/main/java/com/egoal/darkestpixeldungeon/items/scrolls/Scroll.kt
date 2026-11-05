@@ -29,7 +29,7 @@ import com.egoal.darkestpixeldungeon.items.Item
 import com.egoal.darkestpixeldungeon.items.ItemStatusHandler
 import com.egoal.darkestpixeldungeon.messages.M
 import com.egoal.darkestpixeldungeon.messages.Messages
-import com.egoal.darkestpixeldungeon.sprites.HeroSprite
+import com.egoal.darkestpixeldungeon.sprites.DollSprite
 import com.egoal.darkestpixeldungeon.sprites.ItemSpriteSheet
 import com.egoal.darkestpixeldungeon.utils.GLog
 import com.watabou.utils.Bundle
@@ -116,7 +116,7 @@ abstract class Scroll : Item() {
     protected fun readAnimation() {
         curUser.spend(TIME_TO_READ)
         curUser.busy()
-        (curUser.sprite as HeroSprite).read()
+        (curUser.sprite as DollSprite).read()
     }
 
     fun setKnown() {

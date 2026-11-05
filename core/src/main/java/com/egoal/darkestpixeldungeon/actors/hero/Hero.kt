@@ -42,7 +42,7 @@ import com.egoal.darkestpixeldungeon.plants.Earthroot
 import com.egoal.darkestpixeldungeon.plants.Sungrass
 import com.egoal.darkestpixeldungeon.scenes.GameScene
 import com.egoal.darkestpixeldungeon.sprites.CharSprite
-import com.egoal.darkestpixeldungeon.sprites.HeroSprite
+import com.egoal.darkestpixeldungeon.sprites.DollSprite
 import com.egoal.darkestpixeldungeon.ui.AttackIndicator
 import com.egoal.darkestpixeldungeon.ui.BuffIndicator
 import com.egoal.darkestpixeldungeon.ui.QuickSlotButton
@@ -605,7 +605,7 @@ class Hero : Char() {
         if (estr > 0)
             return speed / 1.2f.pow(estr)
         else {
-            if ((sprite as HeroSprite).sprint(subClass == HeroSubClass.FREERUNNER && !isStarving()))
+            if ((sprite as DollSprite).sprint(subClass == HeroSubClass.FREERUNNER && !isStarving()))
                 speed *= if (invisible > 0) 2f else 1.5f
 
             return speed

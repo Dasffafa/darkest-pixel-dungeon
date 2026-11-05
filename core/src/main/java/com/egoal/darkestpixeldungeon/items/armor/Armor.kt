@@ -36,7 +36,7 @@ import com.egoal.darkestpixeldungeon.items.armor.glyphs.*
 import com.egoal.darkestpixeldungeon.items.unclassified.BrokenSeal
 import com.egoal.darkestpixeldungeon.messages.M
 import com.egoal.darkestpixeldungeon.messages.Messages
-import com.egoal.darkestpixeldungeon.sprites.HeroSprite
+import com.egoal.darkestpixeldungeon.sprites.DollSprite
 import com.egoal.darkestpixeldungeon.sprites.ItemSprite
 import com.egoal.darkestpixeldungeon.utils.GLog
 import com.watabou.noosa.particles.Emitter
@@ -116,7 +116,7 @@ open class Armor(var tier: Int) : EquipableItem() {
                 GLog.n(Messages.get(Armor::class.java, "equip_cursed"))
             }
 
-            (hero.sprite as HeroSprite).updateArmor()
+            (hero.sprite as DollSprite).updateArmor()
             activate(hero)
 
             hero.spendAndNext(time2equip(hero))
@@ -152,7 +152,7 @@ open class Armor(var tier: Int) : EquipableItem() {
     override fun doUnequip(hero: Hero, collect: Boolean, single: Boolean): Boolean {
         if (super.doUnequip(hero, collect, single)) {
             hero.belongings.armor = null
-            (hero.sprite as HeroSprite).updateArmor()
+            (hero.sprite as DollSprite).updateArmor()
 
             hero.buff(BrokenSeal.WarriorShield::class.java)?.setArmor(null)
             if (glyph is Peaceful)
