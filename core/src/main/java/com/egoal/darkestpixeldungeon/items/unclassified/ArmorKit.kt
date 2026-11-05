@@ -8,7 +8,7 @@ import com.egoal.darkestpixeldungeon.items.armor.Armor
 import com.egoal.darkestpixeldungeon.items.armor.ClassArmor
 import com.egoal.darkestpixeldungeon.messages.Messages
 import com.egoal.darkestpixeldungeon.scenes.GameScene
-import com.egoal.darkestpixeldungeon.sprites.HeroSprite
+import com.egoal.darkestpixeldungeon.sprites.DollSprite
 import com.egoal.darkestpixeldungeon.sprites.ItemSpriteSheet
 import com.egoal.darkestpixeldungeon.utils.GLog
 import com.egoal.darkestpixeldungeon.windows.WndBag
@@ -42,7 +42,7 @@ class ArmorKit : Item() {
         val classArmor = ClassArmor.upgrade(curUser, armor)
         if (curUser.belongings.armor == armor) {
             curUser.belongings.armor = classArmor
-            (curUser.sprite as HeroSprite).updateArmor()
+            (curUser.sprite as DollSprite).updateArmor()
         } else {
             armor.detach(curUser.belongings.backpack)
             classArmor.collect(curUser.belongings.backpack)

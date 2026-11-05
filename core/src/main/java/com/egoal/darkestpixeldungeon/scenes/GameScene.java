@@ -65,7 +65,6 @@ import com.egoal.darkestpixeldungeon.items.potions.Potion;
 import com.egoal.darkestpixeldungeon.levels.features.Chasm;
 import com.egoal.darkestpixeldungeon.levels.traps.Trap;
 import com.egoal.darkestpixeldungeon.messages.Messages;
-import com.egoal.darkestpixeldungeon.sprites.HeroSprite;
 import com.egoal.darkestpixeldungeon.sprites.TrapSprite;
 import com.egoal.darkestpixeldungeon.ui.ActionIndicator;
 import com.egoal.darkestpixeldungeon.ui.AttackIndicator;
@@ -127,8 +126,7 @@ public class GameScene extends PixelScene {
   private SkinnedBlock water;
   private DungeonTilemap tiles;
   private FogOfWar fog;
-  private DollSprite heroDoll;
-  private HeroSprite hero;
+  private DollSprite hero;
 
   private StatusPane pane;
 
@@ -287,13 +285,7 @@ public class GameScene extends PixelScene {
     sentences = new Group();
     filteredMap.add(sentences);
 
-//    heroDoll = new DollSprite();
-//    heroDoll.place(Dungeon.hero.pos+ 1);
-//    heroDoll.updateArmor();
-//    mobs.add(heroDoll);
-//    heroDoll.addComponencts();
-
-    hero = new HeroSprite();
+    hero = new DollSprite();
     hero.place(Dungeon.INSTANCE.getHero().getPos());
     hero.updateArmor();
     mobs.add(hero);

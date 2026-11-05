@@ -40,7 +40,7 @@ class MirrorSprite : MobSprite() {
     }
 
     fun updateArmor(tier: Int) {
-        val film = TextureFilm(HeroSprite.tiers(), tier, FRAME_WIDTH, FRAME_HEIGHT)
+        val film = TextureFilm(DollSprite.Tiers(), tier, FRAME_WIDTH, FRAME_HEIGHT)
 
         idle = Animation(1, true)
         idle.frames(film, 0, 0, 0, 1, 0, 0, 1, 1)

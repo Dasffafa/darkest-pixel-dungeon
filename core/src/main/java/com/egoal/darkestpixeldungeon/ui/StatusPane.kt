@@ -34,7 +34,7 @@ import com.egoal.darkestpixeldungeon.items.unclassified.Torch
 import com.egoal.darkestpixeldungeon.messages.M.L
 import com.egoal.darkestpixeldungeon.scenes.GameScene
 import com.egoal.darkestpixeldungeon.scenes.PixelScene
-import com.egoal.darkestpixeldungeon.sprites.HeroSprite.Companion.Portrait
+import com.egoal.darkestpixeldungeon.sprites.DollSprite.Companion.Portrait
 import com.egoal.darkestpixeldungeon.ui.Icons
 import com.egoal.darkestpixeldungeon.ui.StatusPane
 import com.egoal.darkestpixeldungeon.ui.Toolbar.PickedUpItem

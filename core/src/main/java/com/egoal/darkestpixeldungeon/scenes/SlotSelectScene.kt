@@ -2,6 +2,7 @@ package com.egoal.darkestpixeldungeon.scenes
 
 import com.egoal.darkestpixeldungeon.*
 import com.egoal.darkestpixeldungeon.messages.M
+import com.egoal.darkestpixeldungeon.sprites.DollSprite
 import com.egoal.darkestpixeldungeon.ui.*
 import com.egoal.darkestpixeldungeon.windows.WndOptions
 import com.watabou.noosa.*
@@ -115,7 +116,7 @@ class SlotSelectScene : PixelScene() {
             } else {
                 name.text(info!!.name)
                 if (hero == null) {
-                    hero = Image(info.heroClass.spritesheet(), 0, 15 * info.armorTier, 12, 15)
+                    hero = DollSprite.Avatar(info.heroClass, info.armorTier)
                     add(hero)
 
                     stairs = Image(Icons.get(Icons.DEPTH))
@@ -128,7 +129,7 @@ class SlotSelectScene : PixelScene() {
                     level = BitmapText(PixelScene.pixelFont)
                     add(level)
                 } else {
-                    hero!!.copy(Image(info.heroClass.spritesheet(), 0, 15 * info.armorTier, 12, 15))
+                    hero!!.copy(DollSprite.Avatar(info.heroClass, info.armorTier))
                     classIcon!!.copy(Image(Icons.get(info.heroClass)))
                 }
 

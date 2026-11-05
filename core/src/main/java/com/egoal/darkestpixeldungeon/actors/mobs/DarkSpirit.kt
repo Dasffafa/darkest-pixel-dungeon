@@ -23,7 +23,7 @@ import com.egoal.darkestpixeldungeon.messages.M
 import com.egoal.darkestpixeldungeon.network.BundleGuard
 import com.egoal.darkestpixeldungeon.network.SpiritServer
 import com.egoal.darkestpixeldungeon.sprites.CharSprite
-import com.egoal.darkestpixeldungeon.sprites.HeroSprite
+import com.egoal.darkestpixeldungeon.sprites.DollSprite
 import com.egoal.darkestpixeldungeon.sprites.MobSprite
 import com.watabou.noosa.TextureFilm
 import com.watabou.noosa.audio.Sample
@@ -265,7 +265,7 @@ class DarkSpirit : Mob() {
         }
 
         fun updateArmor(tier: Int) {
-            val film = TextureFilm(HeroSprite.tiers(), tier, FRAME_WIDTH, FRAME_HEIGHT)
+            val film = TextureFilm(DollSprite.Tiers(), tier, FRAME_WIDTH, FRAME_HEIGHT)
 
             idle = Animation(1, true)
             idle.frames(film, 0, 0, 0, 1, 0, 0, 1, 1)

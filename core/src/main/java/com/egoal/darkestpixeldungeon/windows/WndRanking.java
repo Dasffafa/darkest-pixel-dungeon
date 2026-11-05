@@ -26,7 +26,7 @@ import com.egoal.darkestpixeldungeon.actors.hero.Belongings;
 import com.egoal.darkestpixeldungeon.actors.hero.perks.Perk;
 import com.egoal.darkestpixeldungeon.messages.Messages;
 import com.egoal.darkestpixeldungeon.scenes.PixelScene;
-import com.egoal.darkestpixeldungeon.sprites.HeroSprite;
+import com.egoal.darkestpixeldungeon.sprites.DollSprite;
 import com.egoal.darkestpixeldungeon.Assets;
 import com.egoal.darkestpixeldungeon.Badges;
 import com.egoal.darkestpixeldungeon.Dungeon;
@@ -161,7 +161,7 @@ public class WndRanking extends WndTabbed {
       String heroClass = Dungeon.INSTANCE.getHero().className();
 
       IconTitle title = new IconTitle();
-      title.icon(HeroSprite.Companion.avatar(Dungeon.INSTANCE.getHero().getHeroClass(), Dungeon.INSTANCE.getHero()
+      title.icon(DollSprite.Companion.Avatar(Dungeon.INSTANCE.getHero().getHeroClass(), Dungeon.INSTANCE.getHero()
               .tier
                       ()));
       title.label(Messages.get(this, "title", Dungeon.INSTANCE.getHero().getLvl(), heroClass)
