@@ -286,7 +286,9 @@ public class WndBag extends WndTabbed {
         }
 
         // Free Space
-        while (count - (backpack ? 6 : nCols) < (backpack ? container.getSize() - 1 : container.getSize())) {
+        int totalSlots = nCols * nRows;
+        int reserved = backpack ? 2 : 0;   // gold + goldclaw occupy last 2 slots
+        while (itemButtons.size() < totalSlots - reserved) {
             placeItem(null);
         }
 
