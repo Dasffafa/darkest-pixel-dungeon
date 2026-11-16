@@ -57,10 +57,11 @@ public class WndInfoItem extends Window {
 
     } else if (heap.getType() == Heap.Type.TOMB) {
 
-      if (heap.getEpitaphText() != null) {
+      String tombText = Epitaphs.INSTANCE.formatTombText(heap.getEpitaphCause(), heap.getEpitaphText());
+      if (!tombText.isEmpty()) {
         String name = heap.getEpitaphName() == null ? "" : heap.getEpitaphName();
         fillFields(heap.image(), heap.glowing(), TITLE_COLOR,
-                Epitaphs.INSTANCE.graveLabel(name), heap.getEpitaphText());
+                Epitaphs.INSTANCE.graveLabel(name), tombText);
       } else {
         fillFields(heap.image(), heap.glowing(), TITLE_COLOR, heap.toString(),
                 Messages.get(heap, "tomb_worn"));

@@ -306,10 +306,11 @@ abstract class RegularLevel : Level() {
      *  left deliberately blank, their inscriptions worn away by time. */
     private fun assignEpitaphs() {
         for (heap in heaps.values()) {
-            if (heap.type != Heap.Type.TOMB || heap.epitaphText != null) continue
+            if (heap.type != Heap.Type.TOMB || heap.epitaphText != null || heap.epitaphCause != null) continue
             if (Random.Float() < WORN_TOMB_CHANCE) continue
             val entry = Epitaphs.take() ?: continue
             heap.epitaphName = entry.name
+            heap.epitaphCause = entry.cause
             heap.epitaphText = entry.text
         }
     }

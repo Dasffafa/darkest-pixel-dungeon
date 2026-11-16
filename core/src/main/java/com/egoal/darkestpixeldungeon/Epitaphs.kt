@@ -17,15 +17,24 @@ object Epitaphs {
     private const val FILE = "epitaphs.dat"
     private const val COUNT = "count"
     private const val NAME = "name"
+    private const val CAUSE = "cause"
     private const val TEXT = "text"
     private const val OWN = "own"
 
     private const val MAX_POOL = 500
     private const val OWN_WEIGHT = 3f
 
-    class Entry(var name: String = "", var text: String = "", var own: Boolean = false)
+    class Entry(
+            var name: String = "",
+            var cause: String = "",
+            var text: String = "",
+            var own: Boolean = false
+    ) {
+        fun isEmpty(): Boolean = cause.isBlank() && text.isBlank()
+        fun key(): String = "$cause\u0000$text"
+    }
 
-    /** Texts already carved during the current run, so a run never repeats one. */
+    /** Entries already carved during the current run, so a run never repeats one. */
     private val used = HashSet<String>()
 
     fun startNewRun() {
@@ -33,6 +42,8 @@ object Epitaphs {
     }
 
     fun deathTitle(): String = M.L(Epitaphs::class.java, "death_title")
+
+    fun deathDefault(): String = M.L(Epitaphs::class.java, "death_default")
 
     fun victoryTitle(): String = M.L(Epitaphs::class.java, "victory_title")
 
@@ -44,6 +55,16 @@ object Epitaphs {
     fun graveLabel(name: String): String =
             if (name.isBlank()) M.L(Epitaphs::class.java, "grave_label_nameless")
             else M.L(Epitaphs::class.java, "grave_label", name)
+
+    fun formatTombText(cause: String?, text: String?): String {
+        val c = cause?.trim().orEmpty()
+        val t = text?.trim().orEmpty()
+        return when {
+            c.isNotEmpty() && t.isNotEmpty() -> "$c\n\n“$t”"
+            c.isNotEmpty() -> c
+            else -> t
+        }
+    }
 
     /** Asks the winner for a few words; the speech is only stored, never carved on a grave. */
     fun promptVictory(userName: String) {
@@ -63,6 +84,7 @@ object Epitaphs {
                 val e = bundle.getBundle(key)
                 entries.add(Entry(
                         name = e.getString(NAME),
+                        cause = if (e.contains(CAUSE)) e.getString(CAUSE) else "",
                         text = e.getString(TEXT),
                         own = if (e.contains(OWN)) e.getBoolean(OWN) else false))
             }
@@ -75,23 +97,26 @@ object Epitaphs {
         return entries
     }
 
-    fun addOwn(name: String, text: String) {
-        if (text.isBlank()) return
+    fun addOwn(name: String, cause: String, text: String) {
+        if (cause.isBlank() && text.isBlank()) return
 
         val entries = load()
-        if (entries.any { it.text == text }) return
+        if (entries.any { it.cause == cause && it.text == text }) return
 
-        entries.add(Entry(name, text, true))
+        entries.add(Entry(name, cause, text, true))
         trim(entries)
         save(entries)
 
-        SpiritServer.uploadEpitaph(name, text)
+        SpiritServer.uploadEpitaph(name, cause, text)
     }
 
-    fun removeOwn(text: String) {
-        if (text.isBlank()) return
+    fun removeOwn(text: String, cause: String = "") {
+        if (cause.isBlank() && text.isBlank()) return
         val entries = load()
-        if (entries.removeAll { it.own && it.text == text }) {
+        val removed = entries.removeAll {
+            it.own && it.text == text && (cause.isEmpty() || it.cause == cause)
+        }
+        if (removed) {
             save(entries)
         }
     }
@@ -100,9 +125,9 @@ object Epitaphs {
         val entries = load()
         var changed = false
         for (e in downloaded) {
-            if (e.text.isBlank()) continue
-            if (entries.any { it.text == e.text }) continue
-            entries.add(Entry(e.name, e.text, false))
+            if (e.isEmpty()) continue
+            if (entries.any { it.cause == e.cause && it.text == e.text }) continue
+            entries.add(Entry(e.name, e.cause, e.text, false))
             changed = true
         }
         if (!changed) return
@@ -112,12 +137,12 @@ object Epitaphs {
     }
 
     fun take(): Entry? {
-        val entries = load().filter { it.text.isNotBlank() && it.text !in used }
+        val entries = load().filter { !it.isEmpty() && it.key() !in used }
         if (entries.isEmpty()) return null
 
         val weights = FloatArray(entries.size) { if (entries[it].own) OWN_WEIGHT else 1f }
         val chosen = entries[Random.chances(weights)]
-        used.add(chosen.text)
+        used.add(chosen.key())
         return chosen
     }
 
@@ -134,6 +159,7 @@ object Epitaphs {
         entries.forEachIndexed { i, e ->
             val entry = Bundle()
             entry.put(NAME, e.name)
+            entry.put(CAUSE, e.cause)
             entry.put(TEXT, e.text)
             entry.put(OWN, e.own)
             bundle.put("entry$i", entry)
