@@ -26,8 +26,16 @@ var I18N = {
     col_killed_by: "击杀者",
     col_victims: "击杀过",
     col_time: "时间",
+    col_cause: "死亡信息",
     col_epitaph: "遗言",
     col_speech: "感言",
+    filter_all: "全部字段",
+    filter_placeholder: "输入名称筛选……",
+    filter_search: "筛选",
+    filter_reset: "重置",
+    page_prev: "上一页",
+    page_next: "下一页",
+    page_info: "第 {page} / {totalPages} 页（共 {total} 条）",
     links_title: "相关链接",
     link_qq: "玩家 QQ 群：818725226",
     link_email: "作者邮箱：xixi012.c@gmail.com",
@@ -64,8 +72,16 @@ var I18N = {
     col_killed_by: "擊殺者",
     col_victims: "擊殺過",
     col_time: "時間",
+    col_cause: "死亡資訊",
     col_epitaph: "遺言",
     col_speech: "感言",
+    filter_all: "全部欄位",
+    filter_placeholder: "輸入名稱篩選……",
+    filter_search: "篩選",
+    filter_reset: "重設",
+    page_prev: "上一頁",
+    page_next: "下一頁",
+    page_info: "第 {page} / {totalPages} 頁（共 {total} 筆）",
     links_title: "相關連結",
     link_qq: "玩家 QQ 群：818725226",
     link_email: "作者信箱：xixi012.c@gmail.com",
@@ -102,8 +118,16 @@ var I18N = {
     col_killed_by: "Killed by",
     col_victims: "Killed",
     col_time: "Time",
+    col_cause: "Death Info",
     col_epitaph: "Epitaph",
     col_speech: "Speech",
+    filter_all: "All fields",
+    filter_placeholder: "Filter by name...",
+    filter_search: "Filter",
+    filter_reset: "Reset",
+    page_prev: "Prev",
+    page_next: "Next",
+    page_info: "Page {page} / {totalPages} ({total} total)",
     links_title: "Links",
     link_qq: "QQ group: 818725226",
     link_email: "Contact: xixi012.c@gmail.com",
@@ -126,6 +150,7 @@ var CLASS_NAMES = {
 };
 
 var lang = "zh";
+var spiritState = { page: 1, totalPages: 1, total: 0, field: "all", q: "" };
 
 function t(key) {
   return (I18N[lang] && I18N[lang][key]) || I18N.zh[key] || key;
@@ -153,10 +178,26 @@ function applyLang(next) {
     nodes[i].textContent = t(nodes[i].getAttribute("data-i18n"));
   }
 
+  var placeholders = document.querySelectorAll("[data-i18n-placeholder]");
+  for (var p = 0; p < placeholders.length; p++) {
+    placeholders[p].placeholder = t(placeholders[p].getAttribute("data-i18n-placeholder"));
+  }
+
+  updatePageInfo();
+
   var links = document.querySelectorAll("[data-lang]");
   for (var j = 0; j < links.length; j++) {
     links[j].style.fontWeight = links[j].getAttribute("data-lang") === lang ? "bold" : "normal";
   }
+}
+
+function updatePageInfo() {
+  var info = document.getElementById("spirit-page-info");
+  if (!info) return;
+  info.textContent = t("page_info")
+    .replace("{page}", spiritState.page)
+    .replace("{totalPages}", spiritState.totalPages)
+    .replace("{total}", spiritState.total);
 }
 
 function renderStats(data) {
@@ -169,11 +210,21 @@ function renderStats(data) {
     parts.push(className(codes[i]) + " " + data.by_class[codes[i]]);
   }
   document.getElementById("stat-classes").textContent = parts.length ? parts.join(" / ") : t("empty");
+}
+
+function renderSpirits(data) {
+  spiritState.page = data.page || 1;
+  spiritState.totalPages = data.total_pages || 1;
+  spiritState.total = data.total || 0;
+
+  document.getElementById("spirit-prev").disabled = spiritState.page <= 1;
+  document.getElementById("spirit-next").disabled = spiritState.page >= spiritState.totalPages;
+  updatePageInfo();
 
   var tbody = document.querySelector("#recent-table tbody");
   tbody.innerHTML = "";
-  var recent = data.recent || [];
-  if (!recent.length) {
+  var list = data.spirits || [];
+  if (!list.length) {
     var emptyRow = document.createElement("tr");
     var emptyCell = document.createElement("td");
     emptyCell.colSpan = 7;
@@ -183,8 +234,8 @@ function renderStats(data) {
     return;
   }
 
-  for (var k = 0; k < recent.length; k++) {
-    var item = recent[k];
+  for (var k = 0; k < list.length; k++) {
+    var item = list[k];
     var row = document.createElement("tr");
     var cells = [
       escapeHtml(item.username || ""),
@@ -202,6 +253,30 @@ function renderStats(data) {
     }
     tbody.appendChild(row);
   }
+}
+
+function loadSpirits(page) {
+  var targetPage = page && page >= 1 ? page : 1;
+  var url = "/api/v1/spirits?page=" + encodeURIComponent(targetPage)
+    + "&limit=20"
+    + "&field=" + encodeURIComponent(spiritState.field)
+    + "&q=" + encodeURIComponent(spiritState.q);
+
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET", url, true);
+  xhr.onreadystatechange = function () {
+    if (xhr.readyState !== 4) return;
+    if (xhr.status >= 200 && xhr.status < 300) {
+      try {
+        renderSpirits(JSON.parse(xhr.responseText));
+      } catch (e) {
+        renderSpirits({ spirits: [], page: 1, total_pages: 1, total: 0 });
+      }
+    } else {
+      renderSpirits({ spirits: [], page: 1, total_pages: 1, total: 0 });
+    }
+  };
+  xhr.send();
 }
 
 function loadStats() {
@@ -222,14 +297,15 @@ function loadStats() {
   xhr.send();
 }
 
-function renderList(tableId, rows, textKey) {
+function renderList(tableId, rows, keys) {
   var tbody = document.querySelector("#" + tableId + " tbody");
   tbody.innerHTML = "";
 
+  var colSpan = keys.length + 2;
   if (!rows || !rows.length) {
     var emptyRow = document.createElement("tr");
     var emptyCell = document.createElement("td");
-    emptyCell.colSpan = 3;
+    emptyCell.colSpan = colSpan;
     emptyCell.textContent = t("empty");
     emptyRow.appendChild(emptyCell);
     tbody.appendChild(emptyRow);
@@ -239,11 +315,11 @@ function renderList(tableId, rows, textKey) {
   for (var i = 0; i < rows.length; i++) {
     var item = rows[i];
     var row = document.createElement("tr");
-    var cells = [
-      escapeHtml(item.name || ""),
-      escapeHtml(item[textKey] || ""),
-      escapeHtml(new Date((item.created_at || 0) * 1000).toLocaleString())
-    ];
+    var cells = [escapeHtml(item.name || "")];
+    for (var k = 0; k < keys.length; k++) {
+      cells.push(escapeHtml(item[keys[k]] || ""));
+    }
+    cells.push(escapeHtml(new Date((item.created_at || 0) * 1000).toLocaleString()));
     for (var c = 0; c < cells.length; c++) {
       var td = document.createElement("td");
       td.innerHTML = cells[c];
@@ -253,7 +329,7 @@ function renderList(tableId, rows, textKey) {
   }
 }
 
-function loadList(url, tableId, collectionKey, textKey) {
+function loadList(url, tableId, collectionKey, keys) {
   var xhr = new XMLHttpRequest();
   xhr.open("GET", url, true);
   xhr.onreadystatechange = function () {
@@ -266,7 +342,7 @@ function loadList(url, tableId, collectionKey, textKey) {
         rows = [];
       }
     }
-    renderList(tableId, rows, textKey);
+    renderList(tableId, rows, keys);
   };
   xhr.send();
 }
@@ -279,8 +355,40 @@ function loadList(url, tableId, collectionKey, textKey) {
       applyLang(this.getAttribute("data-lang"));
     });
   }
+
+  var form = document.getElementById("spirit-filter-form");
+  var fieldEl = document.getElementById("spirit-field");
+  var queryEl = document.getElementById("spirit-query");
+  var resetBtn = document.getElementById("spirit-reset-btn");
+  var prevBtn = document.getElementById("spirit-prev");
+  var nextBtn = document.getElementById("spirit-next");
+
+  form.addEventListener("submit", function (event) {
+    event.preventDefault();
+    spiritState.field = fieldEl.value || "all";
+    spiritState.q = (queryEl.value || "").trim();
+    loadSpirits(1);
+  });
+
+  resetBtn.addEventListener("click", function () {
+    fieldEl.value = "all";
+    queryEl.value = "";
+    spiritState.field = "all";
+    spiritState.q = "";
+    loadSpirits(1);
+  });
+
+  prevBtn.addEventListener("click", function () {
+    if (spiritState.page > 1) loadSpirits(spiritState.page - 1);
+  });
+
+  nextBtn.addEventListener("click", function () {
+    if (spiritState.page < spiritState.totalPages) loadSpirits(spiritState.page + 1);
+  });
+
   applyLang(lang);
   loadStats();
-  loadList("/api/v1/epitaphs/recent?n=20", "epitaph-table", "epitaphs", "text");
-  loadList("/api/v1/victory/recent?n=20", "victory-table", "victory", "speech");
+  loadSpirits(1);
+  loadList("/api/v1/epitaphs/recent?n=20", "epitaph-table", "epitaphs", ["cause", "text"]);
+  loadList("/api/v1/victory/recent?n=20", "victory-table", "victory", ["speech"]);
 })();

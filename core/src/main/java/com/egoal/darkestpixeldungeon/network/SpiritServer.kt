@@ -90,18 +90,19 @@ object SpiritServer {
         }
     }
 
-    fun uploadEpitaph(userName: String, text: String) {
+    fun uploadEpitaph(userName: String, cause: String, text: String) {
         if (!DarkestPixelDungeon.epitaphSync() || !isConfigured) return
-        if (text.isBlank()) return
+        if (cause.isBlank() && text.isBlank()) return
 
         val body = buildJsonObject {
             put("name", userName)
+            put("cause", cause)
             put("text", text)
         }.toString().toByteArray(Charsets.UTF_8)
 
         background {
             val resp = request("POST", "$baseUrl/api/v1/epitaphs", body, json = true)
-            handleUploadResult(resp, userName, text)
+            handleUploadResult(resp, userName, text, cause)
         }
     }
 
@@ -150,9 +151,10 @@ object SpiritServer {
                 val obj = element as? JsonObject ?: return@mapNotNull null
                 Epitaphs.Entry(
                         name = (obj["name"] as? JsonPrimitive)?.content ?: "",
+                        cause = (obj["cause"] as? JsonPrimitive)?.content ?: "",
                         text = (obj["text"] as? JsonPrimitive)?.content ?: "",
                         own = false)
-            }.filter { it.text.isNotBlank() }
+            }.filter { !it.isEmpty() }
         } catch (e: Exception) {
             emptyList()
         }
@@ -169,12 +171,12 @@ object SpiritServer {
         return reason == "rejected"
     }
 
-    private fun handleUploadResult(resp: Response, userName: String, text: String): Boolean {
+    private fun handleUploadResult(resp: Response, userName: String, text: String, cause: String = ""): Boolean {
         if (!isRejected(resp)) return false
 
         Gdx.app?.postRunnable {
             DarkestPixelDungeon.epitaphNotice(Epitaphs.rejectedNotice(userName, text))
-            Epitaphs.removeOwn(text)
+            Epitaphs.removeOwn(text, cause)
         }
         return true
     }

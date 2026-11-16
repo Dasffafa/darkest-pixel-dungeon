@@ -69,6 +69,17 @@
       </table>
 
       <h2 data-i18n="recent_title">最近的红灵</h2>
+      <form class="toolbar" id="spirit-filter-form">
+        <select class="win-select" id="spirit-field">
+          <option value="all" data-i18n="filter_all">全部字段</option>
+          <option value="username" data-i18n="col_name">角色名</option>
+          <option value="killed_by" data-i18n="col_killed_by">击杀者</option>
+          <option value="victims" data-i18n="col_victims">击杀过</option>
+        </select>
+        <input class="win-input" type="text" id="spirit-query" data-i18n-placeholder="filter_placeholder" placeholder="输入名称筛选……">
+        <button class="win-btn" type="submit" id="spirit-search-btn" data-i18n="filter_search">筛选</button>
+        <button class="win-btn" type="button" id="spirit-reset-btn" data-i18n="filter_reset">重置</button>
+      </form>
       <table class="panel" id="recent-table">
         <thead>
           <tr>
@@ -85,18 +96,24 @@
           <tr><td colspan="7" id="recent-status" data-i18n="loading">加载中……</td></tr>
         </tbody>
       </table>
+      <div class="toolbar pagination" id="spirit-pagination">
+        <button class="win-btn" type="button" id="spirit-prev" data-i18n="page_prev">上一页</button>
+        <span id="spirit-page-info">1 / 1</span>
+        <button class="win-btn" type="button" id="spirit-next" data-i18n="page_next">下一页</button>
+      </div>
 
       <h2 data-i18n="epitaph_title">最近的遗言</h2>
       <table class="panel" id="epitaph-table">
         <thead>
           <tr>
             <th data-i18n="col_name">角色名</th>
+            <th data-i18n="col_cause">死亡信息</th>
             <th data-i18n="col_epitaph">遗言</th>
             <th data-i18n="col_time">时间</th>
           </tr>
         </thead>
         <tbody>
-          <tr><td colspan="3" data-i18n="loading">加载中……</td></tr>
+          <tr><td colspan="4" data-i18n="loading">加载中……</td></tr>
         </tbody>
       </table>
 

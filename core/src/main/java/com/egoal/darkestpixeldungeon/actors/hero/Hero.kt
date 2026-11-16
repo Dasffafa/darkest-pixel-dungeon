@@ -1673,11 +1673,12 @@ class Hero : Char() {
             Dungeon.deleteGame(true, true)
 
             // let the player leave last words; fallback to default if dismissed or blank
-            val default = Rankings.deathDescription(src)
-            InputDialog.GetStringWithResult(Epitaphs.deathTitle(), default) { accepted, text ->
-                val epitaph = if (accepted) text.ifBlank { default } else default
+            val deathCause = Rankings.deathDescription(src)
+            val defaultLastWords = Epitaphs.deathDefault()
+            InputDialog.GetStringWithResult(Epitaphs.deathTitle(), "") { accepted, text ->
+                val lastWords = if (accepted) text.ifBlank { defaultLastWords } else defaultLastWords
                 DarkSpirit.CommitDeath(spiritRecord)
-                Epitaphs.addOwn(epitaphUser, epitaph)
+                Epitaphs.addOwn(epitaphUser, deathCause, lastWords)
             }
         }
 

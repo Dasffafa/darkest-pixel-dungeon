@@ -73,10 +73,108 @@ function clamp_n($value, $default, $max) {
     return $n;
 }
 
+function like_escape($value) {
+    return str_replace(array('\\', '%', '_'), array('\\\\', '\\%', '\\_'), $value);
+}
+
+function handle_list_spirits() {
+    $limit = clamp_n(isset($_GET['limit']) ? $_GET['limit'] : (isset($_GET['n']) ? $_GET['n'] : null), 20, 50);
+    $page = isset($_GET['page']) ? (int) $_GET['page'] : 1;
+    if ($page < 1) $page = 1;
+
+    $field = isset($_GET['field']) ? trim($_GET['field']) : 'all';
+    $q = isset($_GET['q']) ? trim($_GET['q']) : '';
+    $username = isset($_GET['username']) ? trim($_GET['username']) : '';
+    $killed_by = isset($_GET['killed_by']) ? trim($_GET['killed_by']) : '';
+    $victim = isset($_GET['victim']) ? trim($_GET['victim']) : '';
+
+    $where = array();
+    $params = array();
+
+    if ($q !== '') {
+        $pat = '%' . like_escape($q) . '%';
+        if ($field === 'username') {
+            $where[] = "LOWER(COALESCE(username, '')) LIKE LOWER(?) ESCAPE '\\'";
+            $params[] = $pat;
+        } elseif ($field === 'killed_by') {
+            $where[] = "LOWER(COALESCE(killed_by, '')) LIKE LOWER(?) ESCAPE '\\'";
+            $params[] = $pat;
+        } elseif ($field === 'victims') {
+            $where[] = "LOWER(COALESCE(victims, '')) LIKE LOWER(?) ESCAPE '\\'";
+            $params[] = $pat;
+        } else {
+            $where[] = "(LOWER(COALESCE(username, '')) LIKE LOWER(?) ESCAPE '\\'"
+                . " OR LOWER(COALESCE(killed_by, '')) LIKE LOWER(?) ESCAPE '\\'"
+                . " OR LOWER(COALESCE(victims, '')) LIKE LOWER(?) ESCAPE '\\')";
+            $params[] = $pat;
+            $params[] = $pat;
+            $params[] = $pat;
+        }
+    }
+
+    if ($username !== '') {
+        $where[] = "LOWER(COALESCE(username, '')) LIKE LOWER(?) ESCAPE '\\'";
+        $params[] = '%' . like_escape($username) . '%';
+    }
+    if ($killed_by !== '') {
+        $where[] = "LOWER(COALESCE(killed_by, '')) LIKE LOWER(?) ESCAPE '\\'";
+        $params[] = '%' . like_escape($killed_by) . '%';
+    }
+    if ($victim !== '') {
+        $where[] = "LOWER(COALESCE(victims, '')) LIKE LOWER(?) ESCAPE '\\'";
+        $params[] = '%' . like_escape($victim) . '%';
+    }
+
+    $where_sql = count($where) > 0 ? (' WHERE ' . implode(' AND ', $where)) : '';
+
+    $pdo = db();
+    $count_stmt = $pdo->prepare('SELECT COUNT(*) FROM spirits' . $where_sql);
+    $count_stmt->execute($params);
+    $total = (int) $count_stmt->fetchColumn();
+
+    $total_pages = $total > 0 ? (int) ceil($total / $limit) : 1;
+    if ($page > $total_pages) $page = $total_pages;
+    $offset = ($page - 1) * $limit;
+
+    $stmt = $pdo->prepare(
+        'SELECT username, hero_class, level, depth, killed_by, victims, created_at FROM spirits'
+        . $where_sql
+        . ' ORDER BY id DESC LIMIT ? OFFSET ?'
+    );
+    $idx = 1;
+    foreach ($params as $p) {
+        $stmt->bindValue($idx++, $p, PDO::PARAM_STR);
+    }
+    $stmt->bindValue($idx++, $limit, PDO::PARAM_INT);
+    $stmt->bindValue($idx++, $offset, PDO::PARAM_INT);
+    $stmt->execute();
+
+    $spirits = array();
+    foreach ($stmt->fetchAll() as $row) {
+        $spirits[] = array(
+            'username' => $row['username'],
+            'hero_class' => $row['hero_class'],
+            'level' => $row['level'] !== null ? (int) $row['level'] : null,
+            'depth' => $row['depth'] !== null ? (int) $row['depth'] : null,
+            'killed_by' => $row['killed_by'],
+            'victims' => $row['victims'],
+            'created_at' => (int) $row['created_at'],
+        );
+    }
+
+    json_out(array(
+        'spirits' => $spirits,
+        'total' => $total,
+        'page' => $page,
+        'limit' => $limit,
+        'total_pages' => $total_pages,
+    ), 200);
+}
+
 function handle_recent_epitaphs() {
     $n = clamp_n(isset($_GET['n']) ? $_GET['n'] : null, 20, 50);
 
-    $stmt = db()->prepare('SELECT id, name, text, created_at FROM epitaphs WHERE text <> \'\' ORDER BY id DESC LIMIT ?');
+    $stmt = db()->prepare('SELECT id, name, COALESCE(cause, \'\') AS cause, text, created_at FROM epitaphs WHERE text <> \'\' OR COALESCE(cause, \'\') <> \'\' ORDER BY id DESC LIMIT ?');
     $stmt->bindValue(1, $n, PDO::PARAM_INT);
     $stmt->execute();
 
@@ -85,6 +183,7 @@ function handle_recent_epitaphs() {
         $epitaphs[] = array(
             'id' => (int) $row['id'],
             'name' => $row['name'],
+            'cause' => $row['cause'],
             'text' => $row['text'],
             'created_at' => (int) $row['created_at'],
         );
@@ -171,17 +270,19 @@ function handle_upload_epitaph() {
     if (!is_array($data)) fail(400, 'bad payload');
 
     $name = sanitize_text(isset($data['name']) ? $data['name'] : null, (int) cfgv('max_epitaph'));
+    $cause = isset($data['cause']) ? sanitize_text($data['cause'], (int) cfgv('max_epitaph')) : '';
     $text = sanitize_text(isset($data['text']) ? $data['text'] : null, (int) cfgv('max_epitaph'));
     if ($name === null) fail(400, 'bad name');
-    if ($text === null || trim($text) === '') fail(400, 'bad epitaph');
+    if ($cause === null) $cause = '';
+    if ($text === null || (trim($text) === '' && trim($cause) === '')) fail(400, 'bad epitaph');
 
-    $payload = array('name' => $name, 'text' => $text);
+    $payload = array('name' => $name, 'cause' => $cause, 'text' => $text);
     $decision = moderate_or_queue('epitaph', $device, $name, $text, $payload);
     if ($decision === 'banned') json_out(array('ok' => false, 'reason' => 'banned'), 200);
     if ($decision === 'pending') { note_upload($device); json_out(array('ok' => true, 'pending' => true), 200); }
     if ($decision === 'rejected') { note_upload($device); json_out(array('ok' => false, 'reason' => 'rejected'), 200); }
 
-    publish_epitaph($device, $name, $text);
+    publish_epitaph($device, $name, $text, $cause);
     note_upload($device);
     json_out(array('ok' => true), 200);
 }
@@ -228,16 +329,16 @@ function handle_random_epitaphs() {
     if ($n < 1) $n = 1;
     if ($n > 500) $n = 500;
 
-    $sql = 'SELECT name, text FROM ('
-        . ' SELECT username AS name, epitaph AS text FROM spirits WHERE epitaph IS NOT NULL AND epitaph <> \'\''
-        . ' UNION ALL SELECT name, text FROM epitaphs'
-        . ' UNION ALL SELECT name, text FROM seed_epitaphs'
+    $sql = 'SELECT name, cause, text FROM ('
+        . ' SELECT username AS name, \'\' AS cause, epitaph AS text FROM spirits WHERE epitaph IS NOT NULL AND epitaph <> \'\''
+        . ' UNION ALL SELECT name, COALESCE(cause, \'\') AS cause, text FROM epitaphs'
+        . ' UNION ALL SELECT name, \'\' AS cause, text FROM seed_epitaphs'
         . ') t ORDER BY RANDOM() LIMIT ' . $n;
 
     $rows = db()->query($sql)->fetchAll();
     $epitaphs = array();
     foreach ($rows as $row) {
-        $epitaphs[] = array('name' => $row['name'], 'text' => $row['text']);
+        $epitaphs[] = array('name' => $row['name'], 'cause' => $row['cause'], 'text' => $row['text']);
     }
     json_out(array('epitaphs' => $epitaphs), 200);
 }
@@ -342,6 +443,8 @@ if ($method === 'GET' && $path === 'health') {
     handle_version();
 } elseif ($method === 'GET' && $path === 'v1/stats') {
     handle_stats();
+} elseif ($method === 'GET' && $path === 'v1/spirits') {
+    handle_list_spirits();
 } elseif ($method === 'GET' && $path === 'v1/epitaphs/recent') {
     handle_recent_epitaphs();
 } elseif ($method === 'GET' && $path === 'v1/victory/recent') {

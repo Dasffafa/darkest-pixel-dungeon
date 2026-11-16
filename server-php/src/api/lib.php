@@ -346,6 +346,7 @@ function init_db() {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             device_id TEXT NOT NULL,
             name TEXT,
+            cause TEXT DEFAULT \'\',
             text TEXT NOT NULL,
             created_at INTEGER NOT NULL
         )');
@@ -386,6 +387,13 @@ function init_db() {
         }
 
         $pdo->exec("REPLACE INTO meta(k, v) VALUES('schema_v2', '1')");
+    }
+
+    if (get_meta('schema_v3') !== '1') {
+        if (!table_has_column('epitaphs', 'cause')) {
+            $pdo->exec('ALTER TABLE epitaphs ADD COLUMN cause TEXT DEFAULT \'\'');
+        }
+        $pdo->exec("REPLACE INTO meta(k, v) VALUES('schema_v3', '1')");
     }
 }
 
@@ -449,9 +457,9 @@ function publish_victory($device, $username, $speech) {
     $stmt->execute(array($device, $username, $speech, time()));
 }
 
-function publish_epitaph($device, $name, $text) {
-    $stmt = db()->prepare('INSERT INTO epitaphs(device_id, name, text, created_at) VALUES (?, ?, ?, ?)');
-    $stmt->execute(array($device, $name, $text, time()));
+function publish_epitaph($device, $name, $text, $cause = '') {
+    $stmt = db()->prepare('INSERT INTO epitaphs(device_id, name, cause, text, created_at) VALUES (?, ?, ?, ?, ?)');
+    $stmt->execute(array($device, $name, $cause, $text, time()));
 }
 
 function judged_text($name, $text) {
@@ -490,7 +498,8 @@ function flush_pending() {
                 );
                 publish_spirit($row['device_id'], $payload, $meta);
             } elseif ($kind === 'epitaph') {
-                publish_epitaph($row['device_id'], $name, $text);
+                $cause = isset($payload['cause']) ? $payload['cause'] : '';
+                publish_epitaph($row['device_id'], $name, $text, $cause);
             } else {
                 publish_victory($row['device_id'], $name, $text);
             }

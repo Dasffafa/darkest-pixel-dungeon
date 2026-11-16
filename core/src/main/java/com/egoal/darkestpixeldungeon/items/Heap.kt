@@ -71,6 +71,7 @@ class Heap : Bundlable {
 
     /** Epitaph carved on a TOMB, or null if this heap is not an inscribed grave. */
     var epitaphName: String? = null
+    var epitaphCause: String? = null
     var epitaphText: String? = null
 
     fun size(): Int = items.size
@@ -187,6 +188,7 @@ class Heap : Bundlable {
             // heap is a normal pile, so never let the inscription leak onto it.
             if (type == Type.TOMB) {
                 epitaphName = null
+                epitaphCause = null
                 epitaphText = null
             }
             type = Type.HEAP
@@ -472,6 +474,7 @@ class Heap : Bundlable {
         // Only a tomb can carry an epitaph; ignore any stale keys on other types.
         if (type == Type.TOMB) {
             if (bundle.contains(EPITAPH_NAME)) epitaphName = bundle.getString(EPITAPH_NAME)
+            if (bundle.contains(EPITAPH_CAUSE)) epitaphCause = bundle.getString(EPITAPH_CAUSE)
             if (bundle.contains(EPITAPH_TEXT)) epitaphText = bundle.getString(EPITAPH_TEXT)
         }
         if (bundle.contains(IS_PENDING)) isPending = bundle.getBoolean(IS_PENDING)
@@ -487,6 +490,7 @@ class Heap : Bundlable {
         if (pendingKind != PendingKind.NONE) bundle.put(PENDING_KIND, pendingKind)
         if (type == Type.TOMB) {
             epitaphName?.let { bundle.put(EPITAPH_NAME, it) }
+            epitaphCause?.let { bundle.put(EPITAPH_CAUSE, it) }
             epitaphText?.let { bundle.put(EPITAPH_TEXT, it) }
         }
     }
@@ -508,6 +512,7 @@ class Heap : Bundlable {
         private const val IS_PENDING = "is_pending"
         private const val PENDING_KIND = "pending_kind"
         private const val EPITAPH_NAME = "epitaph_name"
+        private const val EPITAPH_CAUSE = "epitaph_cause"
         private const val EPITAPH_TEXT = "epitaph_text"
     }
 
