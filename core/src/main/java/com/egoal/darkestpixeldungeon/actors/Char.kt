@@ -31,6 +31,7 @@ import com.egoal.darkestpixeldungeon.actors.hero.HeroSubClass
 import com.egoal.darkestpixeldungeon.actors.mobs.Mob
 import com.egoal.darkestpixeldungeon.effects.DamagePalette
 import com.egoal.darkestpixeldungeon.effects.FloatingText
+import com.egoal.darkestpixeldungeon.effects.IceShatter
 import com.egoal.darkestpixeldungeon.items.artifacts.TimekeepersHourglass
 import com.egoal.darkestpixeldungeon.levels.Level
 import com.egoal.darkestpixeldungeon.levels.Terrain
@@ -303,7 +304,12 @@ abstract class Char : Actor() {
             }
         }
 
-        if (!isAlive) die(dmg.from)
+        if (!isAlive) {
+            if (this is Mob && dmg.type == Damage.Type.NORMAL && buff(Frost::class.java) != null) {
+                IceShatter.shatter(this)
+            }
+            die(dmg.from)
+        }
 
         return dmg.value + dmg.add_value
     }

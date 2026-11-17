@@ -16,6 +16,7 @@
 | **地面焦痕贴花** | [ScorchMark.kt](file:///home/thecatist/darkest-pixel-dungeon/core/src/main/java/com/egoal/darkestpixeldungeon/effects/ScorchMark.kt) | `ScorchMark.place(group, cell)` | 在地面生成随机倾角的深炭焦痕，约 `2.6s` 自然淡出 |
 | **怪物死亡 GLSL 着色器** | [RadishDeathEffects.kt](file:///home/thecatist/darkest-pixel-dungeon/core/src/main/java/com/egoal/darkestpixeldungeon/effects/shaders/RadishDeathEffects.kt) | `RadishDeathShaders.play(target, DeathShaderType.*)`、`RadishDeathShaders.lightEvaporate(target)` | 迁移自 RadishPD 的 10 套死亡着色器（`CUT`/`BURN`/`ACID`/`SINGULARITY`/`NOISE`/`LIGHT_EVAPORATE`/`LIGHT_DISSOLVE`/`ELLIPSE`/`WIPE`/`ALPHA`）；`LIGHT_EVAPORATE` 附带跟随目标的上升 1px 白色光像素粒子流 |
 | **物理腰斩 / 飞头尸体** | [HalvedCorpse.kt](file:///home/thecatist/darkest-pixel-dungeon/core/src/main/java/com/egoal/darkestpixeldungeon/effects/HalvedCorpse.kt) | `HalvedCorpse.bisect(ch, angleDeg, speed, cutFrac = 0.5f)` | 将目标精灵水平切开：切口喷血 + 冒血粒子，上半身抛飞旋转并在撞墙后小幅弹开落地，停留后整体淡出 |
+| **冰冻碎裂死亡** | [IceShatter.kt](file:///home/thecatist/darkest-pixel-dungeon/core/src/main/java/com/egoal/darkestpixeldungeon/effects/IceShatter.kt) | `IceShatter.shatter(ch)`（已自动接入 `Frost` + 物理致死） | 将被冰冻怪物的精灵切成 4×4 冰染小块四散弹跳落地（支持撞墙反弹）并淡出，伴随碎裂音效与冰光 |
 
 ---
 

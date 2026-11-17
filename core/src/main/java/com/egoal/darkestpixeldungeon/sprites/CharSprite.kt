@@ -127,6 +127,10 @@ open class CharSprite : MovieClip(), Tweener.Listener, MovieClip.Listener {
         hasPendingShaderDeath = false
     }
 
+    fun suppressDeathAnimation() {
+        hasPendingShaderDeath = true
+    }
+
     open fun link(ch: Char) {
         this.ch = ch
         ch.sprite = this
