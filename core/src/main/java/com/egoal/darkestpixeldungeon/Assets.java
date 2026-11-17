@@ -176,6 +176,8 @@ public class Assets {
     public static final String SPECKS = MISCS + "specks.png";
     public static final String EFFECTS = MISCS + "effects.png";
     public static final String SWORD_SLASH = MISCS + "sword_slash.png";
+    public static final String KILL_BOAT_SLASH = MISCS + "killboat/slash.png";
+    public static final String KILL_BOAT_TEAR = MISCS + "killboat/tear.png";
     public static final String TEXT_ICONS = MISCS + "text_icons.png";
 
     // other

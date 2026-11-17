@@ -20,9 +20,6 @@
  */
 package com.egoal.darkestpixeldungeon.items.weapon.melee
 
-import com.egoal.darkestpixeldungeon.actors.Char
-import com.egoal.darkestpixeldungeon.actors.Damage
-import com.egoal.darkestpixeldungeon.effects.SwordSlashEffect
 import com.egoal.darkestpixeldungeon.sprites.ItemSpriteSheet
 
 class Claymore : MeleeWeapon() {
@@ -31,11 +28,6 @@ class Claymore : MeleeWeapon() {
         image = ItemSpriteSheet.Claymore
 
         tier = 5
-    }
-
-    override fun proc(dmg: Damage): Damage {
-        SwordSlashEffect.showOn(dmg.from as? Char, dmg.to as? Char)
-        return super.proc(dmg)
     }
 
 }
