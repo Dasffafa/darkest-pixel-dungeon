@@ -53,6 +53,7 @@ import com.egoal.darkestpixeldungeon.effects.EmoIcon;
 import com.egoal.darkestpixeldungeon.effects.Flare;
 import com.egoal.darkestpixeldungeon.effects.FloatingText;
 import com.egoal.darkestpixeldungeon.effects.Ripple;
+import com.egoal.darkestpixeldungeon.effects.SceneCutEffect;
 import com.egoal.darkestpixeldungeon.effects.SpellSprite;
 import com.egoal.darkestpixeldungeon.effects.shaders.FilteredMapGroup;
 import com.egoal.darkestpixeldungeon.effects.shaders.MapFilter;
@@ -449,6 +450,7 @@ public class GameScene extends PixelScene {
     }
 
     freezeEmitters = false;
+    SceneCutEffect.reset();
 
     scene = null;
     Badges.INSTANCE.saveGlobal();
@@ -1217,6 +1219,12 @@ public class GameScene extends PixelScene {
   }
   // ^^^ may not a good idea...
 
+
+  @Override
+  public void draw() {
+    super.draw();
+    SceneCutEffect.postDraw();
+  }
 
   public static void gameOver() {
     Banner gameOver = new Banner(BannerSprites.get(BannerSprites.Type

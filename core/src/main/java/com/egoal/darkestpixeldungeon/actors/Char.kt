@@ -32,6 +32,9 @@ import com.egoal.darkestpixeldungeon.actors.mobs.Mob
 import com.egoal.darkestpixeldungeon.effects.DamagePalette
 import com.egoal.darkestpixeldungeon.effects.FloatingText
 import com.egoal.darkestpixeldungeon.effects.IceShatter
+import com.egoal.darkestpixeldungeon.effects.KillBoatSlashEffect
+import com.egoal.darkestpixeldungeon.effects.SceneCutEffect
+import com.egoal.darkestpixeldungeon.items.weapon.melee.Claymore
 import com.egoal.darkestpixeldungeon.items.artifacts.TimekeepersHourglass
 import com.egoal.darkestpixeldungeon.levels.Level
 import com.egoal.darkestpixeldungeon.levels.Terrain
@@ -305,7 +308,10 @@ abstract class Char : Actor() {
         }
 
         if (!isAlive) {
-            if (this is Mob && dmg.type == Damage.Type.NORMAL && buff(Frost::class.java) != null) {
+            if (this is Mob && dmg.type == Damage.Type.NORMAL &&
+                dmg.from is Hero && (dmg.from as Hero).belongings.weapon is Claymore) {
+                SceneCutEffect.trigger(this)
+            } else if (this is Mob && dmg.type == Damage.Type.NORMAL && buff(Frost::class.java) != null) {
                 IceShatter.shatter(this)
             }
             die(dmg.from)
@@ -658,6 +664,12 @@ abstract class Char : Actor() {
             } else {
                 defender.sprite.bloodBurstA(attacker.sprite.center(), value)
                 defender.sprite.flash()
+            }
+
+            if (defender.isAlive && attackerIsHero &&
+                (attacker as Hero).belongings.weapon is Claymore &&
+                dmg.type == Damage.Type.NORMAL) {
+                KillBoatSlashEffect.showOn(defender, false)
             }
 
             if (!defender.isAlive) {
