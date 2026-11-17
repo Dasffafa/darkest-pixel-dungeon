@@ -33,18 +33,22 @@ class WandDigger : RectDigger() {
         when (wall.direction) {
             Direction.Left -> {
                 LinkVertical(level, rect.x1, rect.y1, rect.y2, lastRowTile)
+                Set(level, rect.x1, plat.y, Terrain.WALL_LIGHT_ON)
                 plat.x = rect.x1 + 1
             }
             Direction.Right -> {
                 LinkVertical(level, rect.x2, rect.y1, rect.y2, lastRowTile)
+                Set(level, rect.x2, plat.y, Terrain.WALL_LIGHT_ON)
                 plat.x = rect.x2 - 1
             }
             Direction.Up -> {
                 LinkHorizontal(level, rect.y1, rect.x1, rect.x2, lastRowTile)
+                Set(level, plat.x, rect.y1, Terrain.WALL_LIGHT_ON)
                 plat.y = rect.y1 + 1
             }
             Direction.Down -> {
                 LinkHorizontal(level, rect.y2, rect.x1, rect.x2, lastRowTile)
+                Set(level, plat.x, rect.y2, Terrain.WALL_LIGHT_ON)
                 plat.y = rect.y2 - 1
             }
         }
@@ -72,6 +76,12 @@ class WandDigger : RectDigger() {
         val cen = rect.center
         val ceni = level.pointToCell(cen)
         for (i in PathFinder.NEIGHBOURS9) Set(level, i + ceni, Terrain.EMPTY_SP)
+
+        // Ensure the large room has guaranteed corner torch pillars for visibility.
+        Set(level, rect.x1, rect.y1, Terrain.WALL_LIGHT_ON)
+        Set(level, rect.x2, rect.y1, Terrain.WALL_LIGHT_ON)
+        Set(level, rect.x1, rect.y2, Terrain.WALL_LIGHT_ON)
+        Set(level, rect.x2, rect.y2, Terrain.WALL_LIGHT_ON)
 
         val door = overlappedWall(wall, rect).random()
         Set(level, door, Terrain.DOOR)

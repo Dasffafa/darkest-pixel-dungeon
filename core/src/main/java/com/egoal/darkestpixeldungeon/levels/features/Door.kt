@@ -15,8 +15,8 @@ object Door {
         GameScene.updateMap(pos)
 
         if (ch === Dungeon.hero) {
-            // don't observe here: already observed when hero moving
             Sample.INSTANCE.play(Assets.SND_OPEN)
+            Dungeon.observe()
         } else if (Dungeon.visible[pos]) {
             Sample.INSTANCE.play(Assets.SND_OPEN)
             Dungeon.observe()
