@@ -15,6 +15,7 @@
 | **喷火技能粒子流** | [FireSprayParticles.kt](file:///home/thecatist/darkest-pixel-dungeon/core/src/main/java/com/egoal/darkestpixeldungeon/effects/particles/FireSprayParticles.kt) | `FireSprayParticle.FACTORY`、`FireSparkParticle.FACTORY`、`FireSmokeParticle.FACTORY` | 白黄→橙→红渐变膨胀火团 + 重力火星 + 上升黑烟；`MagicMissile.fire(...)` 已默认接入 |
 | **地面焦痕贴花** | [ScorchMark.kt](file:///home/thecatist/darkest-pixel-dungeon/core/src/main/java/com/egoal/darkestpixeldungeon/effects/ScorchMark.kt) | `ScorchMark.place(group, cell)` | 在地面生成随机倾角的深炭焦痕，约 `2.6s` 自然淡出 |
 | **怪物死亡 GLSL 着色器** | [RadishDeathEffects.kt](file:///home/thecatist/darkest-pixel-dungeon/core/src/main/java/com/egoal/darkestpixeldungeon/effects/shaders/RadishDeathEffects.kt) | `RadishDeathShaders.play(target, DeathShaderType.*)`、`RadishDeathShaders.lightEvaporate(target)` | 迁移自 RadishPD 的 10 套死亡着色器（`CUT`/`BURN`/`ACID`/`SINGULARITY`/`NOISE`/`LIGHT_EVAPORATE`/`LIGHT_DISSOLVE`/`ELLIPSE`/`WIPE`/`ALPHA`）；`LIGHT_EVAPORATE` 附带跟随目标的上升 1px 白色光像素粒子流 |
+| **物理腰斩 / 飞头尸体** | [HalvedCorpse.kt](file:///home/thecatist/darkest-pixel-dungeon/core/src/main/java/com/egoal/darkestpixeldungeon/effects/HalvedCorpse.kt) | `HalvedCorpse.bisect(ch, angleDeg, speed, cutFrac = 0.5f)` | 将目标精灵水平切开：切口喷血 + 冒血粒子，上半身抛飞旋转并在撞墙后小幅弹开落地，停留后整体淡出 |
 
 ---
 
