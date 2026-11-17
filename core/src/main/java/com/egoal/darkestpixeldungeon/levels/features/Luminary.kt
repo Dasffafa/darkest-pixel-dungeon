@@ -5,6 +5,7 @@ import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.DungeonTilemap
 import com.egoal.darkestpixeldungeon.effects.Halo
 import com.egoal.darkestpixeldungeon.levels.Level
+import com.egoal.darkestpixeldungeon.levels.lighting.LightSource
 import com.watabou.noosa.particles.Emitter
 
 // basic class for luminaries
@@ -15,6 +16,8 @@ open class Luminary(var pos: Int = -1) {
             if (level.insideMap(pos + it)) Level.lighted[pos + it] = true
         }
     }
+
+    open fun toLightSource(): LightSource = LightSource.torch(pos)
 
     fun visual(): LightVisual? {
         if (visual == null)
