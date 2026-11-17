@@ -225,6 +225,7 @@ public class MagicMissile extends Emitter {
         if (flightLight != null && !Dungeon.INSTANCE.isLevelNull() && flightColor != 0) {
           Dungeon.INSTANCE.getLevel().addTransientLight(
                   LightSource.Companion.fromColor(targetCell, flightColor, 3.2f, 0.95f, 0.28f));
+          MagicBurst.spawn(parent, targetCell, flightColor);
           flightLight = null;
         }
         if (fireSprayImpact && !Dungeon.INSTANCE.isLevelNull()) {

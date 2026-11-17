@@ -75,6 +75,33 @@ public class TextureCache {
 		}
 		
 	}
+
+	public static SmartTexture createRadialGlow( int size ) {
+		final String key = "radial:" + size;
+
+		if (all.containsKey( key )) {
+			return all.get( key );
+		} else {
+			Pixmap bmp = new Pixmap( size, size, Pixmap.Format.RGBA8888 );
+			float half = (size - 1) * 0.5f;
+			float invHalf = half > 0f ? 1f / half : 1f;
+			for (int y = 0; y < size; y++) {
+				for (int x = 0; x < size; x++) {
+					float dx = (x - half) * invHalf;
+					float dy = (y - half) * invHalf;
+					float dist = (float) Math.sqrt( dx * dx + dy * dy );
+					float falloff = Math.max( 0f, 1f - dist );
+					int a = Math.round( falloff * falloff * 255f );
+					bmp.drawPixel( x, y, 0xFFFFFF00 | (a & 0xFF) );
+				}
+			}
+			SmartTexture tx = new SmartTexture( bmp );
+			tx.filter( Texture.LINEAR, Texture.LINEAR );
+			tx.wrap( Texture.CLAMP, Texture.CLAMP );
+			all.put( key, tx );
+			return tx;
+		}
+	}
 	
 	public static void add( Object key, SmartTexture tx ) {
 		all.put( key, tx );
