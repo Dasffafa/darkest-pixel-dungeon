@@ -20,7 +20,9 @@
  */
 package com.egoal.darkestpixeldungeon.effects;
 
+import com.egoal.darkestpixeldungeon.Dungeon;
 import com.egoal.darkestpixeldungeon.DungeonTilemap;
+import com.egoal.darkestpixeldungeon.levels.lighting.LightSource;
 import com.egoal.darkestpixeldungeon.effects.particles.ElectronParticle;
 import com.egoal.darkestpixeldungeon.effects.particles.FlameParticle;
 import com.egoal.darkestpixeldungeon.effects.particles.LeafParticle;
@@ -47,6 +49,9 @@ public class MagicMissile extends Emitter {
   private float sx;
   private float sy;
   private float time;
+  private LightSource flightLight;
+  private int flightColor;
+  private int targetCell;
 
   public void reset(int from, int to, Callback callback) {
     reset(from, to, SPEED, callback);
@@ -54,6 +59,9 @@ public class MagicMissile extends Emitter {
 
   public void reset(int from, int to, float velocity, Callback callback) {
     this.callback = callback;
+    this.targetCell = to;
+    this.flightLight = null;
+    this.flightColor = 0;
 
     revive();
 
@@ -78,11 +86,19 @@ public class MagicMissile extends Emitter {
     width = height = size;
   }
 
+  private void attachLight(int from, int rgb) {
+    if (Dungeon.INSTANCE.isLevelNull()) return;
+    flightColor = rgb;
+    flightLight = LightSource.Companion.fromColor(from, rgb, 2.6f, 0.85f, Math.max(0.15f, time + 0.05f));
+    Dungeon.INSTANCE.getLevel().addTransientLight(flightLight);
+  }
+
   public static void blueLight(Group group, int from, int to, Callback
           callback) {
     MagicMissile missile = ((MagicMissile) group.recycle(MagicMissile.class));
     missile.reset(from, to, callback);
     missile.pour(MagicParticle.FACTORY, 0.01f);
+    missile.attachLight(from, 0x44AAFF);
   }
 
   public static void fire(Group group, int from, int to, Callback callback) {
@@ -90,6 +106,7 @@ public class MagicMissile extends Emitter {
     missile.reset(from, to, callback);
     missile.size(10);
     missile.pour(FlameParticle.FACTORY, 0.03f);
+    missile.attachLight(from, 0xFF7722);
   }
 
   public static void earth(Group group, int from, int to, Callback callback) {
@@ -105,6 +122,7 @@ public class MagicMissile extends Emitter {
     missile.reset(from, to, callback);
     missile.size(2);
     missile.pour(PurpleParticle.MISSILE, 0.01f);
+    missile.attachLight(from, 0xCC55FF);
   }
 
   public static void whiteLight(Group group, int from, int to, Callback
@@ -113,6 +131,7 @@ public class MagicMissile extends Emitter {
     missile.reset(from, to, callback);
     missile.size(4);
     missile.pour(WhiteParticle.FACTORY, 0.01f);
+    missile.attachLight(from, 0xFFEEAA);
   }
 
   public static void wool(Group group, int from, int to, Callback callback) {
@@ -156,6 +175,7 @@ public class MagicMissile extends Emitter {
     missile.reset(from, to, callback);
     missile.size(4);
     missile.pour(ColdParticle.FACTORY, 0.01f);
+    missile.attachLight(from, 0x55CCFF);
   }
 
   public static void shadow(Group group, int from, int to, Callback callback) {
@@ -170,6 +190,7 @@ public class MagicMissile extends Emitter {
     missile.reset(from, to, callback);
     missile.size(4);
     missile.pour(RainbowParticle.BURST, 0.01f);
+    missile.attachLight(from, 0xFFE0FF);
   }
 
   public static void electronics(Group group, int from, int to, Callback callback){
@@ -177,6 +198,7 @@ public class MagicMissile extends Emitter {
     missile.reset(from, to, callback);
     missile.size(4);
     missile.pour(ElectronParticle.Companion.getFACTORY(), 0.01f);
+    missile.attachLight(from, 0x66EEFF);
   }
 
   @Override
@@ -186,8 +208,19 @@ public class MagicMissile extends Emitter {
       float d = Game.elapsed;
       x += sx * d;
       y += sy * d;
+      if (flightLight != null && !Dungeon.INSTANCE.isLevelNull()) {
+        int w = Dungeon.INSTANCE.getLevel().width();
+        int cx = Math.max(0, Math.min(w - 1, (int) (x / DungeonTilemap.SIZE)));
+        int cy = Math.max(0, Math.min(Dungeon.INSTANCE.getLevel().height() - 1, (int) (y / DungeonTilemap.SIZE)));
+        flightLight.setCell(cy * w + cx);
+      }
       if ((time -= d) <= 0) {
         on = false;
+        if (flightLight != null && !Dungeon.INSTANCE.isLevelNull() && flightColor != 0) {
+          Dungeon.INSTANCE.getLevel().addTransientLight(
+                  LightSource.Companion.fromColor(targetCell, flightColor, 3.2f, 0.95f, 0.28f));
+          flightLight = null;
+        }
         if (callback != null) callback.call();
       }
     }
