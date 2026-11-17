@@ -1,11 +1,14 @@
 package com.egoal.darkestpixeldungeon.sprites
 
+import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Pixmap
+import com.badlogic.gdx.utils.JsonReader
+import com.badlogic.gdx.utils.JsonValue
 import com.egoal.darkestpixeldungeon.Assets
 import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.actors.hero.Hero
 import com.egoal.darkestpixeldungeon.actors.hero.HeroClass
-import com.egoal.darkestpixeldungeon.items.KindOfWeapon
+import com.egoal.darkestpixeldungeon.sprites.DollSpriteSheets.WeaponVisual
 import com.watabou.gltextures.SmartTexture
 import com.watabou.gltextures.TextureCache
 import com.watabou.noosa.Camera
@@ -28,7 +31,9 @@ class DollSprite : CharSprite() {
     private val weapon = WeaponLayer(this)
 
     private var helmetState = Int.MIN_VALUE
-    private var weaponId = -1
+    private var currentHelmetRow = -1
+    private var currentFrameIndex = 0
+    private var weaponVisual: WeaponVisual = WeaponVisual.None
 
     init {
         initBodyAnimation()
@@ -92,6 +97,7 @@ class DollSprite : CharSprite() {
         val state = if (drawId >= 0) drawId * 2 + (if (hat!!.replacesHead) 1 else 0) else -1
         if (state == helmetState) return
         helmetState = state
+        currentHelmetRow = drawId
 
         if (drawId >= 0) {
             helmet.visible = true
@@ -105,16 +111,17 @@ class DollSprite : CharSprite() {
     }
 
     private fun refreshWeapon() {
-        val id = DollSpriteSheets.weaponDrawId((ch as? Hero)?.belongings?.weapon)
-        if (id != weaponId) {
-            weaponId = id
-            weapon.updateGear(id)
+        val visual = DollSpriteSheets.weaponVisual((ch as? Hero)?.belongings?.weapon)
+        if (visual != weaponVisual) {
+            weaponVisual = visual
+            weapon.updateGear(visual)
             weapon.syncFrame(animationId(), curFrame)
         }
     }
 
     private fun syncComponentsFrame() {
         val index = (curAnim as? IndexedAnimation)?.frameIndexes?.getOrNull(curFrame) ?: 0
+        currentFrameIndex = index
         if (head.visible) head.col(index)
         armor.col(index)
         if (helmet.visible) helmet.col(index)
@@ -137,9 +144,10 @@ class DollSprite : CharSprite() {
 
     override fun turnTo(from: Int, to: Int) {
         super.turnTo(from, to)
-        head.flipHorizontal = flipHorizontal
-        armor.flipHorizontal = flipHorizontal
-        helmet.flipHorizontal = flipHorizontal
+        head.syncFlip(flipHorizontal)
+        armor.syncFlip(flipHorizontal)
+        helmet.syncFlip(flipHorizontal)
+        weapon.syncFlip(flipHorizontal)
     }
 
     override fun move(from: Int, to: Int) {
@@ -161,6 +169,20 @@ class DollSprite : CharSprite() {
         play(read)
     }
 
+    /**
+     * Play a named special animation from the custom weapon's JSON `animations` map
+     * (e.g. "skill", "parry", "charge"). Non-looped animations return to the hero's
+     * current state automatically when finished.
+     */
+    fun playWeaponAnim(name: String, onComplete: Callback? = null): Boolean {
+        return weapon.playNamed(name, onComplete)
+    }
+
+    fun clearWeaponAnim() {
+        weapon.clearNamed()
+        weapon.syncFrame(animationId(), curFrame)
+    }
+
     // do nothing to reduce the violence rating of the game
     override fun bloodBurstA(from: PointF, damage: Int) {}
 
@@ -170,19 +192,7 @@ class DollSprite : CharSprite() {
 
         updateHelmet()
         refreshWeapon()
-
-        // sync pos
-        head.point(point())
-        armor.point(point())
-        helmet.point(point())
-
-        head.flipHorizontal = flipHorizontal
-        armor.flipHorizontal = flipHorizontal
-        helmet.flipHorizontal = flipHorizontal
-
-        head.camera = camera
-        armor.camera = camera
-        helmet.camera = camera
+        weapon.updateAnim(Game.elapsed)
     }
 
     override fun updateAnimation() {
@@ -217,10 +227,29 @@ class DollSprite : CharSprite() {
 
     override fun draw() {
         super.draw()
-        if (head.visible) head.draw()
+        // Sync transform & camera in draw() so PosTweener updates from this frame are reflected
+        if (head.visible) {
+            head.syncFrom(this)
+            head.draw()
+        }
+        armor.syncFrom(this)
         armor.draw()
-        if (helmet.visible) helmet.draw()
+        if (helmet.visible) {
+            helmet.syncFrom(this)
+            val off = loadHelmetMeta().offsetFor(currentHelmetRow, currentFrameIndex)
+            helmet.x += off[0] * (if (flipHorizontal) -1f else 1f)
+            helmet.y += off[1]
+            helmet.draw()
+        }
         weapon.drawLayer(curFrame)
+    }
+
+    override fun destroy() {
+        super.destroy()
+        head.destroy()
+        armor.destroy()
+        helmet.destroy()
+        weapon.destroy()
     }
 
     fun sprint(on: Boolean): Boolean {
@@ -279,6 +308,29 @@ class DollSprite : CharSprite() {
             }
             return this
         }
+
+        fun syncFlip(flip: Boolean) {
+            if (flipHorizontal != flip) {
+                flipHorizontal = flip
+                updateFrame()
+            }
+        }
+
+        fun syncFrom(owner: CharSprite) {
+            point(owner.point())
+            origin.set(owner.origin)
+            scale.set(owner.scale)
+            angle = owner.angle
+            camera = owner.camera
+            alpha(owner.alpha())
+            ra = owner.ra
+            ga = owner.ga
+            ba = owner.ba
+            rm = owner.rm
+            gm = owner.gm
+            bm = owner.bm
+            syncFlip(owner.flipHorizontal)
+        }
     }
 
     class Head : Component(Assets.HERO_HEAD) {}
@@ -287,41 +339,211 @@ class DollSprite : CharSprite() {
 
     class HelmetLayer : Component(Assets.HERO_HELMET) {}
 
-    // NNYPD style equipment overlay: an independent texture sheet, whose row is
-    // the gear id, and whose columns are animation frames selected by drawData
+    data class CustomWeaponAnim(
+            val frames: IntArray,
+            val delay: Float,
+            val looped: Boolean,
+            val offsetX: Float,
+            val offsetY: Float,
+            val frameOffsets: Array<FloatArray>? = null
+    )
+
+    data class CustomWeaponSpec(
+            val frameWidth: Int,
+            val frameHeight: Int,
+            val anims: Map<Int, CustomWeaponAnim>,
+            val namedAnims: Map<String, CustomWeaponAnim>
+    )
+
+    // Supports both NNYPD-style legacy rows in weapons.png and custom per-weapon
+    // sheets (actors/hero/weapons/<name>.png + .json) with arbitrary size & FPS.
     class WeaponLayer(private val owner: CharSprite) : Image(TextureCache.get(Assets.HERO_WEAPONS)) {
-        private val rows: TextureFilm = TextureFilm(texture, texture.width, WEAP_FRAME_HEIGHT)
+        private val legacyTex = texture
+        private val legacyRows = TextureFilm(legacyTex, legacyTex.width, WEAP_FRAME_HEIGHT)
         private var film: TextureFilm? = null
         private var drawData: Array<IntArray>? = null
 
-        fun updateGear(id: Int) {
+        private var customSpec: CustomWeaponSpec? = null
+        private var customAnim: CustomWeaponAnim? = null
+        private var customAnimId = -1
+        private var customFrame = 0
+        private var customTimer = 0f
+        private var overrideAnimName: String? = null
+        private var overrideCallback: Callback? = null
+
+        fun updateGear(visual: WeaponVisual) {
             drawData = null
-            film = if (id >= 0) TextureFilm(rows, id, WEAP_FRAME_WIDTH, WEAP_FRAME_HEIGHT) else null
+            customSpec = null
+            customAnim = null
+            customAnimId = -1
+            customFrame = 0
+            customTimer = 0f
+            overrideAnimName = null
+            overrideCallback = null
+
+            when (visual) {
+                WeaponVisual.None -> {
+                    film = null
+                }
+                is WeaponVisual.Legacy -> {
+                    texture(legacyTex)
+                    film = TextureFilm(legacyRows, visual.row, WEAP_FRAME_WIDTH, WEAP_FRAME_HEIGHT)
+                }
+                is WeaponVisual.Custom -> {
+                    val tex = TextureCache.get("actors/hero/weapons/${visual.name}.png")
+                    val spec = loadCustomWeaponSpec(visual.name)
+                    if (tex != null && spec != null) {
+                        texture(tex)
+                        customSpec = spec
+                        film = TextureFilm(tex, spec.frameWidth, spec.frameHeight)
+                    } else {
+                        film = null
+                    }
+                }
+            }
+        }
+
+        fun playNamed(name: String, onComplete: Callback? = null): Boolean {
+            val spec = customSpec ?: return false
+            val anim = spec.namedAnims[name] ?: return false
+            val f = film ?: return false
+            overrideAnimName = name
+            overrideCallback = onComplete
+            customAnim = anim
+            customFrame = 0
+            customTimer = 0f
+            if (anim.frames.isNotEmpty()) {
+                val rect = f.get(anim.frames[0])
+                if (rect != null) frame(rect)
+            }
+            syncFlip(owner.flipHorizontal)
+            return true
+        }
+
+        fun clearNamed() {
+            overrideAnimName = null
+            overrideCallback = null
+            customAnimId = -1
+        }
+
+        fun syncFlip(flip: Boolean) {
+            if (flipHorizontal != flip) {
+                flipHorizontal = flip
+                updateFrame()
+            }
         }
 
         fun syncFrame(animationId: Int, curFrame: Int) {
+            val spec = customSpec
+            if (spec != null) {
+                if (overrideAnimName != null) {
+                    customAnimId = animationId
+                    return
+                }
+                if (animationId != customAnimId) {
+                    customAnimId = animationId
+                    customAnim = if (animationId >= 0) {
+                        spec.anims[animationId] ?: spec.anims[ANIM_IDLE]
+                    } else {
+                        null
+                    }
+                    customFrame = 0
+                    customTimer = 0f
+                }
+                val anim = customAnim ?: return
+                val f = film ?: return
+                if (anim.frames.isNotEmpty()) {
+                    val rect = f.get(anim.frames[minOf(customFrame, anim.frames.size - 1)])
+                    if (rect != null) frame(rect)
+                }
+                syncFlip(owner.flipHorizontal)
+                return
+            }
+
             val data = drawTable(animationId)
             drawData = data
             val f = film ?: return
             if (data == null || curFrame >= data[0].size) return
 
             frame(f.get(data[0][curFrame]))
-            flipHorizontal = owner.flipHorizontal
+            syncFlip(owner.flipHorizontal)
+        }
+
+        fun updateAnim(elapsed: Float) {
+            val anim = customAnim ?: return
+            val f = film ?: return
+            if (anim.delay <= 0f || anim.frames.isEmpty()) return
+            if (anim.frames.size <= 1 && (anim.looped || overrideAnimName == null)) return
+
+            customTimer += elapsed
+            var changed = false
+            var finishedOverride = false
+            while (customTimer > anim.delay) {
+                customTimer -= anim.delay
+                if (customFrame >= anim.frames.size - 1) {
+                    if (anim.looped) {
+                        customFrame = 0
+                        changed = true
+                    } else {
+                        customTimer = 0f
+                        if (overrideAnimName != null) finishedOverride = true
+                        break
+                    }
+                } else {
+                    customFrame++
+                    changed = true
+                }
+            }
+            if (finishedOverride) {
+                val cb = overrideCallback
+                val restoreId = customAnimId
+                clearNamed()
+                syncFrame(restoreId, 0)
+                cb?.call()
+                return
+            }
+            if (changed) {
+                val rect = f.get(anim.frames[customFrame])
+                if (rect != null) {
+                    frame(rect)
+                    updateFrame()
+                }
+            }
         }
 
         fun drawLayer(curFrame: Int) {
-            val data = drawData ?: return
             val f = film ?: return
-            val i = minOf(curFrame, data[0].size - 1)
+            val dx: Float
+            val dy: Float
 
-            flipHorizontal = owner.flipHorizontal
+            val anim = customAnim
+            if (customSpec != null) {
+                if (anim == null || anim.frames.isEmpty()) return
+                val idx = minOf(customFrame, anim.frames.size - 1)
+                val fo = anim.frameOffsets?.getOrNull(idx)
+                dx = fo?.getOrNull(0) ?: anim.offsetX
+                dy = fo?.getOrNull(1) ?: anim.offsetY
+            } else {
+                val data = drawData ?: return
+                val i = minOf(curFrame, data[0].size - 1)
+                dx = data[1][i].toFloat()
+                dy = data[2][i].toFloat()
+            }
+
+            camera = owner.camera
+            syncFlip(owner.flipHorizontal)
             center(owner.center())
-            x += data[1][i] * (if (flipHorizontal) -1f else 1f)
-            y += data[2][i]
+            x += dx * (if (flipHorizontal) -1f else 1f)
+            y += dy
+            scale.set(owner.scale)
+            angle = owner.angle
             alpha(owner.alpha())
             ra = owner.ra
             ga = owner.ga
             ba = owner.ba
+            rm = owner.rm
+            gm = owner.gm
+            bm = owner.bm
             draw()
         }
 
@@ -367,6 +589,136 @@ class DollSprite : CharSprite() {
         private const val PORTRAIT_SIZE = 26
 
         private val avatars = HashMap<Int, Image>()
+        private val customWeaponSpecs = HashMap<String, CustomWeaponSpec?>()
+        private var cachedHelmetMeta: HelmetMeta? = null
+
+        class HelmetRowMeta(
+                val offset: FloatArray?,
+                val frameOffsets: Map<Int, FloatArray>
+        )
+
+        class HelmetMeta(
+                val defaultOffset: FloatArray,
+                val defaultFrameOffsets: Map<Int, FloatArray>,
+                val rows: Map<Int, HelmetRowMeta>
+        ) {
+            fun offsetFor(row: Int, frameIdx: Int): FloatArray {
+                val r = rows[row]
+                if (r != null) {
+                    r.frameOffsets[frameIdx]?.let { return it }
+                    r.offset?.let { return it }
+                }
+                return defaultFrameOffsets[frameIdx] ?: defaultOffset
+            }
+        }
+
+        private fun parsePair(node: JsonValue?, fallback: FloatArray): FloatArray {
+            if (node == null || node.size < 2) return fallback
+            return floatArrayOf(node.getFloat(0), node.getFloat(1))
+        }
+
+        private fun parseFrameOffsetMap(node: JsonValue?): Map<Int, FloatArray> {
+            val map = HashMap<Int, FloatArray>()
+            var c = node?.child
+            while (c != null) {
+                val idx = c.name.toIntOrNull()
+                if (idx != null && c.size >= 2) {
+                    map[idx] = floatArrayOf(c.getFloat(0), c.getFloat(1))
+                }
+                c = c.next
+            }
+            return map
+        }
+
+        fun loadHelmetMeta(): HelmetMeta {
+            cachedHelmetMeta?.let { return it }
+            val fallbackDef = floatArrayOf(1f, -1f)
+            val fallbackFrames = mapOf(1 to floatArrayOf(0f, -1f))
+            val file = Gdx.files.internal("actors/hero/helmets_meta.json")
+            val meta = if (file.exists()) {
+                val root = JsonReader().parse(file)
+                val defOff = parsePair(root.get("defaultOffset"), fallbackDef)
+                val defFrames = parseFrameOffsetMap(root.get("defaultFrameOffsets"))
+                val rowsMap = HashMap<Int, HelmetRowMeta>()
+                var rNode = root.get("rows")?.child
+                while (rNode != null) {
+                    val rowId = rNode.name.toIntOrNull()
+                    if (rowId != null) {
+                        val rOff = if (rNode.has("offset")) parsePair(rNode.get("offset"), defOff) else null
+                        val rFrames = parseFrameOffsetMap(rNode.get("frameOffsets"))
+                        rowsMap[rowId] = HelmetRowMeta(rOff, rFrames)
+                    }
+                    rNode = rNode.next
+                }
+                HelmetMeta(defOff, defFrames, rowsMap)
+            } else {
+                HelmetMeta(fallbackDef, fallbackFrames, emptyMap())
+            }
+            cachedHelmetMeta = meta
+            return meta
+        }
+
+        private fun animIdFromName(name: String): Int? = when (name) {
+            "idle" -> ANIM_IDLE
+            "run" -> ANIM_RUN
+            "attack" -> ANIM_ATTACK
+            "fly" -> ANIM_FLY
+            "operate" -> ANIM_OPERATE
+            else -> null
+        }
+
+        fun loadCustomWeaponSpec(name: String): CustomWeaponSpec? {
+            if (customWeaponSpecs.containsKey(name)) return customWeaponSpecs[name]
+            val file = Gdx.files.internal("actors/hero/weapons/$name.json")
+            if (!file.exists()) {
+                customWeaponSpecs[name] = null
+                return null
+            }
+            val root: JsonValue = JsonReader().parse(file)
+            val fw = root.getInt("frameWidth", WEAP_FRAME_WIDTH)
+            val fh = root.getInt("frameHeight", WEAP_FRAME_HEIGHT)
+            val defOx = root.getFloat("offsetX", 0f)
+            val defOy = root.getFloat("offsetY", 0f)
+            val anims = HashMap<Int, CustomWeaponAnim>()
+            val namedAnims = HashMap<String, CustomWeaponAnim>()
+            val animsNode = root.get("animations")
+            if (animsNode != null) {
+                var child = animsNode.child
+                while (child != null) {
+                    val animId = animIdFromName(child.name)
+                    val frames = child.get("frames")?.asIntArray() ?: intArrayOf(0)
+                    val fps = child.getFloat("fps", 1f)
+                    val defaultLoop = animId == ANIM_IDLE || animId == ANIM_RUN || animId == ANIM_FLY
+                    val looped = child.getBoolean("looped", defaultLoop)
+                    val ox = child.getFloat("offsetX", defOx)
+                    val oy = child.getFloat("offsetY", defOy)
+                    val offsetsNode = child.get("offsets")
+                    val frameOffsets = if (offsetsNode != null && offsetsNode.size > 0) {
+                        Array(offsetsNode.size) { i ->
+                            val pair = offsetsNode.get(i)
+                            floatArrayOf(
+                                    if (pair.size >= 1) pair.getFloat(0) else ox,
+                                    if (pair.size >= 2) pair.getFloat(1) else oy
+                            )
+                        }
+                    } else null
+                    val parsed = CustomWeaponAnim(
+                            frames = frames,
+                            delay = if (fps > 0f) 1f / fps else 0f,
+                            looped = looped,
+                            offsetX = ox,
+                            offsetY = oy,
+                            frameOffsets = frameOffsets
+                    )
+                    namedAnims[child.name] = parsed
+                    if (animId != null) anims[animId] = parsed
+                    child = child.next
+                }
+            }
+            val spec = CustomWeaponSpec(fw, fh, anims, namedAnims)
+            customWeaponSpecs[name] = spec
+            return spec
+        }
 
         fun armorRow(hc: HeroClass, tier: Int): Int = when {
             tier >= 6 -> DollSpriteSheets.Armor.CLASS_ARMOR + hc.ordinal

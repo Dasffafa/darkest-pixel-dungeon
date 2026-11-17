@@ -58,6 +58,28 @@ object DollSpriteSheets {
     const val WEAP_FLAIL = 21
     const val WEAP_DOUBLE_BLADE = 23
 
+    sealed class WeaponVisual {
+        object None : WeaponVisual()
+        data class Legacy(val row: Int) : WeaponVisual()
+        data class Custom(val name: String) : WeaponVisual()
+    }
+
+    /**
+     * Maps a weapon to either a custom sheet under `actors/hero/weapons/<name>.png+.json`
+     * or a legacy NNYPD row in `weapons.png`.
+     */
+    fun weaponVisual(weapon: KindOfWeapon?): WeaponVisual {
+        val custom = customWeaponName(weapon)
+        if (custom != null) return WeaponVisual.Custom(custom)
+        val row = weaponDrawId(weapon)
+        return if (row >= 0) WeaponVisual.Legacy(row) else WeaponVisual.None
+    }
+
+    // Add custom weapon sheet names here (matching assets/actors/hero/weapons/<name>.png + .json)
+    fun customWeaponName(weapon: KindOfWeapon?): String? = when (weapon) {
+        else -> null
+    }
+
     fun weaponDrawId(weapon: KindOfWeapon?): Int = when (weapon) {
         is Dagger, is ParryingDagger -> WEAP_DAGGER
         is AssassinsBlade -> WEAP_ASSASSIN_BLADE
