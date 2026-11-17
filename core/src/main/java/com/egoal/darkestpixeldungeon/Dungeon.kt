@@ -746,7 +746,7 @@ object Dungeon {
         if (hero!!.buff(MindVision::class.java) != null || hero!!.buff(Awareness::class.java) != null)
             GameScene.updateFog()
         else
-            GameScene.updateFog(ax, ay, len, by - ay)
+            GameScene.updateFog(ax, ay, len, by - ay + 1)
 
         for(mob in hero.mindVisionEnemies) GameScene.updateFog(mob.pos, 2)
 
