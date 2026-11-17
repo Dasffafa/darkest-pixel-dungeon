@@ -60,6 +60,9 @@ import com.egoal.darkestpixeldungeon.levels.features.Chasm
 import com.egoal.darkestpixeldungeon.levels.features.Door
 import com.egoal.darkestpixeldungeon.levels.features.HighGrass
 import com.egoal.darkestpixeldungeon.levels.features.Luminary
+import com.egoal.darkestpixeldungeon.levels.lighting.AmbientLightProfile
+import com.egoal.darkestpixeldungeon.levels.lighting.LightMap
+import com.egoal.darkestpixeldungeon.levels.lighting.LightSource
 import com.egoal.darkestpixeldungeon.levels.traps.PrizeTrap
 import com.egoal.darkestpixeldungeon.levels.traps.Trap
 import com.egoal.darkestpixeldungeon.mechanics.ShadowCaster
@@ -110,6 +113,7 @@ abstract class Level : Bundlable {
     var traps = SparseArray<Trap>()
     var customTiles = HashSet<CustomTileVisual>()
     var luminaries = HashSet<Luminary>()
+    val lightMap = LightMap()
     // TheCatist: 光照的脏加载，也许是光照系统导致了游戏的卡顿，只在发光体移动的时候重新渲染LightMap
     private var lightMapDirty = true
 
@@ -571,8 +575,26 @@ abstract class Level : Bundlable {
     // Modified by TheCatist: rebuild only after a light source changes.
     fun updateLightMap() {
         BArray.setFalse(lighted)
-        for (lum in luminaries.toTypedArray()) lum.light(this)
+        val lumList = luminaries.toTypedArray()
+        for (lum in lumList) lum.light(this)
+
+        lightMap.resize(width, height)
+        val sources = lumList.map { it.toLightSource() }
+        val ambient = AmbientLightProfile.forLevel(Dungeon.depth, feeling)
+        lightMap.setStaticSources(sources, ambient, losBlocking)
+
+        val heroPos = if (!Dungeon.isHeroNull) Dungeon.hero.pos else -1
+        val heroDist = if (!Dungeon.isHeroNull) Dungeon.hero.viewDistance() else 4
+        val torchLit = !Dungeon.isHeroNull &&
+                Dungeon.hero.buff(com.egoal.darkestpixeldungeon.actors.buffs.Light::class.java) != null
+        lightMap.updateFrame(heroPos, heroDist, torchLit, losBlocking, lighted)
+
         lightMapDirty = false
+    }
+
+    fun addTransientLight(source: LightSource) {
+        lightMap.addTransient(source)
+        invalidateLightMap()
     }
 
     private fun updateLightMapIfNeeded() {
