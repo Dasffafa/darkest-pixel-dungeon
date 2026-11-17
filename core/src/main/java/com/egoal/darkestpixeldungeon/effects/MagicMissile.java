@@ -24,6 +24,9 @@ import com.egoal.darkestpixeldungeon.Dungeon;
 import com.egoal.darkestpixeldungeon.DungeonTilemap;
 import com.egoal.darkestpixeldungeon.levels.lighting.LightSource;
 import com.egoal.darkestpixeldungeon.effects.particles.ElectronParticle;
+import com.egoal.darkestpixeldungeon.effects.particles.FireSmokeParticle;
+import com.egoal.darkestpixeldungeon.effects.particles.FireSparkParticle;
+import com.egoal.darkestpixeldungeon.effects.particles.FireSprayParticle;
 import com.egoal.darkestpixeldungeon.effects.particles.FlameParticle;
 import com.egoal.darkestpixeldungeon.effects.particles.LeafParticle;
 import com.egoal.darkestpixeldungeon.effects.particles.PoisonParticle;
@@ -52,6 +55,7 @@ public class MagicMissile extends Emitter {
   private LightSource flightLight;
   private int flightColor;
   private int targetCell;
+  private boolean fireSprayImpact = false;
 
   public void reset(int from, int to, Callback callback) {
     reset(from, to, SPEED, callback);
@@ -62,6 +66,7 @@ public class MagicMissile extends Emitter {
     this.targetCell = to;
     this.flightLight = null;
     this.flightColor = 0;
+    this.fireSprayImpact = false;
 
     revive();
 
@@ -104,8 +109,9 @@ public class MagicMissile extends Emitter {
   public static void fire(Group group, int from, int to, Callback callback) {
     MagicMissile missile = ((MagicMissile) group.recycle(MagicMissile.class));
     missile.reset(from, to, callback);
-    missile.size(10);
-    missile.pour(FlameParticle.FACTORY, 0.03f);
+    missile.size(12);
+    missile.pour(FireSprayParticle.FACTORY, 0.014f);
+    missile.fireSprayImpact = true;
     missile.attachLight(from, 0xFF7722);
   }
 
@@ -220,6 +226,11 @@ public class MagicMissile extends Emitter {
           Dungeon.INSTANCE.getLevel().addTransientLight(
                   LightSource.Companion.fromColor(targetCell, flightColor, 3.2f, 0.95f, 0.28f));
           flightLight = null;
+        }
+        if (fireSprayImpact && !Dungeon.INSTANCE.isLevelNull()) {
+          ScorchMark.place(parent, targetCell);
+          CellEmitter.center(targetCell).burst(FireSparkParticle.FACTORY, 6);
+          CellEmitter.center(targetCell).burst(FireSmokeParticle.FACTORY, 3);
         }
         if (callback != null) callback.call();
       }

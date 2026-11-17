@@ -149,7 +149,7 @@ public class Emitter extends Group {
 	@Override
 	public void draw() {
 		if (lightMode) {
-			Gdx.gl.glBlendFunc( Gdx.gl.GL_SRC_ALPHA, Gdx.gl.GL_ONE );
+			Gdx.gl.glBlendFuncSeparate( Gdx.gl.GL_SRC_ALPHA, Gdx.gl.GL_ONE, Gdx.gl.GL_ONE, Gdx.gl.GL_ONE_MINUS_SRC_ALPHA );
 			super.draw();
 			Gdx.gl.glBlendFunc( Gdx.gl.GL_SRC_ALPHA, Gdx.gl.GL_ONE_MINUS_SRC_ALPHA );
 		} else {
