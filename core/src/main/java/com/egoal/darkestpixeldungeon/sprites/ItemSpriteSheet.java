@@ -208,6 +208,7 @@ public class ItemSpriteSheet {
     public static final int MANTILLA = HELMET + 18;
     public static final int SLAVE_COLLAR = HELMET + 19;
     public static final int HEADGEAR = HELMET + 20;
+    public static final int ELDER_CROWN = HELMET + 21;
 
     //16 free slots
 

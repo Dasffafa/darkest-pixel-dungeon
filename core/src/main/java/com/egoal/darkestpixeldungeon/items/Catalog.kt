@@ -164,6 +164,7 @@ enum class Catalog(private val baseItems: Map<Class<*>, Boolean>) {
             LittlePail::class.java to false,
             CircletEmerald::class.java to false,
             CrownOfDwarf::class.java to false,
+            CrownOfTheElder::class.java to false,
             HeaddressRegeneration::class.java to false,
             WizardHat::class.java to false,
             MaskOfHorror::class.java to false,

@@ -817,6 +817,14 @@ class Hero : Char() {
         return dmgToken
     }
 
+    override fun elementalResistance(element: Damage.Element): Float {
+        var res = super.elementalResistance(element)
+        (belongings.helmet as? CrownOfTheElder)?.let {
+            res += it.elementalResistanceAmend(element)
+        }
+        return res
+    }
+
     private fun takeMentalDamage(dmg: Damage): Int {
         if (dmg.value <= 0) return 0
 

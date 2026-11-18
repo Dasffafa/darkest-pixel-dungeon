@@ -422,6 +422,7 @@ object Generator {
             LittlePail::class to 1f,
             CircletEmerald::class to 1f,
             CrownOfDwarf::class to 0f, // by king 
+            CrownOfTheElder::class to 0f, // elder altar
             HeaddressRegeneration::class to 1f,
             WizardHat::class to 1f,
             MaskOfHorror::class to 1f,
