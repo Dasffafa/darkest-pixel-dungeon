@@ -8,6 +8,30 @@ FTP_ROOT="${FTP_ROOT:-wwwroot}"
 BASE="ftp://${FTP_USER}:${FTP_PASS}@${FTP_HOST}"
 
 DIR="$(cd "$(dirname "$0")" && pwd)"
+BACKUP_DIR="$DIR/backups/$(date +%Y%m%d-%H%M%S)"
+mkdir -p "$BACKUP_DIR"
+
+backup() {
+  local remote="$1"
+  local dest="$BACKUP_DIR/$2"
+  mkdir -p "$(dirname "$dest")"
+  if curl -fsS -m 60 "$BASE/$remote" -o "$dest"; then
+    echo "<- $remote"
+  else
+    rm -f "$dest"
+    echo "warning: skip backup $remote (not found or transfer failed)"
+  fi
+}
+
+echo "backing up remote files to $BACKUP_DIR ..."
+backup "data/spirits.db" "data/spirits.db"
+backup "$FTP_ROOT/api/config.php" "api/config.php"
+backup "$FTP_ROOT/api/index.php" "api/index.php"
+backup "$FTP_ROOT/api/lib.php" "api/lib.php"
+backup "$FTP_ROOT/.htaccess" ".htaccess"
+backup "$FTP_ROOT/index.html" "index.html"
+backup "$FTP_ROOT/app.js" "app.js"
+backup "$FTP_ROOT/style.css" "style.css"
 
 put() {
   echo "-> $2"

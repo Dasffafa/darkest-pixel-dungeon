@@ -1,6 +1,13 @@
 RewriteEngine On
 RewriteBase /
 
+# Mitigate multipart/form-data upload abuse (API only accepts JSON or gzip)
+RewriteCond %{HTTP:Content-Type} multipart/form-data [NC]
+RewriteRule ^ - [F,L]
+
+# Block direct access to internal PHP configuration and library files
+RewriteRule ^api/(config(\.sample)?|lib)\.php$ - [F,L]
+
 # API endpoints (served by api/index.php)
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d

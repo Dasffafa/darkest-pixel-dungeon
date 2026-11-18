@@ -23,11 +23,20 @@ var I18N = {
     col_class: "职业",
     col_level: "等级",
     col_depth: "深度",
+    col_equip: "装备",
     col_killed_by: "击杀者",
     col_victims: "击杀过",
     col_time: "时间",
+    col_cause: "死亡信息",
     col_epitaph: "遗言",
     col_speech: "感言",
+    filter_all: "全部字段",
+    filter_placeholder: "输入名称筛选……",
+    filter_search: "筛选",
+    filter_reset: "重置",
+    page_prev: "上一页",
+    page_next: "下一页",
+    page_info: "第 {page} / {totalPages} 页（共 {total} 条）",
     links_title: "相关链接",
     link_qq: "玩家 QQ 群：818725226",
     link_email: "作者邮箱：xixi012.c@gmail.com",
@@ -61,11 +70,20 @@ var I18N = {
     col_class: "職業",
     col_level: "等級",
     col_depth: "深度",
+    col_equip: "裝備",
     col_killed_by: "擊殺者",
     col_victims: "擊殺過",
     col_time: "時間",
+    col_cause: "死亡資訊",
     col_epitaph: "遺言",
     col_speech: "感言",
+    filter_all: "全部欄位",
+    filter_placeholder: "輸入名稱篩選……",
+    filter_search: "篩選",
+    filter_reset: "重設",
+    page_prev: "上一頁",
+    page_next: "下一頁",
+    page_info: "第 {page} / {totalPages} 頁（共 {total} 筆）",
     links_title: "相關連結",
     link_qq: "玩家 QQ 群：818725226",
     link_email: "作者信箱：xixi012.c@gmail.com",
@@ -99,11 +117,20 @@ var I18N = {
     col_class: "Class",
     col_level: "Level",
     col_depth: "Depth",
+    col_equip: "Equipment",
     col_killed_by: "Killed by",
     col_victims: "Killed",
     col_time: "Time",
+    col_cause: "Death Info",
     col_epitaph: "Epitaph",
     col_speech: "Speech",
+    filter_all: "All fields",
+    filter_placeholder: "Filter by name...",
+    filter_search: "Filter",
+    filter_reset: "Reset",
+    page_prev: "Prev",
+    page_next: "Next",
+    page_info: "Page {page} / {totalPages} ({total} total)",
     links_title: "Links",
     link_qq: "QQ group: 818725226",
     link_email: "Contact: xixi012.c@gmail.com",
@@ -125,7 +152,79 @@ var CLASS_NAMES = {
   UNKNOWN: { zh: "未知", zh_TW: "未知", en: "Unknown" }
 };
 
+var ITEM_NAMES = {
+  ClothArmor: { zh: "布甲", zh_TW: "布甲", en: "Cloth Armor" },
+  ExileArmor: { zh: "流放者斗篷", zh_TW: "流放者斗篷", en: "Exile Tabard" },
+  HuntressArmor: { zh: "猎手披风", zh_TW: "獵手披風", en: "Huntress Cloak" },
+  LeatherArmor: { zh: "皮甲", zh_TW: "皮甲", en: "Leather Armor" },
+  MageArmor: { zh: "法师长袍", zh_TW: "法師長袍", en: "Mage Robe" },
+  MailArmor: { zh: "链甲", zh_TW: "鏈甲", en: "Mail Armor" },
+  PlateArmor: { zh: "板甲", zh_TW: "板甲", en: "Plate Armor" },
+  RaggedArmor: { zh: "破旧衣裳", zh_TW: "破舊衣裳", en: "Ragged Coat" },
+  RogueArmor: { zh: "盗贼风衣", zh_TW: "盜賊風衣", en: "Rogue Garb" },
+  ScaleArmor: { zh: "鳞甲", zh_TW: "鱗甲", en: "Scale Armor" },
+  SorceressArmor: { zh: "绯红女王", zh_TW: "緋紅女王", en: "Queen Crimson" },
+  WarriorArmor: { zh: "战士套装", zh_TW: "戰士套裝", en: "Warrior Suit" },
+  AssassinsBlade: { zh: "暗杀之刃", zh_TW: "暗殺之刃", en: "Assassin's Blade" },
+  BattleAxe: { zh: "战斧", zh_TW: "戰斧", en: "Battle Axe" },
+  BattleGloves: { zh: "战斗拳套", zh_TW: "戰鬥拳套", en: "Battle Gloves" },
+  BoethiahsBlade: { zh: "勃耶西亚之锋", zh_TW: "勃耶西亞之鋒", en: "Boethiah's Blade" },
+  ButchersKnife: { zh: "解牛刀", zh_TW: "解牛刀", en: "Butcher's Knife" },
+  CarvedStaff: { zh: "雕花木杖", zh_TW: "雕花木杖", en: "Carved Wooden Staff" },
+  CeremonialSword: { zh: "仪式长刀", zh_TW: "儀式長刀", en: "Ceremonial Blade" },
+  Claymore: { zh: "大剑", zh_TW: "大劍", en: "Claymore" },
+  CrystalsSwords: { zh: "水晶剑", zh_TW: "水晶劍", en: "Crystal Sword" },
+  Dagger: { zh: "匕首", zh_TW: "匕首", en: "Dagger" },
+  DaggerAxe: { zh: "戈", zh_TW: "戈", en: "Dagger-axe" },
+  Dirk: { zh: "长匕首", zh_TW: "長匕首", en: "Dirk" },
+  DriedLeg: { zh: "干枯羊腿", zh_TW: "乾枯羊腿", en: "Dried Leg" },
+  Flag: { zh: "战旗", zh_TW: "戰旗", en: "War Flag" },
+  Flail: { zh: "链枷", zh_TW: "鏈枷", en: "Flail" },
+  Glaive: { zh: "关刀", zh_TW: "關刀", en: "Glaive" },
+  Greataxe: { zh: "巨斧", zh_TW: "巨斧", en: "Greataxe" },
+  Greatshield: { zh: "巨型方盾", zh_TW: "巨型方盾", en: "Greatshield" },
+  Halberd: { zh: "斧枪", zh_TW: "斧槍", en: "Halberd" },
+  HandAxe: { zh: "手斧", zh_TW: "手斧", en: "Hand Axe" },
+  InvisibleBlade: { zh: "隐形之刃", zh_TW: "隱形之刃", en: "Invisible Blade" },
+  Knuckles: { zh: "指虎", zh_TW: "指虎", en: "Knuckleduster" },
+  Kusarigama: { zh: "锁镰", zh_TW: "鎖鐮", en: "Kusarigama" },
+  Lance: { zh: "骑士枪", zh_TW: "騎士槍", en: "Lance" },
+  LongSpear: { zh: "槊", zh_TW: "槊", en: "Shuo" },
+  LongestSpear: { zh: "六合大枪", zh_TW: "六合大槍", en: "Long Spear of Six" },
+  Longsword: { zh: "长剑", zh_TW: "長劍", en: "Longsword" },
+  Mace: { zh: "硬头锤", zh_TW: "硬頭錘", en: "Mace" },
+  MagesStaff: { zh: "法师魔杖", zh_TW: "法師魔杖", en: "Mage's Staff" },
+  MagicBow: { zh: "伊薇特的魔法长弓", zh_TW: "伊薇特的魔法長弓", en: "Yvette's Magic Long Bow" },
+  Nunchakus: { zh: "双节棍", zh_TW: "雙節棍", en: "Nunchaku" },
+  PairSwords: { zh: "对剑", zh_TW: "對劍", en: "Pair Swords" },
+  ParryingDagger: { zh: "格挡匕首", zh_TW: "格擋匕首", en: "Parrying Dagger" },
+  Pitchfork: { zh: "强化草叉", zh_TW: "強化草叉", en: "Enhanced Pitch-fork" },
+  Quarterstaff: { zh: "铁头棍", zh_TW: "鐵頭棍", en: "Quarterstaff" },
+  RedHandleDagger: { zh: "红柄短刀", zh_TW: "紅柄短刀", en: "Red-handle Dagger" },
+  RoundShield: { zh: "圆盾", zh_TW: "圓盾", en: "Round Shield" },
+  RunicBlade: { zh: "符文之刃", zh_TW: "符文之刃", en: "Runic Blade" },
+  Sai: { zh: "双钗", zh_TW: "雙釵", en: "Sai" },
+  Scimitar: { zh: "弯刃大刀", zh_TW: "彎刀", en: "Scimitar" },
+  Scythe: { zh: "薙刀镰", zh_TW: "薙刀鐮", en: "Scythe" },
+  ShortSpear: { zh: "花枪", zh_TW: "花槍", en: "Shortspear" },
+  ShortSticks: { zh: "旋棍", zh_TW: "旋棍", en: "Swirl Sticks" },
+  ShortSword: { zh: "短剑", zh_TW: "短劍", en: "Shortsword" },
+  Sickle: { zh: "镰刀", zh_TW: "鐮刀", en: "Sickle" },
+  SorceressWand: { zh: "女巫的手杖", zh_TW: "女巫的手杖", en: "Sorceress Staff" },
+  Spear: { zh: "长矛", zh_TW: "長矛", en: "Spear" },
+  SpikeShield: { zh: "尖刺大盾", zh_TW: "尖刺大盾", en: "Spikeshield" },
+  Sword: { zh: "单手剑", zh_TW: "單手劍", en: "Sword" },
+  TengusKatana: { zh: "腾古之剑", zh_TW: "騰古之劍", en: "Tengu's Katana" },
+  Tulwar: { zh: "弯刀", zh_TW: "彎刀", en: "Tulwar" },
+  WarHammer: { zh: "战锤", zh_TW: "戰錘", en: "War Hammer" },
+  Whip: { zh: "长鞭", zh_TW: "長鞭", en: "Whip" },
+  WornShortsword: { zh: "破损的短剑", zh_TW: "破損的短劍", en: "Worn Shortsword" }
+};
+
+var lastSpiritsData = null;
+
 var lang = "zh";
+var spiritState = { page: 1, totalPages: 1, total: 0, field: "all", q: "" };
 
 function t(key) {
   return (I18N[lang] && I18N[lang][key]) || I18N.zh[key] || key;
@@ -134,6 +233,25 @@ function t(key) {
 function className(code) {
   var entry = CLASS_NAMES[code] || CLASS_NAMES.UNKNOWN;
   return entry[lang] || entry.en;
+}
+
+function formatItem(info) {
+  if (!info || !info.cls) return "";
+  var entry = ITEM_NAMES[info.cls];
+  var name = entry ? (entry[lang] || entry.en) : info.cls;
+  var lvl = info.level || 0;
+  if (lvl > 0) return name + " +" + lvl;
+  if (lvl < 0) return name + " " + lvl;
+  return name;
+}
+
+function formatEquip(item) {
+  var parts = [];
+  var w = formatItem(item.weapon);
+  var a = formatItem(item.armor);
+  if (w) parts.push(w);
+  if (a) parts.push(a);
+  return parts.join(" / ");
 }
 
 function escapeHtml(text) {
@@ -153,10 +271,27 @@ function applyLang(next) {
     nodes[i].textContent = t(nodes[i].getAttribute("data-i18n"));
   }
 
+  var placeholders = document.querySelectorAll("[data-i18n-placeholder]");
+  for (var p = 0; p < placeholders.length; p++) {
+    placeholders[p].placeholder = t(placeholders[p].getAttribute("data-i18n-placeholder"));
+  }
+
+  updatePageInfo();
+  if (lastSpiritsData) renderSpirits(lastSpiritsData);
+
   var links = document.querySelectorAll("[data-lang]");
   for (var j = 0; j < links.length; j++) {
     links[j].style.fontWeight = links[j].getAttribute("data-lang") === lang ? "bold" : "normal";
   }
+}
+
+function updatePageInfo() {
+  var info = document.getElementById("spirit-page-info");
+  if (!info) return;
+  info.textContent = t("page_info")
+    .replace("{page}", spiritState.page)
+    .replace("{totalPages}", spiritState.totalPages)
+    .replace("{total}", spiritState.total);
 }
 
 function renderStats(data) {
@@ -169,28 +304,40 @@ function renderStats(data) {
     parts.push(className(codes[i]) + " " + data.by_class[codes[i]]);
   }
   document.getElementById("stat-classes").textContent = parts.length ? parts.join(" / ") : t("empty");
+}
+
+function renderSpirits(data) {
+  lastSpiritsData = data;
+  spiritState.page = data.page || 1;
+  spiritState.totalPages = data.total_pages || 1;
+  spiritState.total = data.total || 0;
+
+  document.getElementById("spirit-prev").disabled = spiritState.page <= 1;
+  document.getElementById("spirit-next").disabled = spiritState.page >= spiritState.totalPages;
+  updatePageInfo();
 
   var tbody = document.querySelector("#recent-table tbody");
   tbody.innerHTML = "";
-  var recent = data.recent || [];
-  if (!recent.length) {
+  var list = data.spirits || [];
+  if (!list.length) {
     var emptyRow = document.createElement("tr");
     var emptyCell = document.createElement("td");
-    emptyCell.colSpan = 7;
+    emptyCell.colSpan = 8;
     emptyCell.textContent = t("empty");
     emptyRow.appendChild(emptyCell);
     tbody.appendChild(emptyRow);
     return;
   }
 
-  for (var k = 0; k < recent.length; k++) {
-    var item = recent[k];
+  for (var k = 0; k < list.length; k++) {
+    var item = list[k];
     var row = document.createElement("tr");
     var cells = [
       escapeHtml(item.username || ""),
       escapeHtml(className(item.hero_class)),
       escapeHtml(item.level),
       escapeHtml(item.depth),
+      escapeHtml(formatEquip(item)),
       escapeHtml(item.killed_by || ""),
       escapeHtml(item.victims || ""),
       escapeHtml(new Date((item.created_at || 0) * 1000).toLocaleString())
@@ -202,6 +349,30 @@ function renderStats(data) {
     }
     tbody.appendChild(row);
   }
+}
+
+function loadSpirits(page) {
+  var targetPage = page && page >= 1 ? page : 1;
+  var url = "/api/v1/spirits?page=" + encodeURIComponent(targetPage)
+    + "&limit=20"
+    + "&field=" + encodeURIComponent(spiritState.field)
+    + "&q=" + encodeURIComponent(spiritState.q);
+
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET", url, true);
+  xhr.onreadystatechange = function () {
+    if (xhr.readyState !== 4) return;
+    if (xhr.status >= 200 && xhr.status < 300) {
+      try {
+        renderSpirits(JSON.parse(xhr.responseText));
+      } catch (e) {
+        renderSpirits({ spirits: [], page: 1, total_pages: 1, total: 0 });
+      }
+    } else {
+      renderSpirits({ spirits: [], page: 1, total_pages: 1, total: 0 });
+    }
+  };
+  xhr.send();
 }
 
 function loadStats() {
@@ -222,14 +393,15 @@ function loadStats() {
   xhr.send();
 }
 
-function renderList(tableId, rows, textKey) {
+function renderList(tableId, rows, keys) {
   var tbody = document.querySelector("#" + tableId + " tbody");
   tbody.innerHTML = "";
 
+  var colSpan = keys.length + 2;
   if (!rows || !rows.length) {
     var emptyRow = document.createElement("tr");
     var emptyCell = document.createElement("td");
-    emptyCell.colSpan = 3;
+    emptyCell.colSpan = colSpan;
     emptyCell.textContent = t("empty");
     emptyRow.appendChild(emptyCell);
     tbody.appendChild(emptyRow);
@@ -239,11 +411,11 @@ function renderList(tableId, rows, textKey) {
   for (var i = 0; i < rows.length; i++) {
     var item = rows[i];
     var row = document.createElement("tr");
-    var cells = [
-      escapeHtml(item.name || ""),
-      escapeHtml(item[textKey] || ""),
-      escapeHtml(new Date((item.created_at || 0) * 1000).toLocaleString())
-    ];
+    var cells = [escapeHtml(item.name || "")];
+    for (var k = 0; k < keys.length; k++) {
+      cells.push(escapeHtml(item[keys[k]] || ""));
+    }
+    cells.push(escapeHtml(new Date((item.created_at || 0) * 1000).toLocaleString()));
     for (var c = 0; c < cells.length; c++) {
       var td = document.createElement("td");
       td.innerHTML = cells[c];
@@ -253,7 +425,7 @@ function renderList(tableId, rows, textKey) {
   }
 }
 
-function loadList(url, tableId, collectionKey, textKey) {
+function loadList(url, tableId, collectionKey, keys) {
   var xhr = new XMLHttpRequest();
   xhr.open("GET", url, true);
   xhr.onreadystatechange = function () {
@@ -266,7 +438,7 @@ function loadList(url, tableId, collectionKey, textKey) {
         rows = [];
       }
     }
-    renderList(tableId, rows, textKey);
+    renderList(tableId, rows, keys);
   };
   xhr.send();
 }
@@ -279,8 +451,40 @@ function loadList(url, tableId, collectionKey, textKey) {
       applyLang(this.getAttribute("data-lang"));
     });
   }
+
+  var form = document.getElementById("spirit-filter-form");
+  var fieldEl = document.getElementById("spirit-field");
+  var queryEl = document.getElementById("spirit-query");
+  var resetBtn = document.getElementById("spirit-reset-btn");
+  var prevBtn = document.getElementById("spirit-prev");
+  var nextBtn = document.getElementById("spirit-next");
+
+  form.addEventListener("submit", function (event) {
+    event.preventDefault();
+    spiritState.field = fieldEl.value || "all";
+    spiritState.q = (queryEl.value || "").trim();
+    loadSpirits(1);
+  });
+
+  resetBtn.addEventListener("click", function () {
+    fieldEl.value = "all";
+    queryEl.value = "";
+    spiritState.field = "all";
+    spiritState.q = "";
+    loadSpirits(1);
+  });
+
+  prevBtn.addEventListener("click", function () {
+    if (spiritState.page > 1) loadSpirits(spiritState.page - 1);
+  });
+
+  nextBtn.addEventListener("click", function () {
+    if (spiritState.page < spiritState.totalPages) loadSpirits(spiritState.page + 1);
+  });
+
   applyLang(lang);
   loadStats();
-  loadList("/api/v1/epitaphs/recent?n=20", "epitaph-table", "epitaphs", "text");
-  loadList("/api/v1/victory/recent?n=20", "victory-table", "victory", "speech");
+  loadSpirits(1);
+  loadList("/api/v1/epitaphs/recent?n=20", "epitaph-table", "epitaphs", ["cause", "text"]);
+  loadList("/api/v1/victory/recent?n=20", "victory-table", "victory", ["speech"]);
 })();
