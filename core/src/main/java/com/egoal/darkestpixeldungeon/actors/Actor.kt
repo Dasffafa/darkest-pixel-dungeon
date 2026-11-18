@@ -225,7 +225,8 @@ abstract class Actor : Bundlable {
                         current = null
                     } else {
                         doNext = acting.act()
-                        if (doNext && (Dungeon.isHeroNull || !Dungeon.hero.isAlive)) {
+                        if (doNext && (Dungeon.isHeroNull || !Dungeon.hero.isAlive ||
+                                com.egoal.darkestpixeldungeon.effects.SceneCutEffect.isBusy())) {
                             doNext = false
                             current = null
                         }

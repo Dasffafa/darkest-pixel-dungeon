@@ -209,6 +209,8 @@ class LightMap {
         val y0 = max(0, sy - rInt)
         val y1 = min(height - 1, sy + rInt)
         val rSq = src.radius * src.radius
+        val mountedInWall = src.blocksLos && src.cell in losBlocking.indices && losBlocking[src.cell]
+        val openFaces = if (mountedInWall) collectOpenFaces(sx, sy, losBlocking) else emptyList()
 
         for (y in y0..y1) {
             val dy = y - sy
@@ -218,7 +220,13 @@ class LightMap {
                 val dx = x - sx
                 val distSq = (dx * dx + dySq).toFloat()
                 if (distSq <= rSq) {
-                    if (!src.blocksLos || hasLineOfSight(sx, sy, x, y, losBlocking)) {
+                    val lit = when {
+                        !src.blocksLos -> true
+                        cell == src.cell -> true
+                        mountedInWall -> hasWallLightLos(sx, sy, x, y, openFaces, losBlocking)
+                        else -> hasLineOfSight(sx, sy, x, y, losBlocking)
+                    }
+                    if (lit) {
                         val t = 1f - sqrt(distSq) / src.radius
                         val falloff = t * t * (3f - 2f * t) * src.intensity // smoothstep attenuation
                         dstR[cell] += src.colorR * falloff
@@ -229,6 +237,46 @@ class LightMap {
                 cell++
             }
         }
+    }
+
+    private fun collectOpenFaces(sx: Int, sy: Int, losBlocking: BooleanArray): List<Pair<Int, Int>> {
+        val cardinal = ArrayList<Pair<Int, Int>>(4)
+        for ((ox, oy) in CARDINAL_DIRS) {
+            val nx = sx + ox
+            val ny = sy + oy
+            if (nx in 0 until width && ny in 0 until height && !losBlocking[ny * width + nx]) {
+                cardinal.add(ox to oy)
+            }
+        }
+        if (cardinal.isNotEmpty()) return cardinal
+        // Corner wall sconce (e.g. WandDigger): fall back to diagonal open neighbor
+        val diag = ArrayList<Pair<Int, Int>>(4)
+        for ((ox, oy) in DIAGONAL_DIRS) {
+            val nx = sx + ox
+            val ny = sy + oy
+            if (nx in 0 until width && ny in 0 until height && !losBlocking[ny * width + nx]) {
+                diag.add(ox to oy)
+            }
+        }
+        return diag
+    }
+
+    private fun hasWallLightLos(
+        sx: Int,
+        sy: Int,
+        tx: Int,
+        ty: Int,
+        openFaces: List<Pair<Int, Int>>,
+        losBlocking: BooleanArray
+    ): Boolean {
+        val dx = tx - sx
+        val dy = ty - sy
+        for ((ox, oy) in openFaces) {
+            if (dx * ox + dy * oy > 0 && hasLineOfSight(sx + ox, sy + oy, tx, ty, losBlocking)) {
+                return true
+            }
+        }
+        return false
     }
 
     private fun hasLineOfSight(x0: Int, y0: Int, x1: Int, y1: Int, losBlocking: BooleanArray): Boolean {
@@ -261,5 +309,7 @@ class LightMap {
 
     companion object {
         const val LIGHT_FOV_THRESHOLD = 0.58f
+        private val CARDINAL_DIRS = arrayOf(0 to -1, 0 to 1, -1 to 0, 1 to 0)
+        private val DIAGONAL_DIRS = arrayOf(-1 to -1, 1 to -1, -1 to 1, 1 to 1)
     }
 }

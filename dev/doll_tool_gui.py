@@ -110,10 +110,19 @@ class DollToolGUI(tk.Tk):
         self.hat_input = tk.StringVar(value="")
         self.hat_row = tk.IntVar(value=0)
         self.hat_frame = tk.IntVar(value=0)
-        self.hat_scope = tk.StringVar(value="Row + Frame")
-        self.hat_dx = tk.IntVar(value=1)
-        self.hat_dy = tk.IntVar(value=-1)
+        self.hat_mode = tk.StringVar(value="row_global")  # row_global | row_frame | default_global
+        self.hat_global_dx = tk.IntVar(value=1)
+        self.hat_global_dy = tk.IntVar(value=-1)
+        self.hat_frame_dx = tk.IntVar(value=0)
+        self.hat_frame_dy = tk.IntVar(value=0)
+        self.hat_global_source = tk.StringVar(value="(default)")
+        self.hat_frame_label = tk.StringVar(value="0: idle 0")
+        self.hat_effective_label = tk.StringVar(value="Effective: (1, -1)")
+        self.anim_frame_label = tk.StringVar(value="Frame 0")
         self._helmet_meta = dt.load_helmet_meta()
+        self._meta_dirty = False
+        self._canvas_layout = None
+        self._drag_state = None
 
         # Custom weapon tab vars
         self.weap_input = tk.StringVar(value="")
@@ -200,13 +209,16 @@ class DollToolGUI(tk.Tk):
         ttk.Checkbutton(pb, text="Play", variable=self.playing).pack(side=tk.LEFT)
         ttk.Button(pb, text="<", width=3, command=lambda: self._step_frame(-1)).pack(side=tk.LEFT, padx=2)
         ttk.Button(pb, text=">", width=3, command=lambda: self._step_frame(1)).pack(side=tk.LEFT)
+        ttk.Label(pb, textvariable=self.anim_frame_label, width=18).pack(side=tk.LEFT, padx=(8, 0))
         ttk.Button(pb, text="Export GIF", command=self._export_gif).pack(side=tk.RIGHT)
 
         # Canvas with scrollbars
         cframe = ttk.Frame(left)
         cframe.pack(fill=tk.BOTH, expand=True)
         self.canvas = tk.Canvas(cframe, background="#252525", highlightthickness=0, takefocus=1)
-        self.canvas.bind("<Button-1>", lambda _e: self.canvas.focus_set())
+        self.canvas.bind("<ButtonPress-1>", self._on_canvas_press)
+        self.canvas.bind("<B1-Motion>", self._on_canvas_drag)
+        self.canvas.bind("<ButtonRelease-1>", self._on_canvas_release)
         xbar = ttk.Scrollbar(cframe, orient=tk.HORIZONTAL, command=self.canvas.xview)
         ybar = ttk.Scrollbar(cframe, orient=tk.VERTICAL, command=self.canvas.yview)
         self.canvas.configure(xscrollcommand=xbar.set, yscrollcommand=ybar.set)
@@ -232,54 +244,85 @@ class DollToolGUI(tk.Tk):
 
     def _build_hat_tab(self, parent):
         f = ttk.Frame(parent, padding=10)
-        ttk.Label(f, text="Pack 1F (12x15) or N*12x15 strip into helmets.png").pack(anchor="w", pady=(0, 8))
+        ttk.Label(f, text="Pack 1F (12x15) or N*12x15 strip into helmets.png").pack(anchor="w", pady=(0, 6))
 
         row1 = ttk.Frame(f)
-        row1.pack(fill=tk.X, pady=3)
-        ttk.Label(row1, text="Input PNG:", width=12).pack(side=tk.LEFT)
+        row1.pack(fill=tk.X, pady=2)
+        ttk.Label(row1, text="Input PNG:", width=11).pack(side=tk.LEFT)
         ttk.Entry(row1, textvariable=self.hat_input).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=4)
         ttk.Button(row1, text="Browse", command=lambda: self._pick_png(self.hat_input)).pack(side=tk.LEFT)
 
         row2 = ttk.Frame(f)
-        row2.pack(fill=tk.X, pady=3)
-        ttk.Label(row2, text="Target Row:", width=12).pack(side=tk.LEFT)
+        row2.pack(fill=tk.X, pady=2)
+        ttk.Label(row2, text="Target Row:", width=11).pack(side=tk.LEFT)
         ttk.Spinbox(row2, from_=0, to=128, width=6, textvariable=self.hat_row).pack(side=tk.LEFT, padx=4)
 
         btns = ttk.Frame(f)
-        btns.pack(fill=tk.X, pady=10)
+        btns.pack(fill=tk.X, pady=6)
         ttk.Button(btns, text="Pack into helmets.png", command=self._pack_hat).pack(side=tk.LEFT)
         ttk.Button(btns, text="Extract Row", command=self._extract_hat).pack(side=tk.LEFT, padx=6)
         ttk.Button(btns, text="Save 21F Guide", command=self._save_hat_guide).pack(side=tk.LEFT)
 
-        ttk.Separator(f).pack(fill=tk.X, pady=8)
-        ttk.Label(f, text="Hat Offset (helmets_meta.json, synced with game)").pack(anchor="w", pady=(0, 4))
+        ttk.Separator(f).pack(fill=tk.X, pady=6)
+        ttk.Label(f, text="Hat Offset (helmets_meta.json — drag on canvas or use arrows)").pack(anchor="w", pady=(0, 4))
 
-        sc_row = ttk.Frame(f)
-        sc_row.pack(fill=tk.X, pady=3)
-        ttk.Label(sc_row, text="Scope:", width=12).pack(side=tk.LEFT)
-        cb_sc = ttk.Combobox(
-            sc_row, textvariable=self.hat_scope,
-            values=["Default (All)", "Default + Frame", "Row (All Frames)", "Row + Frame"],
-            width=16, state="readonly",
-        )
-        cb_sc.pack(side=tk.LEFT, padx=4)
-        cb_sc.bind("<<ComboboxSelected>>", lambda _e: self._load_hat_offset())
+        mode_row = ttk.Frame(f)
+        mode_row.pack(fill=tk.X, pady=2)
+        ttk.Label(mode_row, text="Edit Target:", width=11).pack(side=tk.LEFT)
+        for text, val in [("Row Global", "row_global"), ("Per-Frame", "row_frame"), ("All Default", "default_global")]:
+            ttk.Radiobutton(
+                mode_row, text=text, variable=self.hat_mode, value=val,
+                command=self._on_hat_mode_changed,
+            ).pack(side=tk.LEFT, padx=(0, 8))
 
-        hf_row = ttk.Frame(f)
-        hf_row.pack(fill=tk.X, pady=3)
-        ttk.Label(hf_row, text="Frame (0-20):", width=12).pack(side=tk.LEFT)
-        ttk.Spinbox(hf_row, from_=0, to=dt.NUM_FRAMES - 1, width=5, textvariable=self.hat_frame,
-                    command=self._load_hat_offset).pack(side=tk.LEFT, padx=4)
-        ttk.Button(hf_row, text="Sync Frame", command=self._sync_hat_frame_from_anim).pack(side=tk.LEFT, padx=4)
+        # Global Offset panel
+        gf = ttk.LabelFrame(f, text="Global Offset (auto-mirrors head-turn frame 1)", padding=6)
+        gf.pack(fill=tk.X, pady=4)
+        g_row = ttk.Frame(gf)
+        g_row.pack(fill=tk.X)
+        ttk.Label(g_row, text="dx / dy:", width=9).pack(side=tk.LEFT)
+        sb_gdx = ttk.Spinbox(g_row, from_=-32, to=32, width=5, textvariable=self.hat_global_dx,
+                             command=self._apply_hat_global_offset)
+        sb_gdx.pack(side=tk.LEFT, padx=2)
+        sb_gdy = ttk.Spinbox(g_row, from_=-32, to=32, width=5, textvariable=self.hat_global_dy,
+                             command=self._apply_hat_global_offset)
+        sb_gdy.pack(side=tk.LEFT, padx=2)
+        for sb in (sb_gdx, sb_gdy):
+            sb.bind("<Return>", lambda _e: self._apply_hat_global_offset())
+            sb.bind("<FocusOut>", lambda _e: self._apply_hat_global_offset())
+        ttk.Label(g_row, textvariable=self.hat_global_source).pack(side=tk.LEFT, padx=6)
+        ttk.Button(g_row, text="Reset Row", command=self._reset_hat_row_global).pack(side=tk.RIGHT)
 
-        hd_row = ttk.Frame(f)
-        hd_row.pack(fill=tk.X, pady=3)
-        ttk.Label(hd_row, text="dx / dy:", width=12).pack(side=tk.LEFT)
-        ttk.Spinbox(hd_row, from_=-32, to=32, width=5, textvariable=self.hat_dx,
-                    command=self._apply_hat_offset).pack(side=tk.LEFT, padx=4)
-        ttk.Spinbox(hd_row, from_=-32, to=32, width=5, textvariable=self.hat_dy,
-                    command=self._apply_hat_offset).pack(side=tk.LEFT, padx=2)
-        ttk.Button(hd_row, text="Apply", command=self._apply_hat_offset).pack(side=tk.LEFT, padx=6)
+        # Per-Frame Delta panel (additive on top of Global)
+        pf = ttk.LabelFrame(f, text="Per-Frame Delta (added on top of Global)", padding=6)
+        pf.pack(fill=tk.X, pady=4)
+        pf_top = ttk.Frame(pf)
+        pf_top.pack(fill=tk.X, pady=(0, 3))
+        ttk.Label(pf_top, text="Frame:", width=9).pack(side=tk.LEFT)
+        sb_hf = ttk.Spinbox(pf_top, from_=0, to=dt.NUM_FRAMES - 1, width=5, textvariable=self.hat_frame,
+                            command=self._on_hat_frame_selected)
+        sb_hf.pack(side=tk.LEFT, padx=2)
+        sb_hf.bind("<Return>", lambda _e: self._on_hat_frame_selected())
+        ttk.Label(pf_top, textvariable=self.hat_frame_label).pack(side=tk.LEFT, padx=6)
+        ttk.Button(pf_top, text="Sync Anim", command=self._sync_hat_frame_from_anim).pack(side=tk.RIGHT)
+
+        pf_bot = ttk.Frame(pf)
+        pf_bot.pack(fill=tk.X)
+        ttk.Label(pf_bot, text="Δx / Δy:", width=9).pack(side=tk.LEFT)
+        sb_fdx = ttk.Spinbox(pf_bot, from_=-32, to=32, width=5, textvariable=self.hat_frame_dx,
+                             command=self._apply_hat_frame_delta)
+        sb_fdx.pack(side=tk.LEFT, padx=2)
+        sb_fdy = ttk.Spinbox(pf_bot, from_=-32, to=32, width=5, textvariable=self.hat_frame_dy,
+                             command=self._apply_hat_frame_delta)
+        sb_fdy.pack(side=tk.LEFT, padx=2)
+        for sb in (sb_fdx, sb_fdy):
+            sb.bind("<Return>", lambda _e: self._apply_hat_frame_delta())
+            sb.bind("<FocusOut>", lambda _e: self._apply_hat_frame_delta())
+        ttk.Button(pf_bot, text="Clear All", command=self._clear_hat_row_frames).pack(side=tk.RIGHT)
+        ttk.Button(pf_bot, text="Clear Frame", command=self._clear_hat_frame_delta).pack(side=tk.RIGHT, padx=4)
+
+        # Effective readout + Nudge + Save/Discard
+        ttk.Label(f, textvariable=self.hat_effective_label).pack(anchor="w", pady=(4, 2))
 
         nudge_row = ttk.Frame(f)
         nudge_row.pack(fill=tk.X, pady=4)
@@ -287,7 +330,8 @@ class DollToolGUI(tk.Tk):
         ttk.Button(nudge_row, text="↑", width=3, command=lambda: self._nudge_hat(0, -1)).pack(side=tk.LEFT, padx=2)
         ttk.Button(nudge_row, text="↓", width=3, command=lambda: self._nudge_hat(0, 1)).pack(side=tk.LEFT, padx=2)
         ttk.Button(nudge_row, text="→", width=3, command=lambda: self._nudge_hat(1, 0)).pack(side=tk.LEFT)
-        ttk.Button(nudge_row, text="Save Meta", command=self._save_helmets_meta).pack(side=tk.RIGHT)
+        self.btn_save_meta = ttk.Button(nudge_row, text="Save Meta", command=self._save_helmets_meta)
+        self.btn_save_meta.pack(side=tk.RIGHT)
         ttk.Button(nudge_row, text="Discard", command=self._reload_assets).pack(side=tk.RIGHT, padx=4)
         return f
 
@@ -387,6 +431,7 @@ class DollToolGUI(tk.Tk):
     def _reload_assets(self):
         self._sheets_cache.clear()
         self._helmet_meta = dt.load_helmet_meta()
+        self._set_meta_dirty(False)
         self._refresh_selectors()
         self._load_hat_offset()
         self.redraw()
@@ -625,6 +670,24 @@ class DollToolGUI(tk.Tk):
 
     # --- Per-frame hat & custom weapon offset adjustments ---
 
+    _FRAME_NAMES = {
+        0: "idle 0", 1: "idle turn",
+        2: "run 0", 3: "run 1", 4: "run 2", 5: "run 3", 6: "run 4", 7: "run 5",
+        8: "die 0", 9: "die 1", 10: "die 2", 11: "die 3", 12: "die 4",
+        13: "attack 0", 14: "attack 1", 15: "attack 2",
+        16: "operate 0", 17: "operate 1",
+        18: "fly 0",
+        19: "read 0", 20: "read 1",
+    }
+
+    def _frame_desc(self, col: int) -> str:
+        return f"{col}: {self._FRAME_NAMES.get(col, '')}".strip()
+
+    def _set_meta_dirty(self, dirty: bool):
+        self._meta_dirty = dirty
+        if hasattr(self, "btn_save_meta"):
+            self.btn_save_meta.configure(text="Save Meta *" if dirty else "Save Meta")
+
     def _current_body_frame(self) -> int:
         state = self.anim_state.get()
         anim_tuple = next((a for a in dt.ANIMATIONS if a[0] == state), dt.ANIMATIONS[0])
@@ -634,56 +697,233 @@ class DollToolGUI(tk.Tk):
     def _sync_hat_frame_from_anim(self):
         self.hat_frame.set(self._current_body_frame())
         self._load_hat_offset()
-        self.status.set(f"Hat frame synced to {self.hat_frame.get()}")
+        self.redraw()
+        self.status.set(f"Hat frame synced to {self._frame_desc(self.hat_frame.get())}")
 
     def _active_hat_row(self) -> int:
         return int(self.hat_row.get() if self.helmet_sel.get() == "None" else self.helmet_sel.get())
 
+    def _jump_anim_to_frame(self, col: int):
+        """Pause playback and show the given body frame in Anim mode when possible."""
+        self.playing.set(False)
+        state = self.anim_state.get()
+        anim_tuple = next((a for a in dt.ANIMATIONS if a[0] == state), None)
+        if anim_tuple and col in anim_tuple[1]:
+            self._anim_tick = anim_tuple[1].index(col)
+            return
+        for name, b_frames, *_ in dt.ANIMATIONS:
+            if col in b_frames:
+                self.anim_state.set(name)
+                self._anim_tick = b_frames.index(col)
+                return
+
+    def _on_hat_mode_changed(self):
+        self._load_hat_offset()
+        if self.hat_mode.get() == "row_frame":
+            self._jump_anim_to_frame(int(self.hat_frame.get()))
+            self.redraw()
+
+    def _on_hat_frame_selected(self):
+        col = max(0, min(dt.NUM_FRAMES - 1, int(self.hat_frame.get())))
+        self.hat_frame.set(col)
+        self._load_hat_offset()
+        if self.view_mode.get() == "anim":
+            self._jump_anim_to_frame(col)
+        self.redraw()
+
     def _load_hat_offset(self):
         row = self._active_hat_row()
-        col = int(self.hat_frame.get())
-        scope = self.hat_scope.get()
+        col = max(0, min(dt.NUM_FRAMES - 1, int(self.hat_frame.get())))
         meta = self._helmet_meta
-        if scope == "Default (All)":
-            dx, dy = meta.get("defaultOffset", [1, -1])
-        elif scope == "Default + Frame":
-            dx, dy = meta.get("defaultFrameOffsets", {}).get(str(col), meta.get("defaultOffset", [1, -1]))
-        elif scope == "Row (All Frames)":
-            rcfg = meta.get("rows", {}).get(str(row), {})
-            dx, dy = rcfg.get("offset", meta.get("defaultOffset", [1, -1]))
-        else:
-            dx, dy = dt.helmet_offset(meta, row, col)
-        self.hat_dx.set(int(dx))
-        self.hat_dy.set(int(dy))
+        mode = self.hat_mode.get()
+        rcfg = meta.get("rows", {}).get(str(row), {})
+        def_off = meta.get("defaultOffset", [1, -1])
 
-    def _apply_hat_offset(self):
+        if mode == "default_global":
+            gdx, gdy = def_off
+            self.hat_global_source.set("(all hats default)")
+        elif "offset" in rcfg:
+            gdx, gdy = rcfg["offset"]
+            self.hat_global_source.set(f"(row {row} custom)")
+        else:
+            gdx, gdy = def_off
+            self.hat_global_source.set("(inherits default)")
+
+        self.hat_global_dx.set(int(round(gdx)))
+        self.hat_global_dy.set(int(round(gdy)))
+
+        delta = rcfg.get("frameDeltas", {}).get(str(col))
+        if delta is None:
+            delta = meta.get("defaultFrameDeltas", {}).get(str(col), [0, 0])
+        self.hat_frame_dx.set(int(round(delta[0])))
+        self.hat_frame_dy.set(int(round(delta[1])))
+
+        self.hat_frame_label.set(self._frame_desc(col))
+        ex, ey = dt.helmet_offset(meta, row, col)
+        bx, by = dt.mirror_if_head_turn(int(round(gdx)), int(round(gdy)), col)
+        mirror_note = " [mirrored]" if col == 1 else ""
+        self.hat_effective_label.set(
+            f"Effective (Row {row}, F{col}): ({ex}, {ey}) = base({bx}, {by}){mirror_note} + delta({int(round(delta[0]))}, {int(round(delta[1]))})"
+        )
+
+    def _apply_hat_global_offset(self):
+        row = self._active_hat_row()
+        dx, dy = int(self.hat_global_dx.get()), int(self.hat_global_dy.get())
+        meta = self._helmet_meta
+        if self.hat_mode.get() == "default_global":
+            meta["defaultOffset"] = [dx, dy]
+            msg = f"[All Default] ({dx}, {dy})"
+        else:
+            meta.setdefault("rows", {}).setdefault(str(row), {})["offset"] = [dx, dy]
+            msg = f"[Row {row} Global] ({dx}, {dy})"
+        self._set_meta_dirty(True)
+        self._load_hat_offset()
+        self.redraw()
+        self.status.set(f"{msg} — click 'Save Meta' to persist")
+
+    def _reset_hat_row_global(self):
+        row = self._active_hat_row()
+        rcfg = self._helmet_meta.get("rows", {}).get(str(row))
+        if rcfg and "offset" in rcfg:
+            del rcfg["offset"]
+            if not rcfg:
+                del self._helmet_meta["rows"][str(row)]
+            self._set_meta_dirty(True)
+        self._load_hat_offset()
+        self.redraw()
+        self.status.set(f"Row {row} global reset to defaultOffset")
+
+    def _apply_hat_frame_delta(self):
+        row = self._active_hat_row()
+        col = max(0, min(dt.NUM_FRAMES - 1, int(self.hat_frame.get())))
+        dx, dy = int(self.hat_frame_dx.get()), int(self.hat_frame_dy.get())
+        rcfg = self._helmet_meta.setdefault("rows", {}).setdefault(str(row), {})
+        if dx == 0 and dy == 0:
+            rcfg.get("frameDeltas", {}).pop(str(col), None)
+            if not rcfg.get("frameDeltas"):
+                rcfg.pop("frameDeltas", None)
+            if not rcfg:
+                self._helmet_meta.get("rows", {}).pop(str(row), None)
+        else:
+            rcfg.setdefault("frameDeltas", {})[str(col)] = [dx, dy]
+        self._set_meta_dirty(True)
+        if self.view_mode.get() == "anim":
+            self._jump_anim_to_frame(col)
+        self._load_hat_offset()
+        self.redraw()
+        self.status.set(f"[Row {row} Frame {col}] delta=({dx}, {dy}) — click 'Save Meta' to persist")
+
+    def _clear_hat_frame_delta(self):
         row = self._active_hat_row()
         col = int(self.hat_frame.get())
-        dx, dy = int(self.hat_dx.get()), int(self.hat_dy.get())
-        scope = self.hat_scope.get()
-        meta = self._helmet_meta
-        if scope == "Default (All)":
-            meta["defaultOffset"] = [dx, dy]
-        elif scope == "Default + Frame":
-            meta.setdefault("defaultFrameOffsets", {})[str(col)] = [dx, dy]
-        elif scope == "Row (All Frames)":
-            meta.setdefault("rows", {}).setdefault(str(row), {})["offset"] = [dx, dy]
-        else:
-            meta.setdefault("rows", {}).setdefault(str(row), {}).setdefault("frameOffsets", {})[str(col)] = [dx, dy]
-
-        if "Frame" in scope:
-            self.playing.set(False)
-            state = self.anim_state.get()
-            anim_tuple = next((a for a in dt.ANIMATIONS if a[0] == state), dt.ANIMATIONS[0])
-            if col in anim_tuple[1]:
-                self._anim_tick = anim_tuple[1].index(col)
+        rcfg = self._helmet_meta.get("rows", {}).get(str(row))
+        if rcfg and str(col) in rcfg.get("frameDeltas", {}):
+            del rcfg["frameDeltas"][str(col)]
+            if not rcfg["frameDeltas"]:
+                del rcfg["frameDeltas"]
+            if not rcfg:
+                del self._helmet_meta["rows"][str(row)]
+            self._set_meta_dirty(True)
+        self._load_hat_offset()
         self.redraw()
-        self.status.set(f"[{scope}] row={row} frame={col} -> ({dx}, {dy}) — click 'Save Meta' to persist")
+        self.status.set(f"Cleared delta for Row {row} Frame {col}")
+
+    def _clear_hat_row_frames(self):
+        row = self._active_hat_row()
+        rcfg = self._helmet_meta.get("rows", {}).get(str(row))
+        if rcfg and "frameDeltas" in rcfg:
+            del rcfg["frameDeltas"]
+            if not rcfg:
+                del self._helmet_meta["rows"][str(row)]
+            self._set_meta_dirty(True)
+        self._load_hat_offset()
+        self.redraw()
+        self.status.set(f"Cleared all per-frame deltas for Row {row}")
 
     def _nudge_hat(self, dx: int, dy: int):
-        self.hat_dx.set(int(self.hat_dx.get()) + dx)
-        self.hat_dy.set(int(self.hat_dy.get()) + dy)
-        self._apply_hat_offset()
+        mode = self.hat_mode.get()
+        if mode == "row_frame":
+            self.hat_frame_dx.set(int(self.hat_frame_dx.get()) + dx)
+            self.hat_frame_dy.set(int(self.hat_frame_dy.get()) + dy)
+            self._apply_hat_frame_delta()
+        else:
+            self.hat_global_dx.set(int(self.hat_global_dx.get()) + dx)
+            self.hat_global_dy.set(int(self.hat_global_dy.get()) + dy)
+            self._apply_hat_global_offset()
+
+    # --- Canvas click & drag ---
+
+    def _on_canvas_press(self, event):
+        self.canvas.focus_set()
+        layout = self._canvas_layout
+        if not layout:
+            return
+        cx = self.canvas.canvasx(event.x) - 12
+        cy = self.canvas.canvasy(event.y) - 12
+
+        if layout["mode"] == "sheet":
+            cell_w = layout["cw"] * layout["scale"]
+            cell_h = layout["ch"] * layout["scale"]
+            if cx >= 0 and cy >= 0 and cell_w > 0 and cell_h > 0:
+                col_idx = int(cx // cell_w)
+                row_idx = int(cy // cell_h)
+                if 0 <= col_idx < layout["cols"]:
+                    fidx = row_idx * layout["cols"] + col_idx
+                    if 0 <= fidx < dt.NUM_FRAMES and self.nb.index(self.nb.select()) == 0:
+                        self.hat_frame.set(fidx)
+                        self._load_hat_offset()
+                        self.redraw()
+
+        if self.nb.index(self.nb.select()) == 0:
+            mode = self.hat_mode.get()
+            if mode == "row_frame":
+                init_dx = int(self.hat_frame_dx.get())
+                init_dy = int(self.hat_frame_dy.get())
+                active_frame = int(self.hat_frame.get())
+            else:
+                init_dx = int(self.hat_global_dx.get())
+                init_dy = int(self.hat_global_dy.get())
+                active_frame = int(self.hat_frame.get()) if layout["mode"] == "sheet" else self._current_body_frame()
+            self._drag_state = {
+                "x": event.x,
+                "y": event.y,
+                "dx": init_dx,
+                "dy": init_dy,
+                "mode": mode,
+                "frame": active_frame,
+                "scale": layout["scale"],
+                "was_playing": self.playing.get(),
+            }
+            if layout["mode"] == "anim":
+                self.playing.set(False)
+
+    def _on_canvas_drag(self, event):
+        ds = self._drag_state
+        if not ds:
+            return
+        scale = max(1, ds["scale"])
+        sdx = int(round((event.x - ds["x"]) / scale))
+        sdy = int(round((event.y - ds["y"]) / scale))
+        if self.flip_h.get():
+            sdx = -sdx
+        if ds["mode"] != "row_frame" and ds["frame"] == 1:
+            sdx = -sdx
+
+        ndx = ds["dx"] + sdx
+        ndy = ds["dy"] + sdy
+        if ds["mode"] == "row_frame":
+            if ndx != self.hat_frame_dx.get() or ndy != self.hat_frame_dy.get():
+                self.hat_frame_dx.set(ndx)
+                self.hat_frame_dy.set(ndy)
+                self._apply_hat_frame_delta()
+        else:
+            if ndx != self.hat_global_dx.get() or ndy != self.hat_global_dy.get():
+                self.hat_global_dx.set(ndx)
+                self.hat_global_dy.set(ndy)
+                self._apply_hat_global_offset()
+
+    def _on_canvas_release(self, _event):
+        self._drag_state = None
 
     def _install_arrow_key_bindings(self):
         """Intercept arrow keys before ttk.Notebook/Button/Combobox hijack them for focus/tab switching."""
@@ -712,6 +952,7 @@ class DollToolGUI(tk.Tk):
 
     def _save_helmets_meta(self):
         dt.save_helmet_meta(self._helmet_meta)
+        self._set_meta_dirty(False)
         self.status.set(f"Saved {dt.HELMET_META_PATH}")
 
     def _current_custom_anim(self):
@@ -886,7 +1127,14 @@ class DollToolGUI(tk.Tk):
                 cell = comp.resize((cw * scale, ch * scale), Image.Resampling.NEAREST)
                 gx, gy = (idx % cols) * cw * scale, (idx // cols) * ch * scale
                 img.alpha_composite(cell, (gx, gy))
-                draw.text((gx + 4, gy + 4), str(idx), fill=(210, 210, 210, 255))
+                if idx == int(self.hat_frame.get()):
+                    draw.rectangle(
+                        (gx + 1, gy + 1, gx + cw * scale - 2, gy + ch * scale - 2),
+                        outline=(255, 213, 79, 255), width=2,
+                    )
+                draw.text((gx + 4, gy + 4), str(idx), fill=(255, 213, 79, 255) if idx == int(self.hat_frame.get()) else (210, 210, 210, 255))
+            self._canvas_layout = {"mode": "sheet", "scale": scale, "cw": cw, "ch": ch, "cols": cols}
+            self.anim_frame_label.set(f"Sheet F{self.hat_frame.get()}")
         else:
             state = self.anim_state.get()
             anim_tuple = next((a for a in dt.ANIMATIONS if a[0] == state), dt.ANIMATIONS[0])
@@ -921,6 +1169,8 @@ class DollToolGUI(tk.Tk):
             if self.flip_h.get():
                 comp = ImageOps.mirror(comp)
             img = comp.resize((comp.width * scale, comp.height * scale), Image.Resampling.NEAREST)
+            self._canvas_layout = {"mode": "anim", "scale": scale, "cw": comp.width, "ch": comp.height}
+            self.anim_frame_label.set(f"F{self._frame_desc(bcol)}")
 
         self._photo = ImageTk.PhotoImage(img)
         self.canvas.delete("all")

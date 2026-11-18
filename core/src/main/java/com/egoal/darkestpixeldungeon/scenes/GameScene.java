@@ -263,6 +263,12 @@ public class GameScene extends PixelScene {
 
     filteredMap.add(emitters);
     filteredMap.add(effects);
+    effects.add(new com.watabou.noosa.Gizmo() {
+      @Override
+      public void draw() {
+        SceneCutEffect.preFogDraw();
+      }
+    });
 
     gases = new Group();
     filteredMap.add(gases);
@@ -762,7 +768,7 @@ public class GameScene extends PixelScene {
 
     if (notifyDelay > 0) notifyDelay -= Game.elapsed;
 
-    if (!Actor.Companion.processing() && Dungeon.INSTANCE.getHero().isAlive()) {
+    if (!SceneCutEffect.isBusy() && !Actor.Companion.processing() && Dungeon.INSTANCE.getHero().isAlive()) {
       if (actorThread == null || !actorThread.isAlive()) {
         actorThread = new Thread() {
           @Override

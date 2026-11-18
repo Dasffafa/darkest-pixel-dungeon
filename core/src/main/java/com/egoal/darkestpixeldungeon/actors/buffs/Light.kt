@@ -35,7 +35,7 @@ import kotlin.math.min
 
 open class Light : Buff() {
     var duration = 0f
-    lateinit var luminary: Luminary
+    var luminary: Luminary? = null
 
     fun prolong(dt: Float) {
         duration = max(dt, duration)
@@ -43,9 +43,13 @@ open class Light : Buff() {
 
     override fun onAdd() {
         if (!Dungeon.isLevelNull) {
-            luminary = TorchLight(target.pos, target.id())
-            Dungeon.level.addLuminary(luminary)
+            if (target !is com.egoal.darkestpixeldungeon.actors.hero.Hero) {
+                val lum = TorchLight(target.pos, target.id())
+                luminary = lum
+                Dungeon.level.addLuminary(lum)
+            }
             Dungeon.level.updateLightMap()
+            com.egoal.darkestpixeldungeon.scenes.GameScene.updateFog()
         }
     }
 
@@ -63,9 +67,11 @@ open class Light : Buff() {
         if (duration <= 0) detach()
         else {
             // Modified by TheCatist: 不是每个怪物移动的时候都重新计算光源，而是只有玩家或者怪物在发光并且移动的时候才重新计算光源
-            if (luminary.pos != target.pos) {
-                luminary.pos = target.pos
-                Dungeon.level.invalidateLightMap()
+            luminary?.let {
+                if (it.pos != target.pos) {
+                    it.pos = target.pos
+                    Dungeon.level.invalidateLightMap()
+                }
             }
         }
 
@@ -75,7 +81,11 @@ open class Light : Buff() {
 
     override fun detach() {
         super.detach()
-        Dungeon.level.removeLuminary(luminary)
+        luminary?.let { Dungeon.level.removeLuminary(it) }
+        luminary = null
+        if (!Dungeon.isLevelNull && target is com.egoal.darkestpixeldungeon.actors.hero.Hero) {
+            Dungeon.level.invalidateLightMap()
+        }
         Dungeon.observe()
     }
 
