@@ -29,6 +29,7 @@ uniform float uCrack;        // 刀光显现进度 0..1
 uniform float uGlow;         // 刀光强度
 uniform float uSeed;         // 每次击杀的抖动种子
 uniform float uGlowOnly;     // 1 = 只画刀光（第二遍绘制用的刀光层）
+uniform vec4  uTint;         // 场景光照着色
 
 float hash11(float n) {
   return fract(sin(n * 12.9898 + uSeed * 78.233) * 43758.5453);
@@ -109,7 +110,7 @@ void main() {
     col = grab(p / uSize);        // 下半片原地不动
   }
 
-  vec3 body = mix(col.rgb, vec3(0.0), uSilhouette);   // 剪影：只留轮廓，颜色抹掉
+  vec3 body = mix(col.rgb * uTint.rgb, vec3(0.0), uSilhouette);   // 剪影：只留轮廓，颜色抹掉
   vec3 rgb = body * col.a * uFade + glowRGB * uGlow;
   float alpha = col.a * uFade;
 

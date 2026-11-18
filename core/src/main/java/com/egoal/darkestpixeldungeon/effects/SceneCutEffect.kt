@@ -3,6 +3,7 @@ package com.egoal.darkestpixeldungeon.effects
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.GL20
 import com.egoal.darkestpixeldungeon.Assets
+import com.egoal.darkestpixeldungeon.DarkestPixelDungeon
 import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.DungeonTilemap
 import com.egoal.darkestpixeldungeon.actors.Char
@@ -37,6 +38,7 @@ class SceneCutScript : ResourceNoosaScript("scenecut") {
     private val uGlow = uniform("uGlow")
     private val uSeed = uniform("uSeed")
     private val uGlowOnly = uniform("uGlowOnly")
+    private val uTint = uniform("uTint")
 
     fun setParams(
         uv: RectF,
@@ -48,9 +50,17 @@ class SceneCutScript : ResourceNoosaScript("scenecut") {
         fall: Float,
         crack: Float,
         fade: Float,
-        seed: Float
+        seed: Float,
+        flipH: Boolean,
+        tintR: Float,
+        tintG: Float,
+        tintB: Float
     ) {
-        uFrame.value4f(uv.left, uv.top, uv.width(), uv.height())
+        if (flipH) {
+            uFrame.value4f(uv.right, uv.top, -uv.width(), uv.height())
+        } else {
+            uFrame.value4f(uv.left, uv.top, uv.width(), uv.height())
+        }
         uSize.value2f(w, h)
         uPad.value1f(pad)
         uLine.value4f(line[0], line[1], line[2], line[3])
@@ -62,6 +72,7 @@ class SceneCutScript : ResourceNoosaScript("scenecut") {
         uGlow.value1f(0f)
         uGlowOnly.value1f(0f)
         uSeed.value1f(seed)
+        uTint.value4f(tintR, tintG, tintB, 1f)
     }
 }
 
@@ -93,6 +104,10 @@ object SceneCutEffect {
     private var pendingVictim: Char? = null
     private var tex: SmartTexture? = null
     private var frame: RectF? = null
+    private var flipH = false
+    private var tintR = 1f
+    private var tintG = 1f
+    private var tintB = 1f
     private val rect = FloatArray(4)
     private val line = FloatArray(4)
     private val identity = FloatArray(16).apply { Matrix.setIdentity(this) }
@@ -100,6 +115,9 @@ object SceneCutEffect {
     private var tearTex: SmartTexture? = null
     private var quad: Vertexbuffer? = null
     private var quadBuffer: FloatBuffer? = null
+
+    @JvmStatic
+    fun isBusy(): Boolean = armed || active
 
     @JvmStatic
     fun trigger(victim: Char?): Boolean {
@@ -116,7 +134,7 @@ object SceneCutEffect {
     }
 
     @JvmStatic
-    fun postDraw() {
+    fun preFogDraw() {
         if (armed) {
             armed = false
             val victim = pendingVictim
@@ -132,7 +150,13 @@ object SceneCutEffect {
             finish()
             return
         }
-        render(elapsed)
+        renderVictim(elapsed)
+    }
+
+    @JvmStatic
+    fun postDraw() {
+        if (!active || elapsed >= CLIP_TIME) return
+        renderTearOverlay(elapsed)
     }
 
     private fun capture(victim: Char?): Boolean {
@@ -142,16 +166,34 @@ object SceneCutEffect {
 
         tex = s.texture
         frame = s.frame()
+        flipH = s.flipHorizontal
         rect[0] = s.x
         rect[1] = s.y
         rect[2] = s.width()
         rect[3] = s.height()
         if (rect[2] <= 0f || rect[3] <= 0f) return false
 
+        sampleSceneTint(victim.pos)
         aim()
         s.visible = false
         s.killAndErase()
         return true
+    }
+
+    private fun sampleSceneTint(pos: Int) {
+        if (Dungeon.isLevelNull) {
+            tintR = 1f; tintG = 1f; tintB = 1f
+            return
+        }
+        val lm = Dungeon.level.lightMap
+        val boost = 1.0f + DarkestPixelDungeon.brightness() * 0.14f
+        if (pos in lm.r.indices) {
+            tintR = (lm.r[pos] * boost).coerceIn(0f, 1f)
+            tintG = (lm.g[pos] * boost).coerceIn(0f, 1f)
+            tintB = (lm.b[pos] * boost).coerceIn(0f, 1f)
+        } else {
+            tintR = 1f; tintG = 1f; tintB = 1f
+        }
     }
 
     private fun aim() {
@@ -179,12 +221,9 @@ object SceneCutEffect {
 
     private fun padPx(): Float = max(SLIDE_TILES * DungeonTilemap.SIZE, FALL_FRAC * spriteHeightPx()) + 10f
 
-    private fun render(now: Float) {
+    private fun renderVictim(now: Float) {
         val tTex = tex ?: return finish()
         val tFrame = frame ?: return finish()
-
-        Gdx.gl.glDisable(GL20.GL_SCISSOR_TEST)
-        Gdx.gl.glViewport(0, 0, Gdx.graphics.getBackBufferWidth(), Gdx.graphics.getBackBufferHeight())
 
         val t = now - CUT_TIME
         val crack = if (t >= 0f) 1f else 0f
@@ -194,19 +233,22 @@ object SceneCutEffect {
         val fade = if (t > 0f) 1f - clamp01((t - FADE_DELAY) / FADE_TIME) else 1f
 
         val pad = padPx()
-        beginPass(tTex, tFrame, spriteWidthPx(), spriteHeightPx(), pad, slide, fall, crack, fade)
+        // Drawn inside filteredMap before FogOfWar, so FogOfWar shades every pixel naturally.
+        beginPass(tTex, tFrame, spriteWidthPx(), spriteHeightPx(), pad, slide, fall, crack, fade, flipH, 1f, 1f, 1f)
         drawQuad(rect[0] - pad, rect[1] - pad, rect[2] + pad * 2f, rect[3] + pad * 2f)
 
-        if (now < CLIP_TIME) {
-            val f = min(7, (now * CLIP_FPS).toInt())
-            val clip = getTearTex()
-            val w = CLIP_FRAME * CLIP_SCALE_X
-            val h = CLIP_FRAME * CLIP_SCALE_Y
-            val cx = rect[0] + rect[2] * 0.5f
-            val cy = rect[1] + rect[3] * 0.5f
-            beginPass(clip, clipFrame(clip, f), CLIP_FRAME.toFloat(), CLIP_FRAME.toFloat(), 0f, 0f, 0f, 0f, 1f)
-            drawQuad(cx - w * 0.5f, cy - h * 0.5f, w, h)
-        }
+        Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA)
+    }
+
+    private fun renderTearOverlay(now: Float) {
+        val f = min(7, (now * CLIP_FPS).toInt())
+        val clip = getTearTex()
+        val w = CLIP_FRAME * CLIP_SCALE_X
+        val h = CLIP_FRAME * CLIP_SCALE_Y
+        val cx = rect[0] + rect[2] * 0.5f
+        val cy = rect[1] + rect[3] * 0.5f
+        beginPass(clip, clipFrame(clip, f), CLIP_FRAME.toFloat(), CLIP_FRAME.toFloat(), 0f, 0f, 0f, 0f, 1f, false, 1f, 1f, 1f)
+        drawQuad(cx - w * 0.5f, cy - h * 0.5f, w, h)
 
         Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA)
     }
@@ -233,13 +275,17 @@ object SceneCutEffect {
         slide: Float,
         fall: Float,
         crack: Float,
-        fade: Float
+        fade: Float,
+        flipHoriz: Boolean,
+        tr: Float,
+        tg: Float,
+        tb: Float
     ) {
         val s = Script.use(SceneCutScript::class.java)
         s.resetCamera()
         s.camera(Camera.main)
         s.uModel.valueM4(identity)
-        s.setParams(uv, w, h, pad, line, slide, fall, crack, fade, seed)
+        s.setParams(uv, w, h, pad, line, slide, fall, crack, fade, seed, flipHoriz, tr, tg, tb)
         texture.bind()
 
         Gdx.gl.glEnable(GL20.GL_BLEND)
@@ -273,6 +319,10 @@ object SceneCutEffect {
         pendingVictim = null
         tex = null
         frame = null
+        flipH = false
+        tintR = 1f
+        tintG = 1f
+        tintB = 1f
         Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA)
     }
 

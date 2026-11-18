@@ -152,9 +152,9 @@ class FogOfWar(private val mapWidth: Int, private val mapHeight: Int) : Image() 
                     sumR += lr[c3]; sumG += lg[c3]; sumB += lb[c3]
                 }
 
-                if (visCount >= 1) {
-                    // Any adjacent cell is visible: illuminate smoothly so visible mobs are never covered by fog.
-                    val inv = brightnessBoost / visCount
+                if (visCount == 4) {
+                    // Require all 4 adjacent cells to be visible so light never bleeds behind walls.
+                    val inv = brightnessBoost / 4f
                     val ri = (sumR * inv * 255f).roundToInt().coerceIn(0, 255)
                     val gi = (sumG * inv * 255f).roundToInt().coerceIn(0, 255)
                     val bi = (sumB * inv * 255f).roundToInt().coerceIn(0, 255)

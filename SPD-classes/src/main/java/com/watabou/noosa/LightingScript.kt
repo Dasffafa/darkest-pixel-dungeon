@@ -12,6 +12,7 @@ class LightingScript : NoosaScript() {
     }
 
     override fun use() {
+        resetCamera()
         super.use()
         uQuantizeSteps.value1f(quantizeSteps)
     }

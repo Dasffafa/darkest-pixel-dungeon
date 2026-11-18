@@ -125,29 +125,36 @@ HELMET_META_PATH = HERO_DIR / "helmets_meta.json"
 def load_helmet_meta() -> Dict:
     if HELMET_META_PATH.exists():
         return json.loads(HELMET_META_PATH.read_text(encoding="utf-8"))
-    return {"defaultOffset": [1, -1], "defaultFrameOffsets": {"1": [0, -1]}, "rows": {}}
+    return {"defaultOffset": [1, -1], "defaultFrameDeltas": {}, "rows": {}}
 
 
 def save_helmet_meta(meta: Dict) -> None:
     HELMET_META_PATH.write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
 
 
+def mirror_if_head_turn(dx: int, dy: int, frame_idx: int) -> Tuple[int, int]:
+    return (1 - dx, dy) if frame_idx == 1 else (dx, dy)
+
+
 def helmet_offset(meta: Optional[Dict], row: int, frame_idx: int) -> Tuple[int, int]:
     if meta is None:
         meta = load_helmet_meta()
+    key = str(frame_idx)
     row_cfg = meta.get("rows", {}).get(str(row))
-    if row_cfg:
-        fo = row_cfg.get("frameOffsets", {}).get(str(frame_idx))
+    if row_cfg and key not in row_cfg.get("frameDeltas", {}):
+        fo = row_cfg.get("frameOffsets", {}).get(key)
         if fo is not None:
             return int(round(fo[0])), int(round(fo[1]))
-        ro = row_cfg.get("offset")
-        if ro is not None:
-            return int(round(ro[0])), int(round(ro[1]))
-    dfo = meta.get("defaultFrameOffsets", {}).get(str(frame_idx))
-    if dfo is not None:
-        return int(round(dfo[0])), int(round(dfo[1]))
-    do = meta.get("defaultOffset", [1, -1])
-    return int(round(do[0])), int(round(do[1]))
+    raw_base = (row_cfg.get("offset") if row_cfg else None) or meta.get("defaultOffset", [1, -1])
+    bx, by = mirror_if_head_turn(int(round(raw_base[0])), int(round(raw_base[1])), frame_idx)
+    delta = (row_cfg.get("frameDeltas", {}).get(key) if row_cfg else None) or meta.get("defaultFrameDeltas", {}).get(key)
+    if delta is not None:
+        return bx + int(round(delta[0])), by + int(round(delta[1]))
+    if not row_cfg or row_cfg.get("offset") is None:
+        dfo = meta.get("defaultFrameOffsets", {}).get(key)
+        if dfo is not None:
+            return int(round(dfo[0])), int(round(dfo[1]))
+    return bx, by
 
 
 def compose_hero_frame(

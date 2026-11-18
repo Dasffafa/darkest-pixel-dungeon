@@ -594,21 +594,35 @@ class DollSprite : CharSprite() {
 
         class HelmetRowMeta(
                 val offset: FloatArray?,
+                val frameDeltas: Map<Int, FloatArray>,
                 val frameOffsets: Map<Int, FloatArray>
         )
 
         class HelmetMeta(
                 val defaultOffset: FloatArray,
+                val defaultFrameDeltas: Map<Int, FloatArray>,
                 val defaultFrameOffsets: Map<Int, FloatArray>,
                 val rows: Map<Int, HelmetRowMeta>
         ) {
+            private fun mirrorIfHeadTurn(base: FloatArray, frameIdx: Int): FloatArray {
+                return if (frameIdx == 1) floatArrayOf(1f - base[0], base[1]) else base
+            }
+
             fun offsetFor(row: Int, frameIdx: Int): FloatArray {
                 val r = rows[row]
-                if (r != null) {
+                if (r != null && !r.frameDeltas.containsKey(frameIdx)) {
                     r.frameOffsets[frameIdx]?.let { return it }
-                    r.offset?.let { return it }
                 }
-                return defaultFrameOffsets[frameIdx] ?: defaultOffset
+                val rawBase = r?.offset ?: defaultOffset
+                val base = mirrorIfHeadTurn(rawBase, frameIdx)
+                val delta = r?.frameDeltas?.get(frameIdx) ?: defaultFrameDeltas[frameIdx]
+                if (delta != null) {
+                    return floatArrayOf(base[0] + delta[0], base[1] + delta[1])
+                }
+                if (r?.offset == null) {
+                    defaultFrameOffsets[frameIdx]?.let { return it }
+                }
+                return base
             }
         }
 
@@ -633,11 +647,11 @@ class DollSprite : CharSprite() {
         fun loadHelmetMeta(): HelmetMeta {
             cachedHelmetMeta?.let { return it }
             val fallbackDef = floatArrayOf(1f, -1f)
-            val fallbackFrames = mapOf(1 to floatArrayOf(0f, -1f))
             val file = Gdx.files.internal("actors/hero/helmets_meta.json")
             val meta = if (file.exists()) {
                 val root = JsonReader().parse(file)
                 val defOff = parsePair(root.get("defaultOffset"), fallbackDef)
+                val defDeltas = parseFrameOffsetMap(root.get("defaultFrameDeltas"))
                 val defFrames = parseFrameOffsetMap(root.get("defaultFrameOffsets"))
                 val rowsMap = HashMap<Int, HelmetRowMeta>()
                 var rNode = root.get("rows")?.child
@@ -645,14 +659,15 @@ class DollSprite : CharSprite() {
                     val rowId = rNode.name.toIntOrNull()
                     if (rowId != null) {
                         val rOff = if (rNode.has("offset")) parsePair(rNode.get("offset"), defOff) else null
+                        val rDeltas = parseFrameOffsetMap(rNode.get("frameDeltas"))
                         val rFrames = parseFrameOffsetMap(rNode.get("frameOffsets"))
-                        rowsMap[rowId] = HelmetRowMeta(rOff, rFrames)
+                        rowsMap[rowId] = HelmetRowMeta(rOff, rDeltas, rFrames)
                     }
                     rNode = rNode.next
                 }
-                HelmetMeta(defOff, defFrames, rowsMap)
+                HelmetMeta(defOff, defDeltas, defFrames, rowsMap)
             } else {
-                HelmetMeta(fallbackDef, fallbackFrames, emptyMap())
+                HelmetMeta(fallbackDef, emptyMap(), emptyMap(), emptyMap())
             }
             cachedHelmetMeta = meta
             return meta
