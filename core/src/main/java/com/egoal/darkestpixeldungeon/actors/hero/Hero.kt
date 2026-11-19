@@ -1120,7 +1120,7 @@ class Hero : Char() {
         if (cell == -1) return false
 
         curAction = defineAction(cell)
-        if (curAction !is HeroAction.Move) stopContinuousMoving()
+        if (curAction !is HeroAction.Move) GameScene.stopContinuousMove()
         if (curAction is HeroAction.Move) {
             lastAction = null // move cancel last action
             belongings.getItem(CloakOfSheep::class.java)?.tryAutoBlink(this, cell)
@@ -1378,6 +1378,10 @@ class Hero : Char() {
         }
 
         resting = full
+    }
+
+    override fun onMotionComplete() {
+        GameScene.checkKeyHold()
     }
 
     override fun move(step: Int) {

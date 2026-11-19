@@ -33,6 +33,7 @@ import com.egoal.darkestpixeldungeon.actors.mobs.Mob;
 import com.egoal.darkestpixeldungeon.effects.BubbleText;
 import com.egoal.darkestpixeldungeon.items.unclassified.Honeypot;
 import com.egoal.darkestpixeldungeon.input.DPDAction;
+import com.egoal.darkestpixeldungeon.input.DPDKeyBindings;
 import com.egoal.darkestpixeldungeon.items.bags.SeedPouch;
 import com.egoal.darkestpixeldungeon.items.scrolls.ScrollOfTeleportation;
 import com.egoal.darkestpixeldungeon.levels.RegularLevel;
@@ -496,31 +497,31 @@ public class GameScene extends PixelScene {
   }
 
   private boolean handleKey(Keys.Key key) {
-    if (isPanKey(key.code)) {
+    DPDAction command = DPDKeyBindings.actionForKey(key.code);
+    if (command != null && command.isPan()) {
       if (key.pressed) {
-        heldPanX = key.code == com.badlogic.gdx.Input.Keys.A ? -1 : key.code == com.badlogic.gdx.Input.Keys.D ? 1 : 0;
-        heldPanY = key.code == com.badlogic.gdx.Input.Keys.W ? -1 : key.code == com.badlogic.gdx.Input.Keys.S ? 1 : 0;
+        if (command == DPDAction.PAN_LEFT) heldPanX = -1;
+        else if (command == DPDAction.PAN_RIGHT) heldPanX = 1;
+        if (command == DPDAction.PAN_UP) heldPanY = -1;
+        else if (command == DPDAction.PAN_DOWN) heldPanY = 1;
       } else {
-        if (key.code == com.badlogic.gdx.Input.Keys.A || key.code == com.badlogic.gdx.Input.Keys.D) heldPanX = 0;
-        if (key.code == com.badlogic.gdx.Input.Keys.W || key.code == com.badlogic.gdx.Input.Keys.S) heldPanY = 0;
+        if (command == DPDAction.PAN_LEFT || command == DPDAction.PAN_RIGHT) heldPanX = 0;
+        if (command == DPDAction.PAN_UP || command == DPDAction.PAN_DOWN) heldPanY = 0;
       }
       return true;
     }
-    if (isMoveKey(key.code)) {
-      if (key.pressed) {
-        if (pressedMoveKey != key.code) {
-          pressedMoveKey = key.code;
-          heldMoveKey = key.code;
-          Dungeon.INSTANCE.getHero().setContinuousMoving(true);
-        } else {
-          return true;
+    if (command != null && command.isMovement()) {
+      if (hasOpenWindow()) {
+        if (!key.pressed) {
+          cellSelector.onMoveKey(key.code, command, false);
         }
-      } else {
-        if (pressedMoveKey == key.code) {
-          pressedMoveKey = -1;
-          heldMoveKey = -1;
-          Dungeon.INSTANCE.getHero().stopContinuousMoving();
-        }
+        return true;
+      }
+      if (!QuickSlotButton.isTargeting()) {
+        cellSelector.onMoveKey(key.code, command, key.pressed);
+        return true;
+      } else if (!key.pressed) {
+        cellSelector.onMoveKey(key.code, command, false);
         return true;
       }
     }
@@ -530,37 +531,10 @@ public class GameScene extends PixelScene {
     // important for held movement keys: without this guard a key that opened
     // a dialogue could keep selecting cells behind the window.
     if (hasOpenWindow()) return true;
-    if (key.code == com.badlogic.gdx.Input.Keys.GRAVE) {
-      Toolbar.switchQuickSlotTabFromKey();
-      return true;
-    }
-    if (DeviceCompat.isDesktop()) {
-      if (key.code == com.badlogic.gdx.Input.Keys.Z) { cellSelector.zoomBy(1); return true; }
-      if (key.code == com.badlogic.gdx.Input.Keys.X) { cellSelector.zoomBy(-1); return true; }
-    }
-    if (DeviceCompat.isDesktop() && (key.code == com.badlogic.gdx.Input.Keys.PERIOD || key.code == com.badlogic.gdx.Input.Keys.COMMA)) {
-      int target = key.code == com.badlogic.gdx.Input.Keys.PERIOD ? Dungeon.INSTANCE.getLevel().getExit() : Dungeon.INSTANCE.getLevel().getEntrance();
-      if (target >= 0 && target < Dungeon.INSTANCE.getLevel().length()) {
-        Dungeon.INSTANCE.getHero().handle(target);
-        Dungeon.INSTANCE.getHero().next();
-      } else {
-        GLog.w(key.code == com.badlogic.gdx.Input.Keys.PERIOD ? "No downstairs here." : "No upstairs here.");
-      }
-      return true;
-    }
-    if (key.code >= com.badlogic.gdx.Input.Keys.NUM_1 && key.code <= com.badlogic.gdx.Input.Keys.NUM_8) {
-      int configured = DarkestPixelDungeon.quickSlots();
-      int number = key.code - com.badlogic.gdx.Input.Keys.NUM_1 + 1;
-      if (number <= configured) {
-        QuickSlotButton.use(Toolbar.currentQuickSlotIndex(configured - number));
-        return true;
-      }
-    }
-    DPDAction command = DPDAction.fromKey(key.code);
     if (command == null) return false;
 
     if (!Dungeon.INSTANCE.getHero().getReady() && command != DPDAction.ZOOM_IN &&
-            command != DPDAction.ZOOM_OUT) return true;
+            command != DPDAction.ZOOM_OUT && command != DPDAction.SWITCH_QUICKSLOT_TAB) return true;
 
     int width = Dungeon.INSTANCE.getLevel().width();
     int offset = 0;
@@ -601,12 +575,37 @@ public class GameScene extends PixelScene {
       case INVENTORY: toolbar.inventory(); break;
       case EXAMINE: toolbar.examine(); break;
       case REST: toolbar.rest(); break;
-      case QUICK_SLOT_1: QuickSlotButton.use(0); break;
-      case QUICK_SLOT_2: QuickSlotButton.use(1); break;
-      case QUICK_SLOT_3: QuickSlotButton.use(2); break;
-      case QUICK_SLOT_4: QuickSlotButton.use(3); break;
-      case QUICK_SLOT_5: QuickSlotButton.use(4); break;
-      case QUICK_SLOT_6: QuickSlotButton.use(5); break;
+      case QUICK_SLOT_1:
+      case QUICK_SLOT_2:
+      case QUICK_SLOT_3:
+      case QUICK_SLOT_4:
+      case QUICK_SLOT_5:
+      case QUICK_SLOT_6:
+      case QUICK_SLOT_7:
+      case QUICK_SLOT_8: {
+        int number = command.ordinal() - DPDAction.QUICK_SLOT_1.ordinal() + 1;
+        int configured = DarkestPixelDungeon.quickSlots();
+        if (number <= configured) {
+          QuickSlotButton.use(Toolbar.currentQuickSlotIndex(configured - number));
+        }
+        break;
+      }
+      case SWITCH_QUICKSLOT_TAB:
+        Toolbar.switchQuickSlotTabFromKey();
+        break;
+      case STAIRS_DOWN:
+      case STAIRS_UP: {
+        int target = command == DPDAction.STAIRS_DOWN
+                ? Dungeon.INSTANCE.getLevel().getExit()
+                : Dungeon.INSTANCE.getLevel().getEntrance();
+        if (target >= 0 && target < Dungeon.INSTANCE.getLevel().length()) {
+          Dungeon.INSTANCE.getHero().handle(target);
+          Dungeon.INSTANCE.getHero().next();
+        } else {
+          GLog.w(command == DPDAction.STAIRS_DOWN ? "No downstairs here." : "No upstairs here.");
+        }
+        break;
+      }
       case TAG_ATTACK: attack.trigger(); break;
       case TAG_ACTION: action.trigger(); break;
       case TAG_LOOT: loot.trigger(); break;
@@ -638,38 +637,11 @@ public class GameScene extends PixelScene {
     return false;
   }
 
-  private boolean isPanKey(int code) {
-    return DeviceCompat.isDesktop() && (code == com.badlogic.gdx.Input.Keys.W || code == com.badlogic.gdx.Input.Keys.A ||
-            code == com.badlogic.gdx.Input.Keys.S || code == com.badlogic.gdx.Input.Keys.D);
-  }
-
-  private boolean isMoveKey(int code) {
-    return code == com.badlogic.gdx.Input.Keys.UP || code == com.badlogic.gdx.Input.Keys.DOWN ||
-            code == com.badlogic.gdx.Input.Keys.LEFT || code == com.badlogic.gdx.Input.Keys.RIGHT ||
-            code == com.badlogic.gdx.Input.Keys.NUMPAD_1 || code == com.badlogic.gdx.Input.Keys.NUMPAD_2 ||
-            code == com.badlogic.gdx.Input.Keys.NUMPAD_3 || code == com.badlogic.gdx.Input.Keys.NUMPAD_4 ||
-            code == com.badlogic.gdx.Input.Keys.NUMPAD_6 || code == com.badlogic.gdx.Input.Keys.NUMPAD_7 ||
-            code == com.badlogic.gdx.Input.Keys.NUMPAD_8 || code == com.badlogic.gdx.Input.Keys.NUMPAD_9;
-  }
-
   private void updateHeldInput() {
     if (hasOpenWindow()) {
       heldPanX = 0;
       heldPanY = 0;
-      if (heldMoveKey != -1) {
-        heldMoveKey = -1;
-        Dungeon.INSTANCE.getHero().stopContinuousMoving();
-      }
-      return;
-    }
-    // Poll the live key state before committing another step. The key-up event
-    // is dispatched once per frame and can arrive one frame late, so an
-    // edge-triggered release lets one more step slip through after the player
-    // has already let go. Checking the physical state here makes the release
-    // synchronous with the movement decision and prevents that phantom step.
-    if (heldMoveKey != -1 && !Gdx.input.isKeyPressed(heldMoveKey)) {
-      heldMoveKey = -1;
-      Dungeon.INSTANCE.getHero().stopContinuousMoving();
+      resetKeyHold();
       return;
     }
     if (heldPanX != 0 || heldPanY != 0) {
@@ -679,38 +651,23 @@ public class GameScene extends PixelScene {
       Camera.main.scroll.x = Math.max(0, Math.min(maxX, Camera.main.scroll.x + heldPanX * 4));
       Camera.main.scroll.y = Math.max(0, Math.min(maxY, Camera.main.scroll.y + heldPanY * 4));
     }
-    if (heldMoveKey == -1 || !Dungeon.INSTANCE.getHero().getContinuousMoving() ||
-            !Dungeon.INSTANCE.getHero().getReady() ||
-            Dungeon.INSTANCE.getHero().visibleEnemies() > 0 || cellSelector.listener != defaultCellListener) {
-      if (Dungeon.INSTANCE.getHero().visibleEnemies() > 0) {
-        heldMoveKey = -1;
-        Dungeon.INSTANCE.getHero().stopContinuousMoving();
-      }
-      return;
-    }
-    DPDAction command = DPDAction.fromKey(heldMoveKey);
-    if (command == null) return;
-    int width = Dungeon.INSTANCE.getLevel().width();
-    int offset = command == DPDAction.NORTH ? -width : command == DPDAction.SOUTH ? width :
-            command == DPDAction.WEST ? -1 : command == DPDAction.EAST ? 1 :
-            command == DPDAction.NORTH_WEST ? -width - 1 : command == DPDAction.NORTH_EAST ? -width + 1 :
-            command == DPDAction.SOUTH_WEST ? width - 1 : command == DPDAction.SOUTH_EAST ? width + 1 : 0;
-    if (offset != 0) {
-      int next = Dungeon.INSTANCE.getHero().getPos() + offset;
-      if (next >= 0 && next < Dungeon.INSTANCE.getLevel().length()) {
-        com.egoal.darkestpixeldungeon.levels.traps.Trap trap = Dungeon.INSTANCE.getLevel().getTraps().get(next);
-        if (trap != null && trap.getVisible()) {
-          heldMoveKey = -1;
-          Dungeon.INSTANCE.getHero().stopContinuousMoving();
-          return;
-        }
-      }
-      handleCell(next);
-    }
+  }
+
+  public static boolean interfaceBlockingHero() {
+    if (scene == null) return false;
+    return scene.hasOpenWindow();
+  }
+
+  public static void checkKeyHold() {
+    if (cellSelector != null) cellSelector.processKeyHold();
+  }
+
+  public static void resetKeyHold() {
+    if (cellSelector != null) cellSelector.resetKeyHold();
   }
 
   public static void stopContinuousMove() {
-    if (scene != null) scene.heldMoveKey = -1;
+    resetKeyHold();
     if (!Dungeon.INSTANCE.isHeroNull()) Dungeon.INSTANCE.getHero().stopContinuousMoving();
   }
 
@@ -739,13 +696,6 @@ public class GameScene extends PixelScene {
   private float notifyDelay = 1 / 60f;
   /** Set before an asynchronous window handoff so input cannot slip through. */
   private final AtomicBoolean windowPending = new AtomicBoolean(false);
-  private int heldMoveKey = -1;
-  /**
-   * Physically held movement key, cleared only on key-up. Lets us tell a fresh
-   * press apart from OS auto-repeat so a held key cannot re-arm continuous
-   * movement that was stopped by an interaction.
-   */
-  private int pressedMoveKey = -1;
   private int heldPanX;
   private int heldPanY;
 
@@ -1262,9 +1212,10 @@ public class GameScene extends PixelScene {
       scene.prompt(listener.prompt());
   }
 
-  private static boolean cancelCellSelector() {
+  static boolean cancelCellSelector() {
     if (cellSelector.listener != null && cellSelector.listener !=
             defaultCellListener) {
+      cellSelector.resetKeyHold();
       cellSelector.cancel();
       return true;
     } else {
@@ -1307,6 +1258,7 @@ public class GameScene extends PixelScene {
   }
 
   static boolean cancel() {
+    cellSelector.resetKeyHold();
     if (Dungeon.INSTANCE.getHero().getCurAction() != null || Dungeon.INSTANCE.getHero().getResting()) {
 
       Dungeon.INSTANCE.getHero().setCurAction(null);

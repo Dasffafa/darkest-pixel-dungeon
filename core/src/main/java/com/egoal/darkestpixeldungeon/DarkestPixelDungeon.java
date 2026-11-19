@@ -415,6 +415,22 @@ public class DarkestPixelDungeon extends Game {
     return Preferences.INSTANCE.getInt(Preferences.KEY_QUICKSLOTS, 5, 0, 8);
   }
 
+  public static void movementHoldSensitivity(int value) {
+    Preferences.INSTANCE.put(Preferences.KEY_MOVEMENT_HOLD_SENSITIVITY, value);
+  }
+
+  public static int movementHoldSensitivity() {
+    return Preferences.INSTANCE.getInt(Preferences.KEY_MOVEMENT_HOLD_SENSITIVITY, 3, 0, 4);
+  }
+
+  public static void keyBindings(String value) {
+    Preferences.INSTANCE.put(Preferences.KEY_KEY_BINDINGS, value);
+  }
+
+  public static String keyBindings() {
+    return Preferences.INSTANCE.getString(Preferences.KEY_KEY_BINDINGS, "");
+  }
+
   public static void moreQuickSlots(boolean value){
     Preferences.INSTANCE.put(Preferences.KEY_MORE_SLOTS, value);
   }

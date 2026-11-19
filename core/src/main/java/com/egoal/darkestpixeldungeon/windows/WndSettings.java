@@ -31,6 +31,7 @@ import com.egoal.darkestpixeldungeon.messages.Messages;
 import com.egoal.darkestpixeldungeon.scenes.GameScene;
 import com.egoal.darkestpixeldungeon.scenes.PixelScene;
 import com.egoal.darkestpixeldungeon.ui.CheckBox;
+import com.egoal.darkestpixeldungeon.ui.Icons;
 import com.egoal.darkestpixeldungeon.ui.Toolbar;
 import com.egoal.darkestpixeldungeon.update.Updates;
 import com.watabou.noosa.ColorBlock;
@@ -39,6 +40,7 @@ import com.watabou.noosa.Group;
 import com.watabou.noosa.RenderedText;
 import com.watabou.noosa.audio.Music;
 import com.watabou.noosa.audio.Sample;
+import com.watabou.utils.DeviceCompat;
 
 public class WndSettings extends WndTabbed {
 
@@ -55,6 +57,7 @@ public class WndSettings extends WndTabbed {
   private AudioTab audio;
   private NetworkTab network;
   private GameTab game;
+  private KeyboardBindingsTab keyboard;
 
   private static int last_index = 0;
 
@@ -128,10 +131,27 @@ public class WndSettings extends WndTabbed {
       });
     }
 
+    if (DeviceCompat.isDesktop()) {
+      keyboard = new KeyboardBindingsTab(WIDTH, HEIGHT);
+      add(keyboard);
+      keyboard.layoutTab();
+
+      final int keyboardTabIndex = tabs.size();
+      add(new IconTab(Icons.KEYBOARD.get()) {
+        @Override
+        protected void select(boolean value) {
+          super.select(value);
+          keyboard.visible = keyboard.active = value;
+          if (value) last_index = keyboardTabIndex;
+        }
+      });
+    }
+
     resize(WIDTH, HEIGHT);
 
     layoutTabs();
 
+    if (last_index >= tabs.size()) last_index = 0;
     select(last_index);
 
   }
@@ -209,6 +229,22 @@ public class WndSettings extends WndTabbed {
       CatalogSpoilerOption chkCatalogSpoiler = new CatalogSpoilerOption();
       chkCatalogSpoiler.setRect(0, divider2.y + GAP_SML, WIDTH, BTN_HEIGHT);
       add(chkCatalogSpoiler);
+
+      OptionSlider optHoldMoveSens = new OptionSlider(
+              Messages.get(this, "movement_sensitivity"),
+              Messages.get(this, "off"),
+              Messages.get(this, "high"),
+              0,
+              4
+      ) {
+        @Override
+        protected void onChange() {
+          DarkestPixelDungeon.movementHoldSensitivity(getSelectedValue());
+        }
+      };
+      optHoldMoveSens.setSelectedValue(DarkestPixelDungeon.movementHoldSensitivity());
+      optHoldMoveSens.setRect(0, chkCatalogSpoiler.bottom() + GAP_TINY, WIDTH, SLIDER_HEIGHT);
+      add(optHoldMoveSens);
     }
   }
 

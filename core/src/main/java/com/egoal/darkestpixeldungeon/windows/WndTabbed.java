@@ -25,6 +25,7 @@ import com.egoal.darkestpixeldungeon.Chrome;
 import com.egoal.darkestpixeldungeon.scenes.PixelScene;
 import com.egoal.darkestpixeldungeon.ui.Window;
 import com.watabou.noosa.Game;
+import com.watabou.noosa.Image;
 import com.watabou.noosa.NinePatch;
 import com.watabou.noosa.RenderedText;
 import com.watabou.noosa.audio.Sample;
@@ -226,6 +227,43 @@ public class WndTabbed extends Window {
     protected void select(boolean value) {
       super.select(value);
       btLabel.am = selected ? 1.0f : 0.6f;
+    }
+  }
+
+  protected class IconTab extends Tab {
+
+    protected Image icon;
+
+    public IconTab(Image icon) {
+      super();
+
+      this.icon.copy(icon);
+    }
+
+    @Override
+    protected void createChildren() {
+      super.createChildren();
+
+      icon = new Image();
+      add(icon);
+    }
+
+    @Override
+    protected void layout() {
+      super.layout();
+
+      icon.x = x + (width - icon.width) / 2;
+      icon.y = y + (height - icon.height) / 2 - 1;
+      if (!selected) {
+        icon.y -= 2;
+      }
+      PixelScene.align(icon);
+    }
+
+    @Override
+    protected void select(boolean value) {
+      super.select(value);
+      icon.am = selected ? 1.0f : 0.6f;
     }
   }
 

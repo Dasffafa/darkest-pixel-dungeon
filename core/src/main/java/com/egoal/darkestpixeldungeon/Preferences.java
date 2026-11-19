@@ -66,6 +66,8 @@ enum Preferences {
   public static final String KEY_SPECIAL_STYLE = "special_style_text";
   public static final String KEY_UPDATE_CHECK = "update_check";
   public static final String KEY_UPDATE_IGNORED = "update_ignored";
+  public static final String KEY_MOVEMENT_HOLD_SENSITIVITY = "movement_hold_sensitivity";
+  public static final String KEY_KEY_BINDINGS = "key_bindings";
 
   private com.badlogic.gdx.Preferences prefs;
 
