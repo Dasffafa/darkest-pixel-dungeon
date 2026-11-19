@@ -148,11 +148,6 @@ abstract class RegularLevel : Level() {
             diggers.add(cls.newInstance())
         }
 
-        // weak floor check
-        weakFloorCreated = diggers.any { it is WeakFloorDigger }
-
-        Log.d("dpd", "${diggers.size} special diggers chosen, weak floor: $weakFloorCreated")
-
         // random draft normal diggers
         while (diggers.size < total)
             diggers.add(Random.chances(NormalDiggers).newInstance())
@@ -177,6 +172,11 @@ abstract class RegularLevel : Level() {
                 }
             }
         }
+
+        // check after bonus rooms so a bonus WeakFloorDigger still triggers PitDigger on the next floor
+        weakFloorCreated = diggers.any { it is WeakFloorDigger }
+
+        Log.d("dpd", "${diggers.size} special diggers chosen, weak floor: $weakFloorCreated")
 
         return diggers
     }

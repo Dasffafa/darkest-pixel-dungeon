@@ -183,6 +183,7 @@ abstract class Level : Bundlable {
         }
 
         val stationaryItems = createStationaryItems()
+        val stationaryQuantities = stationaryItems.map { it.quantity() }
 
         // now these two variables only set one once, so move outside
         pitRoomNeeded = Dungeon.depth > 1 && weakFloorCreated
@@ -196,6 +197,7 @@ abstract class Level : Bundlable {
 
         var i = 0
         while (true) {
+            stationaryItems.forEachIndexed { idx, item -> item.quantity(stationaryQuantities[idx]) }
             itemsToSpawn.clear()
             itemsToSpawn.addAll(stationaryItems)
 

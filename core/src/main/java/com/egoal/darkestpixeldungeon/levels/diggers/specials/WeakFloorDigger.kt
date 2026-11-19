@@ -39,7 +39,7 @@ class WeakFloorDigger : RectDigger() {
                 well.x = rect.x2
 
                 walls.add(Wall.Up(rect.y1 - 1, rect.x1, rect.x1 + rect.width / 2 - 1))
-                walls.add(Wall.Up(rect.y2 + 1, rect.x1, rect.x1 + rect.width / 2 - 1))
+                walls.add(Wall.Down(rect.y2 + 1, rect.x1, rect.x1 + rect.width / 2 - 1))
             }
             Direction.Up -> {
                 val cy = rect.y2 - rect.height / 2 + 1
