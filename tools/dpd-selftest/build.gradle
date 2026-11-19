@@ -1,0 +1,86 @@
+apply plugin: 'java'
+apply plugin: 'org.jetbrains.kotlin.jvm'
+apply plugin: 'application'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+    kotlinOptions.jvmTarget = '1.8'
+}
+
+sourceSets {
+    main {
+        kotlin.srcDirs = ['src', 'scenarios']
+    }
+}
+
+application {
+    mainClass = 'dpdtest.SuiteRunner'
+}
+
+dependencies {
+    implementation project(':desktop')
+    implementation project(':core')
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+    implementation "com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdx_version"
+}
+
+def scenarioSources = fileTree('scenarios/dpdtest/scenarios') { include '*.kt' }
+def manifestFile = layout.buildDirectory.file('generated/scenarios.properties')
+
+tasks.register('scenarioManifest') {
+    inputs.files(scenarioSources)
+    outputs.file(manifestFile)
+    doLast {
+        def properties = new Properties()
+        def names = []
+        scenarioSources.files.sort { it.name }.each { source ->
+            def text = source.getText('UTF-8')
+            if (text =~ /:\s*Scenario\b/) {
+                def name = source.name - '.kt'
+                names.add(name)
+                ['EXPECTED-VERDICT': 'expected', 'EXPECTED-REASON': 'reason', 'TIMEOUT-SECONDS': 'timeout'].each { marker, key ->
+                    def match = text =~ /${marker}:[ \t]*([^\r\n]+)/
+                    if (match.find()) properties.setProperty("${name}.${key}".toString(), match.group(1).trim())
+                }
+            }
+        }
+        properties.setProperty('scenarios', names.join(','))
+        def output = manifestFile.get().asFile
+        output.parentFile.mkdirs()
+        output.withOutputStream { properties.store(it, null) }
+    }
+}
+
+processResources {
+    dependsOn tasks.named('scenarioManifest')
+    from(manifestFile) { rename { 'scenarios.properties' } }
+}
+
+tasks.withType(JavaExec).configureEach {
+    workingDir rootProject.projectDir
+    systemProperty 'dpd.output', layout.buildDirectory.dir('dpd-selftest').get().asFile.absolutePath
+    systemProperty 'dpd.versionName', appVersionName
+    systemProperty 'dpd.versionCode', appVersionCode
+}
+
+tasks.register('e2eTest', JavaExec) {
+    group = 'verification'
+    description = 'Run real-engine hidden-window E2E regression tests.'
+    dependsOn tasks.named('classes')
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = application.mainClass
+    args providers.gradleProperty('scenario').getOrElse('all')
+}
+
+tasks.register('listScenarios', JavaExec) {
+    group = 'verification'
+    description = 'List available E2E regression scenarios.'
+    dependsOn tasks.named('classes')
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = application.mainClass
+    args 'list'
+}

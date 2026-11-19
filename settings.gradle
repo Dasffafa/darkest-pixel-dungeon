@@ -6,4 +6,5 @@ pluginManagement {
     }
 }
 
-include ':core', ':SPD-classes', ':android', ':desktop'
+include ':core', ':SPD-classes', ':android', ':desktop', ':e2e-tests'
+project(':e2e-tests').projectDir = file('tools/dpd-selftest')
