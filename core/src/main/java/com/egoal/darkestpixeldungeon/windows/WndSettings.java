@@ -28,7 +28,6 @@ import com.egoal.darkestpixeldungeon.ui.OptionSlider;
 import com.egoal.darkestpixeldungeon.ui.RedButton;
 import com.egoal.darkestpixeldungeon.Assets;
 import com.egoal.darkestpixeldungeon.messages.Messages;
-import com.egoal.darkestpixeldungeon.scenes.GameScene;
 import com.egoal.darkestpixeldungeon.scenes.PixelScene;
 import com.egoal.darkestpixeldungeon.ui.CheckBox;
 import com.egoal.darkestpixeldungeon.ui.Icons;
@@ -45,7 +44,7 @@ import com.watabou.utils.DeviceCompat;
 public class WndSettings extends WndTabbed {
 
   private static final int WIDTH = 112;
-  private static final int HEIGHT = 124;
+  private static final int HEIGHT = 128;
   private static final int SLIDER_HEIGHT = 25;
   private static final int BTN_HEIGHT = 20;
   private static final int GAP_TINY = 2;
@@ -62,10 +61,6 @@ public class WndSettings extends WndTabbed {
   private static int last_index = 0;
 
   public WndSettings() {
-    this(false);
-  }
-
-  public WndSettings(boolean settableLanguage) {
     super();
 
     game = new GameTab();
@@ -74,7 +69,7 @@ public class WndSettings extends WndTabbed {
     screen = new ScreenTab();
     add(screen);
 
-    ui = new UITab(settableLanguage);
+    ui = new UITab();
     add(ui);
 
     audio = new AudioTab();
@@ -422,7 +417,7 @@ public class WndSettings extends WndTabbed {
 
   private class UITab extends Group {
 
-    public UITab(boolean lang) {
+    public UITab() {
       super();
 
       RenderedText barDesc = PixelScene.renderText(Messages.get(this, "mode")
@@ -465,56 +460,21 @@ public class WndSettings extends WndTabbed {
       add(btnCentered);
       btnCentered.enable(false);
 
-      CheckBox chkFlipToolbar = new CheckBox(Messages.get(this,
-              "flip_toolbar")) {
+      RedButton btnLanguage = new RedButton(Messages.get(this, "language")) {
         @Override
         public void onClick() {
-          super.onClick();
-          DarkestPixelDungeon.flipToolbar(checked());
-          Toolbar.updateLayout();
-        }
-      };
-      chkFlipToolbar.setRect(0, btnGrouped.bottom() + GAP_TINY, WIDTH / 2 -
-              1, BTN_HEIGHT);
-      chkFlipToolbar.checked(DarkestPixelDungeon.flipToolbar());
-      add(chkFlipToolbar);
-      chkFlipToolbar.enable(false);
-
-      final CheckBox chkFlipTags = new CheckBox(Messages.get(this,
-              "flip_indicators")) {
-        @Override
-        public void onClick() {
-          super.onClick();
-          DarkestPixelDungeon.flipTags(checked());
-          GameScene.layoutTags();
-        }
-      };
-      chkFlipTags.setRect(WIDTH / 2 + 1, chkFlipToolbar.top(), WIDTH / 2 - 1,
-              BTN_HEIGHT);
-      chkFlipTags.checked(DarkestPixelDungeon.flipTags());
-      add(chkFlipTags);
-      chkFlipTags.enable(false);
-
-      float btm = chkFlipTags.bottom();
-      if (lang) {
-        RedButton btnLanguage = new RedButton(Messages.get(this, "language")) {
-          @Override
-          public void onClick() {
-            com.watabou.noosa.Group p = WndSettings.this.parent;
-            if (p != null) {
-              p.add(new WndLangs());
-            } else if (Game.scene() != null) {
-              Game.scene().add(new WndLangs());
-            }
-            WndSettings.this.hide();
+          com.watabou.noosa.Group p = WndSettings.this.parent;
+          if (p != null) {
+            p.add(new WndLangs());
+          } else if (Game.scene() != null) {
+            Game.scene().add(new WndLangs());
           }
-        };
-        btnLanguage.setRect(0, chkFlipToolbar.bottom() + GAP_TINY, WIDTH,
-                BTN_HEIGHT);
-        add(btnLanguage);
-
-        btm = btnLanguage.bottom();
-      }
+          WndSettings.this.hide();
+        }
+      };
+      btnLanguage.setRect(0, btnCentered.bottom() + GAP_TINY, WIDTH,
+              BTN_HEIGHT);
+      add(btnLanguage);
 
       OptionSlider slots = new OptionSlider(Messages.get(this, "quickslots"),
               "0", "8", 0, 8) {
@@ -525,7 +485,7 @@ public class WndSettings extends WndTabbed {
         }
       };
       slots.setSelectedValue(DarkestPixelDungeon.quickSlots());
-      slots.setRect(0, btm + GAP_TINY, WIDTH, SLIDER_HEIGHT);
+      slots.setRect(0, btnLanguage.bottom() + GAP_TINY, WIDTH, SLIDER_HEIGHT);
       add(slots);
 
       CheckBox chkMoreSlots = new CheckBox(M.INSTANCE.L(this, "more_slots")){

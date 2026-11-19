@@ -407,11 +407,11 @@ public class GameScene extends PixelScene {
       Dungeon.INSTANCE.getDroppedItems().remove(Dungeon.INSTANCE.getDepth());
     }
 
-    Dungeon.INSTANCE.getHero().next();
-
     Camera.main.target = hero;
 
     if (InterlevelScene.Companion.getMode() != InterlevelScene.Mode.NONE) {
+      Dungeon.INSTANCE.getHero().next();
+
       if (Dungeon.INSTANCE.getDepth() < Statistics.INSTANCE.getDeepestFloor()) {
         GLog.h(Messages.get(this, "welcome_back"), Dungeon.INSTANCE.getDepth());
       } else {
@@ -444,13 +444,18 @@ public class GameScene extends PixelScene {
 
       fadeIn();
     }
+    if (PixelScene.noFade) PixelScene.noFade = false;
   }
 
   public void destroy() {
 
     // Stop the actor thread mid-action before tearing the scene down, so no
     // level/actor state is mutated while we serialize or discard it.
-    if (!waitForActorThread(4500, true)) {
+    boolean heroIdle = Actor.Companion.processing()
+            && !Actor.Companion.isThreadActive()
+            && Actor.Companion.currentActor() == Dungeon.INSTANCE.getHero();
+
+    if (!heroIdle && !waitForActorThread(4500, true)) {
       Throwable stack = new Throwable();
       if (actorThread != null) stack.setStackTrace(actorThread.getStackTrace());
       throw new RuntimeException("timeout waiting for actor thread! ", stack);
@@ -492,7 +497,7 @@ public class GameScene extends PixelScene {
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
       }
-      return !Actor.Companion.processing();
+      return !Actor.Companion.isThreadActive();
     }
   }
 
@@ -793,40 +798,29 @@ public class GameScene extends PixelScene {
 
     if (scene == null) return;
 
-    float tagLeft = DarkestPixelDungeon.flipTags() ? 0 : uiCamera.width -
-            scene.attack.width();
+    float tagLeft = uiCamera.width - scene.attack.width();
 
-    if (DarkestPixelDungeon.flipTags()) {
-      scene.log.setRect(scene.attack.width(), scene.toolbar.top(), uiCamera
-              .width - scene.attack.width(), 0);
-    } else {
-      scene.log.setRect(0, scene.toolbar.top(), uiCamera.width - scene.attack
-              .width(), 0);
-    }
+    scene.log.setRect(0, scene.toolbar.top(), tagLeft, 0);
 
     float pos = scene.toolbar.top();
 
     if (scene.tagAttack) {
       scene.attack.setPos(tagLeft, pos - scene.attack.height());
-      scene.attack.flip(tagLeft == 0);
       pos = scene.attack.top();
     }
 
     if (scene.tagLoot) {
       scene.loot.setPos(tagLeft, pos - scene.loot.height());
-      scene.loot.flip(tagLeft == 0);
       pos = scene.loot.top();
     }
 
     if (scene.tagAction) {
       scene.action.setPos(tagLeft, pos - scene.action.height());
-      scene.action.flip(tagLeft == 0);
       pos = scene.action.top();
     }
 
     if (scene.tagResume) {
       scene.resume.setPos(tagLeft, pos - scene.resume.height());
-      scene.resume.flip(tagLeft == 0);
     }
   }
 

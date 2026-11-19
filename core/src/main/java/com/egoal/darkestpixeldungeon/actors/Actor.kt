@@ -178,6 +178,8 @@ abstract class Actor : Bundlable {
             return current != null
         }
 
+        fun currentActor(): Actor? = current
+
         fun process() {
             var doNext: Boolean
             var interrupted = false
