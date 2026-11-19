@@ -310,7 +310,7 @@ open class Item : Bundlable {
 
     protected open fun onDetach() {}
 
-    fun level(): Int = level
+    open fun level(): Int = level
 
     open fun level(value: Int) {
         level = value

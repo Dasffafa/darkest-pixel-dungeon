@@ -233,6 +233,9 @@ class Hero : Char() {
 
         if (belongings.weapon is BoethiahsBlade) {
             reg -= (HT + belongings.weapon!!.level() * 5) * 0.005f
+            if ((belongings.weapon as BoethiahsBlade).isViolentActive) {
+                reg -= 0.30f
+            }
         }
 
         // ring
@@ -290,6 +293,7 @@ class Hero : Char() {
         if (pressure.level == Pressure.Level.CONFIDENT) c += 0.07f
 
         if (subClass == HeroSubClass.KNIGHTT) c += belongings.getSpecial(KnightCore::class.java)!!.CRIT
+        if ((belongings.weapon as? BoethiahsBlade)?.isViolentActive == true) c += 0.30f
 
         val level = Ring.getBonus(this, RingOfCritical.Critical::class.java)
         if (level > 0)
@@ -421,7 +425,8 @@ class Hero : Char() {
 
         e *= 0.975f.pow(level)
 
-        return 1 - e
+        val evasion = 1f - e
+        return if ((belongings.weapon as? BoethiahsBlade)?.isEbonyActive == true) evasion * 0.85f else evasion
     }
 
     override fun dexRoll(damage: Damage): Float {
@@ -866,6 +871,7 @@ class Hero : Char() {
             if (buff(TimeDilation::class.java) != null) super.spend(time / 3f)
             else super.spend(time)
         }
+        (belongings.weapon as? BoethiahsBlade)?.onHeroSpend(this, time)
     }
 
     fun busy() {
