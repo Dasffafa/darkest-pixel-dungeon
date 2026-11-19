@@ -94,7 +94,8 @@ class DollSprite : CharSprite() {
     fun updateHelmet() {
         val hat = (ch as? Hero)?.belongings?.helmet
         val drawId = hat?.drawId ?: -1
-        val state = if (drawId >= 0) drawId * 2 + (if (hat!!.replacesHead) 1 else 0) else -1
+        val renderHead = if (drawId >= 0) loadHelmetMeta().renderHeadFor(drawId, !hat!!.replacesHead) else true
+        val state = if (drawId >= 0) drawId * 2 + (if (renderHead) 0 else 1) else -1
         if (state == helmetState) return
         helmetState = state
         currentHelmetRow = drawId
@@ -102,7 +103,7 @@ class DollSprite : CharSprite() {
         if (drawId >= 0) {
             helmet.visible = true
             helmet.row(drawId)
-            head.visible = !hat!!.replacesHead
+            head.visible = renderHead
         } else {
             helmet.visible = false
             head.visible = true
@@ -595,7 +596,8 @@ class DollSprite : CharSprite() {
         class HelmetRowMeta(
                 val offset: FloatArray?,
                 val frameDeltas: Map<Int, FloatArray>,
-                val frameOffsets: Map<Int, FloatArray>
+                val frameOffsets: Map<Int, FloatArray>,
+                val renderHead: Boolean? = null
         )
 
         class HelmetMeta(
@@ -604,6 +606,10 @@ class DollSprite : CharSprite() {
                 val defaultFrameOffsets: Map<Int, FloatArray>,
                 val rows: Map<Int, HelmetRowMeta>
         ) {
+            fun renderHeadFor(row: Int, fallback: Boolean = true): Boolean {
+                return rows[row]?.renderHead ?: fallback
+            }
+
             private fun mirrorIfHeadTurn(base: FloatArray, frameIdx: Int): FloatArray {
                 return if (frameIdx == 1) floatArrayOf(1f - base[0], base[1]) else base
             }
@@ -661,7 +667,8 @@ class DollSprite : CharSprite() {
                         val rOff = if (rNode.has("offset")) parsePair(rNode.get("offset"), defOff) else null
                         val rDeltas = parseFrameOffsetMap(rNode.get("frameDeltas"))
                         val rFrames = parseFrameOffsetMap(rNode.get("frameOffsets"))
-                        rowsMap[rowId] = HelmetRowMeta(rOff, rDeltas, rFrames)
+                        val rRenderHead = if (rNode.has("renderHead")) rNode.getBoolean("renderHead", true) else null
+                        rowsMap[rowId] = HelmetRowMeta(rOff, rDeltas, rFrames, rRenderHead)
                     }
                     rNode = rNode.next
                 }

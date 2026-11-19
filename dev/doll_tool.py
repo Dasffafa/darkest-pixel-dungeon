@@ -157,6 +157,17 @@ def helmet_offset(meta: Optional[Dict], row: int, frame_idx: int) -> Tuple[int, 
     return bx, by
 
 
+def helmet_render_head(meta: Optional[Dict], row: Optional[int]) -> bool:
+    if row is None:
+        return True
+    if meta is None:
+        meta = load_helmet_meta()
+    row_cfg = meta.get("rows", {}).get(str(row))
+    if row_cfg and "renderHead" in row_cfg:
+        return bool(row_cfg["renderHead"])
+    return True
+
+
 def compose_hero_frame(
     body: Image.Image,
     head: Image.Image,
@@ -177,7 +188,11 @@ def compose_hero_frame(
     """Compose a single hero frame on a padded canvas using DollSprite's exact math."""
     canvas = Image.new("RGBA", (FRAME_W + pad * 2, FRAME_H + pad * 2), (0, 0, 0, 0))
     canvas.alpha_composite(crop_cell(body, 0, body_col), (pad, pad))
-    canvas.alpha_composite(crop_cell(head, hero_class_idx, body_col), (pad, pad))
+    show_head = True
+    if helmets is not None and helmet_row is not None and (helmet_row + 1) * FRAME_H <= helmets.height:
+        show_head = helmet_render_head(helmet_meta, helmet_row)
+    if show_head:
+        canvas.alpha_composite(crop_cell(head, hero_class_idx, body_col), (pad, pad))
     canvas.alpha_composite(crop_cell(armor, armor_row(hero_class_idx, tier), body_col), (pad, pad))
 
     if helmets is not None and helmet_row is not None:

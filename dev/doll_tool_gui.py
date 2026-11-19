@@ -87,6 +87,313 @@ filedialog.askopenfilename = _native_open
 filedialog.asksaveasfilename = _native_save
 
 
+class SpritePixelEditor(tk.Toplevel):
+    """Popup pixel editor for horizontal flipping and basic erasing on sprite frames."""
+
+    def __init__(
+        self,
+        master,
+        title: str,
+        sheet_img: Image.Image,
+        fw: int,
+        fh: int,
+        frames: list[tuple[int, int]],
+        on_save,
+        initial_frame: int = 0,
+    ):
+        super().__init__(master)
+        self._base_title = title
+        self.title(title)
+        self.geometry("680x560")
+        self.minsize(520, 420)
+
+        self.sheet_img = sheet_img.copy().convert("RGBA")
+        self.fw = max(1, int(fw))
+        self.fh = max(1, int(fh))
+        self.frames = frames or [(0, 0)]
+        self.on_save = on_save
+
+        self.frame_idx = tk.IntVar(value=max(0, min(initial_frame, len(self.frames) - 1)))
+        self.zoom = tk.IntVar(value=max(8, min(28, 360 // max(self.fw, self.fh))))
+        self.brush_size = tk.IntVar(value=1)
+        self.show_grid = tk.BooleanVar(value=True)
+        self.frame_info = tk.StringVar(value="")
+        self.cursor_info = tk.StringVar(value="Left-drag to erase pixels")
+
+        self._undo_stack: list[Image.Image] = []
+        self._redo_stack: list[Image.Image] = []
+        self._dirty = False
+        self._last_px = None
+        self._photo = None
+
+        self._build_ui()
+        self._bind_shortcuts()
+        self.protocol("WM_DELETE_WINDOW", self._on_close)
+        self._redraw()
+
+    def _build_ui(self):
+        top = ttk.Frame(self, padding=6)
+        top.pack(fill=tk.X)
+
+        ttk.Label(top, text="Frame:").pack(side=tk.LEFT)
+        ttk.Button(top, text="<", width=3, command=lambda: self._step_frame(-1)).pack(side=tk.LEFT, padx=(4, 2))
+        sb_f = ttk.Spinbox(
+            top, from_=0, to=max(0, len(self.frames) - 1), width=4,
+            textvariable=self.frame_idx, command=self._redraw,
+        )
+        sb_f.pack(side=tk.LEFT)
+        sb_f.bind("<Return>", lambda _e: self._redraw())
+        ttk.Button(top, text=">", width=3, command=lambda: self._step_frame(1)).pack(side=tk.LEFT, padx=(2, 6))
+        ttk.Label(top, textvariable=self.frame_info, width=16).pack(side=tk.LEFT)
+
+        ttk.Label(top, text="Zoom:").pack(side=tk.LEFT, padx=(8, 2))
+        sb_z = ttk.Spinbox(top, from_=4, to=36, width=4, textvariable=self.zoom, command=self._redraw)
+        sb_z.pack(side=tk.LEFT)
+        sb_z.bind("<Return>", lambda _e: self._redraw())
+        ttk.Checkbutton(top, text="Grid", variable=self.show_grid, command=self._redraw).pack(side=tk.LEFT, padx=(8, 0))
+
+        tools = ttk.Frame(self, padding=(6, 0, 6, 6))
+        tools.pack(fill=tk.X)
+
+        ttk.Label(tools, text="Eraser:").pack(side=tk.LEFT)
+        for sz in (1, 2, 3):
+            ttk.Radiobutton(tools, text=f"{sz}px", variable=self.brush_size, value=sz).pack(side=tk.LEFT, padx=2)
+
+        ttk.Separator(tools, orient=tk.VERTICAL).pack(side=tk.LEFT, fill=tk.Y, padx=8)
+        ttk.Button(tools, text="Flip Frame H", command=self._flip_current_frame).pack(side=tk.LEFT, padx=2)
+        ttk.Button(tools, text="Flip All H", command=self._flip_all_frames).pack(side=tk.LEFT, padx=2)
+
+        ttk.Separator(tools, orient=tk.VERTICAL).pack(side=tk.LEFT, fill=tk.Y, padx=8)
+        self.btn_undo = ttk.Button(tools, text="Undo", command=self._undo)
+        self.btn_undo.pack(side=tk.LEFT, padx=2)
+        self.btn_redo = ttk.Button(tools, text="Redo", command=self._redo)
+        self.btn_redo.pack(side=tk.LEFT, padx=2)
+
+        ttk.Button(tools, text="Close", command=self._on_close).pack(side=tk.RIGHT, padx=(4, 0))
+        ttk.Button(tools, text="Save & Close", command=self._save_and_close).pack(side=tk.RIGHT, padx=4)
+        ttk.Button(tools, text="Save", command=self._save).pack(side=tk.RIGHT)
+
+        cframe = ttk.Frame(self)
+        cframe.pack(fill=tk.BOTH, expand=True, padx=6)
+        self.canvas = tk.Canvas(cframe, background="#252525", highlightthickness=0, cursor="crosshair")
+        xbar = ttk.Scrollbar(cframe, orient=tk.HORIZONTAL, command=self.canvas.xview)
+        ybar = ttk.Scrollbar(cframe, orient=tk.VERTICAL, command=self.canvas.yview)
+        self.canvas.configure(xscrollcommand=xbar.set, yscrollcommand=ybar.set)
+        self.canvas.grid(row=0, column=0, sticky="nsew")
+        ybar.grid(row=0, column=1, sticky="ns")
+        xbar.grid(row=1, column=0, sticky="ew")
+        cframe.rowconfigure(0, weight=1)
+        cframe.columnconfigure(0, weight=1)
+
+        self.canvas.bind("<ButtonPress-1>", self._on_press)
+        self.canvas.bind("<B1-Motion>", self._on_drag)
+        self.canvas.bind("<ButtonRelease-1>", self._on_release)
+        self.canvas.bind("<Motion>", self._on_hover)
+
+        ttk.Label(self, textvariable=self.cursor_info, anchor="w", padding=(8, 4)).pack(fill=tk.X)
+
+    def _bind_shortcuts(self):
+        self.bind("<Control-z>", lambda _e: self._undo())
+        self.bind("<Control-y>", lambda _e: self._redo())
+        self.bind("<Control-Shift-Z>", lambda _e: self._redo())
+        self.bind("<Control-s>", lambda _e: self._save())
+
+    def _set_dirty(self, dirty: bool):
+        self._dirty = dirty
+        self.title(f"{self._base_title} *" if dirty else self._base_title)
+
+    def _push_undo(self):
+        self._undo_stack.append(self.sheet_img.copy())
+        if len(self._undo_stack) > 50:
+            self._undo_stack.pop(0)
+        self._redo_stack.clear()
+
+    def _undo(self):
+        if not self._undo_stack:
+            return
+        self._redo_stack.append(self.sheet_img.copy())
+        self.sheet_img = self._undo_stack.pop()
+        self._set_dirty(True)
+        self._redraw()
+
+    def _redo(self):
+        if not self._redo_stack:
+            return
+        self._undo_stack.append(self.sheet_img.copy())
+        self.sheet_img = self._redo_stack.pop()
+        self._set_dirty(True)
+        self._redraw()
+
+    def _current_rc(self) -> tuple[int, int]:
+        idx = max(0, min(int(self.frame_idx.get()), len(self.frames) - 1))
+        if idx != self.frame_idx.get():
+            self.frame_idx.set(idx)
+        return self.frames[idx]
+
+    def _step_frame(self, delta: int):
+        idx = (int(self.frame_idx.get()) + delta) % len(self.frames)
+        self.frame_idx.set(idx)
+        self._redraw()
+
+    def _flip_cell_h(self, row: int, col: int):
+        x0, y0 = col * self.fw, row * self.fh
+        x1, y1 = x0 + self.fw, y0 + self.fh
+        if x1 > self.sheet_img.width or y1 > self.sheet_img.height:
+            return
+        cell = self.sheet_img.crop((x0, y0, x1, y1))
+        self.sheet_img.paste(ImageOps.mirror(cell), (x0, y0))
+
+    def _flip_current_frame(self):
+        self._push_undo()
+        r, c = self._current_rc()
+        self._flip_cell_h(r, c)
+        self._set_dirty(True)
+        self._redraw()
+
+    def _flip_all_frames(self):
+        self._push_undo()
+        for r, c in self.frames:
+            self._flip_cell_h(r, c)
+        self._set_dirty(True)
+        self._redraw()
+
+    def _canvas_to_pixel(self, event) -> tuple[int, int] | None:
+        scale = max(4, int(self.zoom.get()))
+        px = int((self.canvas.canvasx(event.x) - 12) // scale)
+        py = int((self.canvas.canvasy(event.y) - 12) // scale)
+        if 0 <= px < self.fw and 0 <= py < self.fh:
+            return (px, py)
+        return None
+
+    def _erase_at(self, px: int, py: int) -> bool:
+        r, c = self._current_rc()
+        ox, oy = c * self.fw, r * self.fh
+        sz = int(self.brush_size.get())
+        offsets = (
+            [(0, 0)] if sz == 1
+            else [(0, 0), (1, 0), (0, 1), (1, 1)] if sz == 2
+            else [(dx, dy) for dy in (-1, 0, 1) for dx in (-1, 0, 1)]
+        )
+        changed = False
+        pixels = self.sheet_img.load()
+        for dx, dy in offsets:
+            x, y = px + dx, py + dy
+            if 0 <= x < self.fw and 0 <= y < self.fh:
+                sx, sy = ox + x, oy + y
+                if 0 <= sx < self.sheet_img.width and 0 <= sy < self.sheet_img.height:
+                    if pixels[sx, sy][3] != 0 or pixels[sx, sy] != (0, 0, 0, 0):
+                        pixels[sx, sy] = (0, 0, 0, 0)
+                        changed = True
+        return changed
+
+    def _erase_line(self, p0: tuple[int, int], p1: tuple[int, int]) -> bool:
+        x0, y0 = p0
+        x1, y1 = p1
+        steps = max(abs(x1 - x0), abs(y1 - y0), 1)
+        changed = False
+        for i in range(steps + 1):
+            t = i / steps
+            x = int(round(x0 + (x1 - x0) * t))
+            y = int(round(y0 + (y1 - y0) * t))
+            if self._erase_at(x, y):
+                changed = True
+        return changed
+
+    def _on_press(self, event):
+        pt = self._canvas_to_pixel(event)
+        if pt is None:
+            return
+        self._push_undo()
+        self._last_px = pt
+        if self._erase_at(*pt):
+            self._set_dirty(True)
+            self._redraw()
+
+    def _on_drag(self, event):
+        pt = self._canvas_to_pixel(event)
+        self._update_cursor_info(pt)
+        if pt is None:
+            return
+        if self._last_px is None:
+            self._last_px = pt
+        if self._erase_line(self._last_px, pt):
+            self._set_dirty(True)
+            self._redraw()
+        self._last_px = pt
+
+    def _on_release(self, _event):
+        self._last_px = None
+
+    def _on_hover(self, event):
+        self._update_cursor_info(self._canvas_to_pixel(event))
+
+    def _update_cursor_info(self, pt: tuple[int, int] | None):
+        if pt is None:
+            self.cursor_info.set("Left-drag to erase pixels")
+            return
+        r, c = self._current_rc()
+        sx, sy = c * self.fw + pt[0], r * self.fh + pt[1]
+        if 0 <= sx < self.sheet_img.width and 0 <= sy < self.sheet_img.height:
+            rgba = self.sheet_img.getpixel((sx, sy))
+            self.cursor_info.set(f"Pixel ({pt[0]}, {pt[1]})  RGBA={rgba}")
+
+    def _redraw(self):
+        r, c = self._current_rc()
+        idx = int(self.frame_idx.get())
+        self.frame_info.set(f"{idx + 1}/{len(self.frames)} (r{r}, c{c})")
+
+        scale = max(4, int(self.zoom.get()))
+        w, h = self.fw * scale, self.fh * scale
+
+        bg = Image.new("RGBA", (w, h), (52, 52, 52, 255))
+        draw = ImageDraw.Draw(bg)
+        for y in range(self.fh):
+            for x in range(self.fw):
+                if (x + y) % 2 == 0:
+                    draw.rectangle((x * scale, y * scale, (x + 1) * scale - 1, (y + 1) * scale - 1), fill=(68, 68, 68, 255))
+
+        x0, y0 = c * self.fw, r * self.fh
+        cell = self.sheet_img.crop((x0, y0, x0 + self.fw, y0 + self.fh))
+        scaled = cell.resize((w, h), Image.Resampling.NEAREST)
+        bg.alpha_composite(scaled, (0, 0))
+
+        if self.show_grid.get() and scale >= 6:
+            for x in range(self.fw + 1):
+                gx = min(w - 1, x * scale)
+                draw.line((gx, 0, gx, h), fill=(95, 95, 95, 160))
+            for y in range(self.fh + 1):
+                gy = min(h - 1, y * scale)
+                draw.line((0, gy, w, gy), fill=(95, 95, 95, 160))
+
+        self._photo = ImageTk.PhotoImage(bg)
+        self.canvas.delete("all")
+        self.canvas.create_image(12, 12, image=self._photo, anchor="nw")
+        self.canvas.configure(scrollregion=(0, 0, w + 24, h + 24))
+
+    def _save(self):
+        try:
+            self.on_save(self.sheet_img.copy())
+            self._set_dirty(False)
+        except Exception as exc:
+            messagebox.showerror("Save failed", str(exc), parent=self)
+
+    def _save_and_close(self):
+        self._save()
+        if not self._dirty:
+            self.destroy()
+
+    def _on_close(self):
+        if self._dirty:
+            ans = messagebox.askyesnocancel("Unsaved Changes", "Save pixel edits before closing?", parent=self)
+            if ans is None:
+                return
+            if ans:
+                self._save()
+                if self._dirty:
+                    return
+        self.destroy()
+
+
 class DollToolGUI(tk.Tk):
     def __init__(self):
         super().__init__()
@@ -116,6 +423,7 @@ class DollToolGUI(tk.Tk):
         self.hat_frame_dx = tk.IntVar(value=0)
         self.hat_frame_dy = tk.IntVar(value=0)
         self.hat_global_source = tk.StringVar(value="(default)")
+        self.hat_render_head = tk.BooleanVar(value=True)
         self.hat_frame_label = tk.StringVar(value="0: idle 0")
         self.hat_effective_label = tk.StringVar(value="Effective: (1, -1)")
         self.anim_frame_label = tk.StringVar(value="Frame 0")
@@ -256,6 +564,7 @@ class DollToolGUI(tk.Tk):
         row2.pack(fill=tk.X, pady=2)
         ttk.Label(row2, text="Target Row:", width=11).pack(side=tk.LEFT)
         ttk.Spinbox(row2, from_=0, to=128, width=6, textvariable=self.hat_row).pack(side=tk.LEFT, padx=4)
+        ttk.Button(row2, text="Edit Pixels / Flip...", command=self._open_hat_editor).pack(side=tk.RIGHT)
 
         btns = ttk.Frame(f)
         btns.pack(fill=tk.X, pady=6)
@@ -292,6 +601,15 @@ class DollToolGUI(tk.Tk):
             sb.bind("<FocusOut>", lambda _e: self._apply_hat_global_offset())
         ttk.Label(g_row, textvariable=self.hat_global_source).pack(side=tk.LEFT, padx=6)
         ttk.Button(g_row, text="Reset Row", command=self._reset_hat_row_global).pack(side=tk.RIGHT)
+
+        g_row2 = ttk.Frame(gf)
+        g_row2.pack(fill=tk.X, pady=(4, 0))
+        ttk.Checkbutton(
+            g_row2,
+            text="Render Player Head (renderHead)",
+            variable=self.hat_render_head,
+            command=self._apply_hat_render_head,
+        ).pack(side=tk.LEFT)
 
         # Per-Frame Delta panel (additive on top of Global)
         pf = ttk.LabelFrame(f, text="Per-Frame Delta (added on top of Global)", padding=6)
@@ -375,6 +693,7 @@ class DollToolGUI(tk.Tk):
         btns.pack(fill=tk.X, pady=8)
         ttk.Button(btns, text="Save Custom Weapon", command=self._save_custom_weapon).pack(side=tk.LEFT)
         ttk.Button(btns, text="Save Guide", command=self._save_weapon_guide).pack(side=tk.LEFT, padx=6)
+        ttk.Button(btns, text="Edit Pixels / Flip...", command=self._open_custom_weapon_editor).pack(side=tk.LEFT)
 
         ttk.Separator(f).pack(fill=tk.X, pady=6)
         ttk.Label(f, text="Per-Frame Weapon Offset (uses current Anim State)").pack(anchor="w", pady=(0, 4))
@@ -619,6 +938,83 @@ class DollToolGUI(tk.Tk):
         dt.cmd_guide(ns)
         self.status.set(f"Saved weapon guide ({self.weap_fw.get()}x{self.weap_fh.get()}) -> {out}")
 
+    def _open_hat_editor(self):
+        row = int(self.hat_row.get())
+        helmets_path = dt.HERO_DIR / "helmets.png"
+        sheet = self._get_sheet("helmets.png")
+        if row < 0 or (row + 1) * dt.FRAME_H > sheet.height:
+            messagebox.showwarning("Row out of range", f"Row {row} is outside helmets.png ({sheet.width}x{sheet.height}).")
+            return
+        frames = [(row, c) for c in range(dt.NUM_FRAMES)]
+        init_frame = int(self.hat_frame.get())
+
+        def on_save(updated_img: Image.Image):
+            updated_img.save(helmets_path)
+            self._sheets_cache.pop("helmets.png", None)
+            self.redraw()
+            self.status.set(f"Saved pixel edits to helmets.png (row {row})")
+
+        SpritePixelEditor(
+            self,
+            title=f"Edit Hat Row {row} (helmets.png)",
+            sheet_img=sheet,
+            fw=dt.FRAME_W,
+            fh=dt.FRAME_H,
+            frames=frames,
+            on_save=on_save,
+            initial_frame=init_frame,
+        )
+
+    def _open_custom_weapon_editor(self):
+        sel = self.weapon_sel.get()
+        if sel.startswith("custom:"):
+            name = sel.split(":", 1)[1]
+            png_path = dt.CUSTOM_WEAP_DIR / f"{name}.png"
+            try:
+                sheet, spec = dt.load_custom_weapon(name)
+            except Exception as exc:
+                messagebox.showerror("Load custom weapon failed", str(exc))
+                return
+            fw = int(spec.get("frameWidth", self.weap_fw.get()))
+            fh = int(spec.get("frameHeight", self.weap_fh.get()))
+            title = f"Edit Custom Weapon: {name}.png"
+        else:
+            src = self.weap_input.get().strip()
+            if not src or not Path(src).is_file():
+                messagebox.showwarning("No weapon selected", "Select a custom weapon or provide an Input PNG first.")
+                return
+            png_path = Path(src)
+            sheet = Image.open(png_path).convert("RGBA")
+            fw = max(1, int(self.weap_fw.get()))
+            fh = max(1, int(self.weap_fh.get()))
+            title = f"Edit Weapon PNG: {png_path.name}"
+
+        cols = max(1, sheet.width // fw)
+        rows = max(1, sheet.height // fh)
+        frames = [(r, c) for r in range(rows) for c in range(cols)]
+        init_frame = 0
+        if sel.startswith("custom:"):
+            _, anim = self._current_custom_anim()
+            if anim and anim.get("frames"):
+                wf_list = anim["frames"]
+                init_frame = wf_list[self._anim_tick % len(wf_list)]
+
+        def on_save(updated_img: Image.Image):
+            updated_img.save(png_path)
+            self.redraw()
+            self.status.set(f"Saved pixel edits to {png_path.name}")
+
+        SpritePixelEditor(
+            self,
+            title=title,
+            sheet_img=sheet,
+            fw=fw,
+            fh=fh,
+            frames=frames,
+            on_save=on_save,
+            initial_frame=init_frame,
+        )
+
     def _pack_legacy_weapon(self):
         src = self.leg_input.get().strip()
         if not src:
@@ -751,6 +1147,7 @@ class DollToolGUI(tk.Tk):
 
         self.hat_global_dx.set(int(round(gdx)))
         self.hat_global_dy.set(int(round(gdy)))
+        self.hat_render_head.set(dt.helmet_render_head(meta, row))
 
         delta = rcfg.get("frameDeltas", {}).get(str(col))
         if delta is None:
@@ -780,6 +1177,15 @@ class DollToolGUI(tk.Tk):
         self._load_hat_offset()
         self.redraw()
         self.status.set(f"{msg} — click 'Save Meta' to persist")
+
+    def _apply_hat_render_head(self):
+        row = self._active_hat_row()
+        val = bool(self.hat_render_head.get())
+        rcfg = self._helmet_meta.setdefault("rows", {}).setdefault(str(row), {})
+        rcfg["renderHead"] = val
+        self._set_meta_dirty(True)
+        self.redraw()
+        self.status.set(f"[Row {row}] renderHead={val} — click 'Save Meta' to persist")
 
     def _reset_hat_row_global(self):
         row = self._active_hat_row()
