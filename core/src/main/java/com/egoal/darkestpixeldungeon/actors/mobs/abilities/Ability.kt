@@ -26,7 +26,7 @@ open class Ability : Bundlable {
     /**
      * return false to refuse death
      */
-    open fun onDying(belonger: Mob): Boolean = true
+    open fun onDying(belonger: Mob, cause: Any?): Boolean = true
 
     override fun storeInBundle(bundle: Bundle) {}
     override fun restoreFromBundle(bundle: Bundle) {}
