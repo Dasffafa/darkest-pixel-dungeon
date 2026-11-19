@@ -25,6 +25,7 @@ import com.egoal.darkestpixeldungeon.*
 import com.egoal.darkestpixeldungeon.actors.Actor
 import com.egoal.darkestpixeldungeon.actors.Char
 import com.egoal.darkestpixeldungeon.actors.Damage
+import com.egoal.darkestpixeldungeon.actors.DeathSilence
 import com.egoal.darkestpixeldungeon.actors.buffs.*
 import com.egoal.darkestpixeldungeon.actors.hero.Hero
 import com.egoal.darkestpixeldungeon.actors.hero.perks.Assassin
@@ -616,8 +617,12 @@ abstract class Mob : Char() {
     }
 
     override fun die(cause: Any?) {
+        val silent = DeathSilence.isSilent(cause)
         var justDie = true
-        for (a in abilities) justDie = a.onDying(this) && justDie
+
+        if (!silent) {
+            for (a in abilities) justDie = a.onDying(this, cause) && justDie
+        }
 
         if (justDie) {
             Catalog.SetSeen(this)
@@ -633,7 +638,7 @@ abstract class Mob : Char() {
             if (Dungeon.hero.isAlive && !Dungeon.visible[pos])
                 GLog.i(M.L(this, "died"))
 
-            super.die(cause)
+            if (silent) destroy() else super.die(cause)
         }
     }
 
