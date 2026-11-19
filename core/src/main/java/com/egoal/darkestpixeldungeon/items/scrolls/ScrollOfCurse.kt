@@ -27,10 +27,16 @@ class ScrollOfCurse : InventoryScroll() {
         CellEmitter.get(Item.curUser.pos).burst(ShadowParticle.CURSE, 5)
         Sample.INSTANCE.play(Assets.SND_CURSED)
 
+        val wasCursed = item.cursed
         item.cursed = true
         item.cursedKnown = true
-        updateQuickslot()
 
-        GLog.w(Messages.get(this, "cursed", item.name()))
+        if (wasCursed && item.isUpgradable) {
+            item.degrade()
+            GLog.w(Messages.get(this, "cursed_degrade", item.name()))
+        } else {
+            GLog.w(Messages.get(this, "cursed", item.name()))
+        }
+        updateQuickslot()
     }
 }
