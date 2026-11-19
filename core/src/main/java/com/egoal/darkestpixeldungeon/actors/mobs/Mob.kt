@@ -122,7 +122,10 @@ abstract class Mob : Char() {
         }
     }
 
-    fun initialize(): Mob {
+    fun initialize(allowRespawn: Boolean = true): Mob {
+        if (!allowRespawn) {
+            abilities.removeAll { it is com.egoal.darkestpixeldungeon.actors.mobs.abilities.RespawnDying }
+        }
         cntAbilities_ = abilities.size
 
         // chance to lift as an elite
@@ -132,7 +135,7 @@ abstract class Mob : Char() {
         if (Dungeon.hero.challenges.contains(Challenge.Outrage) || Random.Float() < chance) {
             val cnt = Random.chances(floatArrayOf(.6f, .3f, .1f)) + 1
 
-            abilities.addAll(randomAbilities(cnt))
+            abilities.addAll(randomAbilities(cnt, allowRespawn))
             if (cntAbilities_ < abilities.size) {
                 //with extra ability, becomes an elite
                 properties.add(Property.ELITE)
@@ -149,11 +152,12 @@ abstract class Mob : Char() {
     /**
      * extra {atMost} random abilities
      */
-    protected open fun randomAbilities(atMost: Int): List<Ability> {
-        val cnt = min(atMost, Config.Ability.size)
+    protected open fun randomAbilities(atMost: Int, allowRespawn: Boolean = true): List<Ability> {
+        val candidates = if (allowRespawn) Config.Ability else Config.Ability.filter { it.Name != "RespawnDying" }
+        val cnt = min(atMost, candidates.size)
 
         val map = HashMap<String, Float>()
-        for (al in Config.Ability) map[al.Name] = al.Chance
+        for (al in candidates) map[al.Name] = al.Chance
 
         return List(cnt) {
             val key = Random.chances(map)
@@ -625,11 +629,32 @@ abstract class Mob : Char() {
         if (justDie) {
             Catalog.SetSeen(this)
 
+            val greedBlade = (Dungeon.hero.belongings.weapon as? com.egoal.darkestpixeldungeon.items.weapon.melee.BoethiahsBlade)?.takeIf { it.isGreedActive }
+
             if (canDropLoot()) {
                 val chance = Config.LootChance * 1.15f.pow(Dungeon.hero.wealthBonus()) *
-                        (if (properties.contains(Property.ELITE)) 2f else 1f)
+                        (if (properties.contains(Property.ELITE)) 2f else 1f) *
+                        (if (greedBlade != null) 1.5f else 1f)
                 if (Random.Float() < chance) {
                     createLoot()?.let { Dungeon.level.drop(it, pos).sprite.drop() }
+                }
+            }
+
+            if (greedBlade != null) {
+                val goldValue = max(10, Config.EXP * 3 + Dungeon.depth * 2)
+                val dropEffigy = {
+                    Dungeon.level.drop(
+                        com.egoal.darkestpixeldungeon.items.unclassified.GoldenEffigy(name, goldValue),
+                        pos
+                    ).sprite.drop()
+                }
+                if (hasSprite) {
+                    com.egoal.darkestpixeldungeon.effects.shaders.GoldStatueEffect.play(
+                        this,
+                        0.7f
+                    ) { dropEffigy() }
+                } else {
+                    dropEffigy()
                 }
             }
 
