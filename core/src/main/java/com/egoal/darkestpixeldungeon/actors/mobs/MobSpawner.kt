@@ -4,6 +4,7 @@ import com.egoal.darkestpixeldungeon.Assets
 import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.actors.mobs.npcs.NPC
 import com.egoal.darkestpixeldungeon.effects.Speck
+import com.egoal.darkestpixeldungeon.effects.UndeadEmergeEffect
 import com.egoal.darkestpixeldungeon.scenes.GameScene
 import com.egoal.darkestpixeldungeon.sprites.CharSprite
 import com.egoal.darkestpixeldungeon.sprites.MobSprite
@@ -40,6 +41,7 @@ class MobSpawner(mob: Class<out Mob>? = null, left: Int = 5) : NPC.Unbreakable()
         val mob = mobClass.newInstance().initialize(false)
         mob.pos = pos
         GameScene.add(mob)
+        UndeadEmergeEffect.emerge(mob)
         die(null)
 
         if (Dungeon.visible[pos]) Sample.INSTANCE.play(Assets.SND_BONES)

@@ -6,6 +6,7 @@ import com.egoal.darkestpixeldungeon.actors.Actor
 import com.egoal.darkestpixeldungeon.actors.hero.Hero
 import com.egoal.darkestpixeldungeon.actors.mobs.npcs.Sheep
 import com.egoal.darkestpixeldungeon.effects.CellEmitter
+import com.egoal.darkestpixeldungeon.effects.DashAfterImage
 import com.egoal.darkestpixeldungeon.effects.Speck
 import com.egoal.darkestpixeldungeon.items.Item
 import com.egoal.darkestpixeldungeon.items.scrolls.ScrollOfTeleportation
@@ -98,6 +99,7 @@ class CloakOfSheep : Artifact() {
         s.yell(Messages.get(s, "baa?"))
 
         // jump there
+        DashAfterImage.trail(hero, hero.pos, cell, color = 0x88DDFF, steps = 6)
         ScrollOfTeleportation.appear(hero, cell)
         hero.spendAndNext(.5f)
         Dungeon.observe()

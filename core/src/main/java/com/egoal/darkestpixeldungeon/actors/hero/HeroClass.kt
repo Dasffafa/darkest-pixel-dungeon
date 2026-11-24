@@ -14,6 +14,7 @@ import com.egoal.darkestpixeldungeon.items.artifacts.CloakOfSheep
 import com.egoal.darkestpixeldungeon.items.artifacts.SandalsOfNature
 import com.egoal.darkestpixeldungeon.items.artifacts.UnstableSpellbook
 import com.egoal.darkestpixeldungeon.items.bags.HatBag
+import com.egoal.darkestpixeldungeon.items.bags.ParticlePlayerBag
 import com.egoal.darkestpixeldungeon.items.bags.SeedPouch
 import com.egoal.darkestpixeldungeon.items.bags.SkillTree
 import com.egoal.darkestpixeldungeon.items.food.Food
@@ -415,6 +416,15 @@ enum class HeroClass(private val title: String, vararg subclasses: HeroSubClass)
                 cursed = false
                 identify()
                 collect(hatBag)
+            }
+        }
+
+        val particleBag = ParticlePlayerBag()
+        particleBag.identify().collect()
+        for (preset in ParticleTesterItem.PRESETS) {
+            ParticleTesterItem(preset.id).apply {
+                identify()
+                collect(particleBag)
             }
         }
     }

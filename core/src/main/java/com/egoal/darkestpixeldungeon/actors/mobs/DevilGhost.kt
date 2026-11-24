@@ -9,7 +9,7 @@ import com.egoal.darkestpixeldungeon.actors.Damage
 import com.egoal.darkestpixeldungeon.actors.buffs.Buff
 import com.egoal.darkestpixeldungeon.actors.hero.Hero
 import com.egoal.darkestpixeldungeon.effects.particles.ElmoParticle
-import com.egoal.darkestpixeldungeon.effects.particles.ShadowParticle
+import com.egoal.darkestpixeldungeon.effects.UndeadEmergeEffect
 import com.egoal.darkestpixeldungeon.items.unclassified.DemonicSkull
 import com.egoal.darkestpixeldungeon.items.unclassified.Gold
 import com.egoal.darkestpixeldungeon.items.Item
@@ -103,15 +103,7 @@ class DevilGhost : Wraith() {
                 dg.state = dg.HUNTING
 
                 GameScene.add(dg, 1f)
-
-                Game.runOnRenderThread {
-                    dg.sprite.alpha(0f)
-                    val p = dg.sprite.parent
-                    if (p != null) {
-                        p.add(AlphaTweener(dg.sprite, 1f, .5f))
-                        dg.sprite.emitter().burst(ShadowParticle.CURSE, 8)
-                    }
-                }
+                UndeadEmergeEffect.emerge(dg, color = 0xAA2255)
 
                 return dg
             } else {

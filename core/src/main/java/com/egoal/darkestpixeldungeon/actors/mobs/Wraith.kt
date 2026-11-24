@@ -28,7 +28,7 @@ import com.egoal.darkestpixeldungeon.actors.buffs.Terror
 import com.egoal.darkestpixeldungeon.levels.Level
 import com.egoal.darkestpixeldungeon.Dungeon
 import com.egoal.darkestpixeldungeon.actors.Actor
-import com.egoal.darkestpixeldungeon.effects.particles.ShadowParticle
+import com.egoal.darkestpixeldungeon.effects.UndeadEmergeEffect
 import com.egoal.darkestpixeldungeon.items.weapon.inscriptions.Grim
 import com.egoal.darkestpixeldungeon.scenes.GameScene
 import com.egoal.darkestpixeldungeon.sprites.WraithSprite
@@ -111,15 +111,7 @@ open class Wraith : Mob() {
                 w.pos = pos
                 w.state = w.HUNTING
                 GameScene.add(w, SPAWN_DELAY)
-
-                Game.runOnRenderThread {
-                    w.sprite.alpha(0f)
-                    val p = w.sprite.parent
-                    if (p != null) {
-                        p.add(AlphaTweener(w.sprite, 1f, 0.5f))
-                        w.sprite.emitter().burst(ShadowParticle.CURSE, 5)
-                    }
-                }
+                UndeadEmergeEffect.emerge(w)
 
                 return w
             } else {

@@ -10,6 +10,7 @@ import com.egoal.darkestpixeldungeon.actors.mobs.Bestiary
 import com.egoal.darkestpixeldungeon.actors.mobs.King
 import com.egoal.darkestpixeldungeon.actors.mobs.npcs.KingStatuary
 import com.egoal.darkestpixeldungeon.effects.particles.ShadowParticle
+import com.egoal.darkestpixeldungeon.effects.UndeadEmergeEffect
 import com.egoal.darkestpixeldungeon.items.Heap
 import com.egoal.darkestpixeldungeon.items.Item
 import com.egoal.darkestpixeldungeon.items.keys.SkeletonKey
@@ -185,7 +186,7 @@ class CityBossLevel : Level() {
                 }
                 GameScene.add(ku, 1f)
                 if (Dungeon.visible[i]) {
-                    ku.sprite.emitter().start(ShadowParticle.CURSE, 0.05f, 10)
+                    UndeadEmergeEffect.emerge(ku)
                     Sample.INSTANCE.play(Assets.SND_BONES)
                     ku.say(M.L(ku, "awaken"))
                 }

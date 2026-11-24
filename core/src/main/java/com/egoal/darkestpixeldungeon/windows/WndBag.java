@@ -36,6 +36,7 @@ import com.egoal.darkestpixeldungeon.items.Item;
 import com.egoal.darkestpixeldungeon.items.armor.Armor;
 import com.egoal.darkestpixeldungeon.items.bags.Bag;
 import com.egoal.darkestpixeldungeon.items.bags.HatBag;
+import com.egoal.darkestpixeldungeon.items.bags.ParticlePlayerBag;
 import com.egoal.darkestpixeldungeon.items.bags.PotionBandolier;
 import com.egoal.darkestpixeldungeon.items.bags.ScrollHolder;
 import com.egoal.darkestpixeldungeon.items.bags.SeedPouch;
@@ -194,8 +195,9 @@ public class WndBag extends WndTabbed {
 
         nCols = DarkestPixelDungeon.landscape() ? COLS_L : COLS_P;
         // +6+1 equipments and gold
-        nRows = (Belongings.BACKPACK_SIZE + 6 + 1) / nCols +
-                ((Belongings.BACKPACK_SIZE + 6 + 1) % nCols > 0 ? 1 : 0);
+        int bagSlots = Math.max(Belongings.BACKPACK_SIZE, bag.getSize());
+        nRows = (bagSlots + 6 + 1) / nCols +
+                ((bagSlots + 6 + 1) % nCols > 0 ? 1 : 0);
 
         int slotsWidth = SLOT_SIZE * nCols + SLOT_MARGIN * (nCols - 1);
         int slotsHeight = SLOT_SIZE * nRows + SLOT_MARGIN * (nRows - 1);
@@ -219,6 +221,7 @@ public class WndBag extends WndTabbed {
                 stuff.getItem(PotionBandolier.class),
                 stuff.getItem(WandHolster.class),
                 stuff.getItem(HatBag.class),
+                stuff.getItem(ParticlePlayerBag.class),
                 stuff.getItem(SkillTree.class)};
 
         for (Bag b : bags) {
@@ -406,6 +409,8 @@ public class WndBag extends WndTabbed {
                 return Icons.Companion.get(Icons.POTION_BANDOLIER);
             } else if (bag instanceof HatBag) {
                 return new ItemSprite(ItemSpriteSheet.STRAW_HAT, null);
+            } else if (bag instanceof ParticlePlayerBag) {
+                return new ItemSprite(ItemSpriteSheet.DUST, null);
             } else if (bag instanceof SkillTree) {
                 return Icons.Companion.get(Icons.SKILL_TREE);
             } else {
