@@ -158,13 +158,59 @@ hr {
 }
 
 .win-input,
-.win-select {
+.win-select,
+.win-textarea {
   font-family: inherit;
   font-size: 12px;
   background: #fff;
   color: #000;
   border: 2px inset #dfdfdf;
   padding: 2px 4px;
+}
+
+.win-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  margin-bottom: 6px;
+}
+
+.suggest-hint {
+  margin: 4px 0 6px;
+  color: #404040;
+}
+
+.suggestion-box {
+  background: #d4d0c8;
+  border: 1px solid #808080;
+  padding: 6px;
+}
+
+.form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.form-status {
+  font-size: 12px;
+}
+
+.form-status.ok {
+  color: #006400;
+  font-weight: bold;
+}
+
+.form-status.err {
+  color: #800000;
 }
 
 .win-input {
@@ -182,8 +228,14 @@ hr {
   cursor: pointer;
 }
 
-.win-btn:active:not(:disabled) {
+.win-btn:active:not(:disabled),
+.win-btn.active {
   border-style: inset;
+}
+
+.win-btn.active {
+  background: #b0b0b0;
+  font-weight: bold;
 }
 
 .win-btn:disabled {

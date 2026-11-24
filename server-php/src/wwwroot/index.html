@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Darkest Pixel Dungeon</title>
-<link rel="stylesheet" href="style.css?v=20261003">
+<link rel="stylesheet" href="style.css?v=20261123">
 </head>
 <body>
 <div class="desktop">
@@ -79,6 +79,7 @@
         <input class="win-input" type="text" id="spirit-query" data-i18n-placeholder="filter_placeholder" placeholder="输入名称筛选……">
         <button class="win-btn" type="submit" id="spirit-search-btn" data-i18n="filter_search">筛选</button>
         <button class="win-btn" type="button" id="spirit-reset-btn" data-i18n="filter_reset">重置</button>
+        <button class="win-btn" type="button" id="spirit-killboard-btn" data-i18n="killboard_btn">击杀榜</button>
       </form>
       <table class="panel" id="recent-table">
         <thead>
@@ -134,6 +135,26 @@
 
       <hr>
 
+      <h2 data-i18n="suggest_title">建议收集</h2>
+      <p class="suggest-hint" data-i18n="suggest_hint">欢迎提出游戏改进建议或 Bug 反馈（内容仅开发者可见，不会公开展示）。</p>
+      <form class="suggestion-box" id="suggestion-form">
+        <div class="form-row">
+          <select class="win-select" id="suggestion-category">
+            <option value="suggestion" data-i18n="suggest_cat_suggestion">游戏建议</option>
+            <option value="bug" data-i18n="suggest_cat_bug">Bug 反馈</option>
+            <option value="other" data-i18n="suggest_cat_other">其他</option>
+          </select>
+          <input class="win-input" type="text" id="suggestion-contact" maxlength="64" data-i18n-placeholder="suggest_contact_placeholder" placeholder="称呼或联系方式（可选，如 QQ / 邮箱）">
+        </div>
+        <textarea class="win-textarea" id="suggestion-content" rows="4" maxlength="1000" required data-i18n-placeholder="suggest_content_placeholder" placeholder="请填写你的建议或反馈（5~1000 字）……"></textarea>
+        <div class="form-actions">
+          <button class="win-btn" type="submit" id="suggestion-submit" data-i18n="suggest_submit">提交建议</button>
+          <span class="form-status" id="suggestion-status"></span>
+        </div>
+      </form>
+
+      <hr>
+
       <h2 data-i18n="links_title">相关链接</h2>
       <ul class="links">
         <li><a href="https://github.com/Dasffafa/darkest-pixel-dungeon">GitHub</a></li>
@@ -153,6 +174,6 @@
 
 </div>
 
-<script src="app.js?v=20261003"></script>
+<script src="app.js?v=20261123"></script>
 </body>
 </html>

@@ -94,6 +94,35 @@ function sanitize_text($text, $limit) {
     return $cleaned;
 }
 
+function sanitize_multiline_text($text, $limit) {
+    if ($text === null) return '';
+    if (!is_string($text)) return null;
+    $normalized = str_replace(array("\r\n", "\r"), "\n", $text);
+    $cleaned = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $normalized);
+    if ($cleaned === null) return null;
+    $cleaned = trim($cleaned);
+    if (str_len($cleaned) > $limit) return null;
+    return $cleaned;
+}
+
+function client_ip() {
+    $candidates = array();
+    if (!empty($_SERVER['HTTP_CF_CONNECTING_IP'])) {
+        $candidates[] = trim($_SERVER['HTTP_CF_CONNECTING_IP']);
+    }
+    if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+        $parts = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
+        if (count($parts) > 0) $candidates[] = trim($parts[0]);
+    }
+    if (!empty($_SERVER['REMOTE_ADDR'])) {
+        $candidates[] = trim($_SERVER['REMOTE_ADDR']);
+    }
+    foreach ($candidates as $ip) {
+        if (filter_var($ip, FILTER_VALIDATE_IP) !== false) return $ip;
+    }
+    return 'unknown';
+}
+
 function sanitize_username($name) {
     if (!is_string($name)) return null;
     $name = sanitize_text($name, 64);
@@ -397,6 +426,21 @@ function init_db() {
         }
         $pdo->exec("REPLACE INTO meta(k, v) VALUES('schema_v3', '1')");
     }
+
+    if (get_meta('schema_v4') !== '1') {
+        $pdo->exec('CREATE TABLE IF NOT EXISTS suggestions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ip TEXT NOT NULL,
+            category TEXT NOT NULL,
+            contact TEXT NOT NULL DEFAULT \'\',
+            content TEXT NOT NULL,
+            email_status TEXT NOT NULL DEFAULT \'pending\',
+            email_error TEXT NOT NULL DEFAULT \'\',
+            created_at INTEGER NOT NULL
+        )');
+        $pdo->exec('CREATE INDEX IF NOT EXISTS idx_suggestions_ip_time ON suggestions(ip, created_at)');
+        $pdo->exec("REPLACE INTO meta(k, v) VALUES('schema_v4', '1')");
+    }
 }
 
 function get_meta($key) {
@@ -553,4 +597,95 @@ function note_upload($device) {
         $stmt = $pdo->prepare('DELETE FROM upload_log WHERE created_at < ?');
         $stmt->execute(array(time() - 7200));
     }
+}
+
+function suggestion_rate_limited($ip) {
+    $now = time();
+    $cooldown = (int) cfgv('suggestion_cooldown_seconds');
+    if ($cooldown > 0) {
+        $stmt = db()->prepare('SELECT created_at FROM suggestions WHERE ip = ? ORDER BY id DESC LIMIT 1');
+        $stmt->execute(array($ip));
+        $last = $stmt->fetchColumn();
+        if ($last !== false && ($now - (int) $last) < $cooldown) {
+            return true;
+        }
+    }
+
+    $max_per_hour = (int) cfgv('suggestion_max_per_hour');
+    if ($max_per_hour > 0) {
+        $stmt = db()->prepare('SELECT COUNT(*) FROM suggestions WHERE ip = ? AND created_at >= ?');
+        $stmt->execute(array($ip, $now - 3600));
+        if ((int) $stmt->fetchColumn() >= $max_per_hour) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function smtp_read_response($fp, $expected_code, &$err) {
+    $resp = '';
+    while (($line = fgets($fp, 512)) !== false) {
+        $resp .= $line;
+        if (strlen($line) < 4 || $line[3] === ' ') break;
+    }
+    $code = (int) substr($resp, 0, 3);
+    if ($code !== (int) $expected_code) {
+        $err = 'SMTP expected ' . $expected_code . ', got ' . trim($resp);
+        return false;
+    }
+    return true;
+}
+
+function smtp_write_cmd($fp, $cmd, $expected_code, &$err) {
+    if (@fwrite($fp, $cmd . "\r\n") === false) {
+        $err = 'SMTP write failed';
+        return false;
+    }
+    return smtp_read_response($fp, $expected_code, $err);
+}
+
+function smtp_send_mail($host, $port, $secure, $user, $pass, $to, $subject, $body, &$err = '') {
+    $prefix = ($secure === 'ssl') ? 'ssl://' : '';
+    $errno = 0;
+    $errstr = '';
+    $fp = @stream_socket_client(
+        $prefix . $host . ':' . (int) $port,
+        $errno,
+        $errstr,
+        10,
+        STREAM_CLIENT_CONNECT
+    );
+    if (!$fp) {
+        $err = 'SMTP connect failed: ' . $errstr . ' (' . $errno . ')';
+        return false;
+    }
+    stream_set_timeout($fp, 10);
+
+    $ok = smtp_read_response($fp, 220, $err)
+        && smtp_write_cmd($fp, 'EHLO localhost', 250, $err)
+        && smtp_write_cmd($fp, 'AUTH LOGIN', 334, $err)
+        && smtp_write_cmd($fp, base64_encode($user), 334, $err)
+        && smtp_write_cmd($fp, base64_encode($pass), 235, $err)
+        && smtp_write_cmd($fp, 'MAIL FROM:<' . $user . '>', 250, $err)
+        && smtp_write_cmd($fp, 'RCPT TO:<' . $to . '>', 250, $err)
+        && smtp_write_cmd($fp, 'DATA', 354, $err);
+
+    if ($ok) {
+        $encoded_subject = '=?UTF-8?B?' . base64_encode($subject) . '?=';
+        $headers = array(
+            'Date: ' . date('r'),
+            'From: Darkest Pixel Dungeon <' . $user . '>',
+            'To: <' . $to . '>',
+            'Subject: ' . $encoded_subject,
+            'MIME-Version: 1.0',
+            'Content-Type: text/plain; charset=UTF-8',
+            'Content-Transfer-Encoding: base64',
+        );
+        $message = implode("\r\n", $headers) . "\r\n\r\n" . chunk_split(base64_encode($body), 76, "\r\n");
+        $ok = smtp_write_cmd($fp, $message . "\r\n.", 250, $err);
+    }
+
+    @fwrite($fp, "QUIT\r\n");
+    @fclose($fp);
+    return $ok;
 }

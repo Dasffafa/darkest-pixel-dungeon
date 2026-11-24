@@ -34,6 +34,7 @@ var I18N = {
     filter_placeholder: "输入名称筛选……",
     filter_search: "筛选",
     filter_reset: "重置",
+    killboard_btn: "击杀榜",
     page_prev: "上一页",
     page_next: "下一页",
     page_info: "第 {page} / {totalPages} 页（共 {total} 条）",
@@ -44,7 +45,20 @@ var I18N = {
     footer_rights: "保留所有权利",
     loading: "加载中……",
     stats_failed: "统计服务暂时不可用",
-    empty: "暂无数据"
+    empty: "暂无数据",
+    suggest_title: "建议收集",
+    suggest_hint: "欢迎提出游戏改进建议或 Bug 反馈（内容仅开发者可见，不会公开展示）。",
+    suggest_cat_suggestion: "游戏建议",
+    suggest_cat_bug: "Bug 反馈",
+    suggest_cat_other: "其他",
+    suggest_contact_placeholder: "称呼或联系方式（可选，如 QQ / 邮箱）",
+    suggest_content_placeholder: "请填写你的建议或反馈（5~1000 字）……",
+    suggest_submit: "提交建议",
+    suggest_submitting: "正在提交……",
+    suggest_ok: "提交成功，感谢你的反馈！",
+    suggest_too_short: "建议内容请至少填写 5 个字。",
+    suggest_rate_limit: "提交过于频繁，请稍后再试。",
+    suggest_failed: "提交失败，请稍后重试。"
   },
   zh_TW: {
     window_title: "Darkest Pixel Dungeon - 官方網站",
@@ -81,6 +95,7 @@ var I18N = {
     filter_placeholder: "輸入名稱篩選……",
     filter_search: "篩選",
     filter_reset: "重設",
+    killboard_btn: "擊殺榜",
     page_prev: "上一頁",
     page_next: "下一頁",
     page_info: "第 {page} / {totalPages} 頁（共 {total} 筆）",
@@ -91,7 +106,20 @@ var I18N = {
     footer_rights: "保留所有權利",
     loading: "載入中……",
     stats_failed: "統計服務暫時無法使用",
-    empty: "暫無資料"
+    empty: "暫無資料",
+    suggest_title: "建議收集",
+    suggest_hint: "歡迎提出遊戲改進建議或 Bug 回報（內容僅開發者可見，不會公開展示）。",
+    suggest_cat_suggestion: "遊戲建議",
+    suggest_cat_bug: "Bug 回報",
+    suggest_cat_other: "其他",
+    suggest_contact_placeholder: "稱呼或聯絡方式（可選，如 QQ / 信箱）",
+    suggest_content_placeholder: "請填寫你的建議或回報（5~1000 字）……",
+    suggest_submit: "提交建議",
+    suggest_submitting: "正在提交……",
+    suggest_ok: "提交成功，感謝你的回饋！",
+    suggest_too_short: "建議內容請至少填寫 5 個字。",
+    suggest_rate_limit: "提交過於頻繁，請稍後再試。",
+    suggest_failed: "提交失敗，請稍後重試。"
   },
   en: {
     window_title: "Darkest Pixel Dungeon - Official Site",
@@ -128,6 +156,7 @@ var I18N = {
     filter_placeholder: "Filter by name...",
     filter_search: "Filter",
     filter_reset: "Reset",
+    killboard_btn: "Kill Board",
     page_prev: "Prev",
     page_next: "Next",
     page_info: "Page {page} / {totalPages} ({total} total)",
@@ -138,7 +167,20 @@ var I18N = {
     footer_rights: "All rights reserved",
     loading: "Loading...",
     stats_failed: "Stats are temporarily unavailable",
-    empty: "No data yet"
+    empty: "No data yet",
+    suggest_title: "Feedback & Suggestions",
+    suggest_hint: "Share your ideas or bug reports here (private to the developer, never shown publicly).",
+    suggest_cat_suggestion: "Suggestion",
+    suggest_cat_bug: "Bug Report",
+    suggest_cat_other: "Other",
+    suggest_contact_placeholder: "Name or contact (optional, e.g. email / Discord)",
+    suggest_content_placeholder: "Write your suggestion or feedback (5-1000 chars)...",
+    suggest_submit: "Submit",
+    suggest_submitting: "Submitting...",
+    suggest_ok: "Submitted successfully! Thank you for your feedback.",
+    suggest_too_short: "Please enter at least 5 characters.",
+    suggest_rate_limit: "Too many submissions. Please try again later.",
+    suggest_failed: "Submission failed. Please try again later."
   }
 };
 
@@ -224,7 +266,7 @@ var ITEM_NAMES = {
 var lastSpiritsData = null;
 
 var lang = "zh";
-var spiritState = { page: 1, totalPages: 1, total: 0, field: "all", q: "" };
+var spiritState = { page: 1, totalPages: 1, total: 0, field: "all", q: "", sort: "recent" };
 
 function t(key) {
   return (I18N[lang] && I18N[lang][key]) || I18N.zh[key] || key;
@@ -332,6 +374,10 @@ function renderSpirits(data) {
   for (var k = 0; k < list.length; k++) {
     var item = list[k];
     var row = document.createElement("tr");
+    var victimsText = item.victims || "";
+    if (item.kill_count > 0) {
+      victimsText = "[" + item.kill_count + "] " + victimsText;
+    }
     var cells = [
       escapeHtml(item.username || ""),
       escapeHtml(className(item.hero_class)),
@@ -339,7 +385,7 @@ function renderSpirits(data) {
       escapeHtml(item.depth),
       escapeHtml(formatEquip(item)),
       escapeHtml(item.killed_by || ""),
-      escapeHtml(item.victims || ""),
+      escapeHtml(victimsText),
       escapeHtml(new Date((item.created_at || 0) * 1000).toLocaleString())
     ];
     for (var c = 0; c < cells.length; c++) {
@@ -356,7 +402,8 @@ function loadSpirits(page) {
   var url = "/api/v1/spirits?page=" + encodeURIComponent(targetPage)
     + "&limit=20"
     + "&field=" + encodeURIComponent(spiritState.field)
-    + "&q=" + encodeURIComponent(spiritState.q);
+    + "&q=" + encodeURIComponent(spiritState.q)
+    + "&sort=" + encodeURIComponent(spiritState.sort || "recent");
 
   var xhr = new XMLHttpRequest();
   xhr.open("GET", url, true);
@@ -456,6 +503,7 @@ function loadList(url, tableId, collectionKey, keys) {
   var fieldEl = document.getElementById("spirit-field");
   var queryEl = document.getElementById("spirit-query");
   var resetBtn = document.getElementById("spirit-reset-btn");
+  var killboardBtn = document.getElementById("spirit-killboard-btn");
   var prevBtn = document.getElementById("spirit-prev");
   var nextBtn = document.getElementById("spirit-next");
 
@@ -471,8 +519,23 @@ function loadList(url, tableId, collectionKey, keys) {
     queryEl.value = "";
     spiritState.field = "all";
     spiritState.q = "";
+    spiritState.sort = "recent";
+    if (killboardBtn) killboardBtn.classList.remove("active");
     loadSpirits(1);
   });
+
+  if (killboardBtn) {
+    killboardBtn.addEventListener("click", function () {
+      var nextSort = spiritState.sort === "kills" ? "recent" : "kills";
+      spiritState.sort = nextSort;
+      if (nextSort === "kills") {
+        killboardBtn.classList.add("active");
+      } else {
+        killboardBtn.classList.remove("active");
+      }
+      loadSpirits(1);
+    });
+  }
 
   prevBtn.addEventListener("click", function () {
     if (spiritState.page > 1) loadSpirits(spiritState.page - 1);
@@ -481,6 +544,53 @@ function loadList(url, tableId, collectionKey, keys) {
   nextBtn.addEventListener("click", function () {
     if (spiritState.page < spiritState.totalPages) loadSpirits(spiritState.page + 1);
   });
+
+  var suggestForm = document.getElementById("suggestion-form");
+  var suggestCategory = document.getElementById("suggestion-category");
+  var suggestContact = document.getElementById("suggestion-contact");
+  var suggestContent = document.getElementById("suggestion-content");
+  var suggestSubmit = document.getElementById("suggestion-submit");
+  var suggestStatus = document.getElementById("suggestion-status");
+
+  if (suggestForm) {
+    suggestForm.addEventListener("submit", function (event) {
+      event.preventDefault();
+      var content = (suggestContent.value || "").trim();
+      if (content.length < 5) {
+        suggestStatus.className = "form-status err";
+        suggestStatus.textContent = t("suggest_too_short");
+        return;
+      }
+
+      suggestSubmit.disabled = true;
+      suggestStatus.className = "form-status";
+      suggestStatus.textContent = t("suggest_submitting");
+
+      var xhr = new XMLHttpRequest();
+      xhr.open("POST", "/api/v1/suggestions", true);
+      xhr.setRequestHeader("Content-Type", "application/json; charset=utf-8");
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState !== 4) return;
+        suggestSubmit.disabled = false;
+        if (xhr.status >= 200 && xhr.status < 300) {
+          suggestContent.value = "";
+          suggestStatus.className = "form-status ok";
+          suggestStatus.textContent = t("suggest_ok");
+        } else if (xhr.status === 429) {
+          suggestStatus.className = "form-status err";
+          suggestStatus.textContent = t("suggest_rate_limit");
+        } else {
+          suggestStatus.className = "form-status err";
+          suggestStatus.textContent = t("suggest_failed");
+        }
+      };
+      xhr.send(JSON.stringify({
+        category: suggestCategory.value || "suggestion",
+        contact: (suggestContact.value || "").trim(),
+        content: content
+      }));
+    });
+  }
 
   applyLang(lang);
   loadStats();

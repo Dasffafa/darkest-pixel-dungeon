@@ -7,8 +7,13 @@ if (!file_exists($config_path)) $config_path = dirname(__FILE__) . '/config.samp
 $GLOBALS['CFG'] = require $config_path;
 
 header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET');
+header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 header('Access-Control-Allow-Headers: *');
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    send_status(200);
+    exit;
+}
 
 init_db();
 
@@ -96,6 +101,7 @@ function handle_list_spirits() {
     $username = isset($_GET['username']) ? trim($_GET['username']) : '';
     $killed_by = isset($_GET['killed_by']) ? trim($_GET['killed_by']) : '';
     $victim = isset($_GET['victim']) ? trim($_GET['victim']) : '';
+    $sort = isset($_GET['sort']) ? trim($_GET['sort']) : 'recent';
 
     $where = array();
     $params = array();
@@ -145,10 +151,15 @@ function handle_list_spirits() {
     if ($page > $total_pages) $page = $total_pages;
     $offset = ($page - 1) * $limit;
 
+    $order_sql = $sort === 'kills'
+        ? " ORDER BY (CASE WHEN victims IS NULL OR victims = '' THEN 0 ELSE LENGTH(victims) - LENGTH(REPLACE(victims, ',', '')) + 1 END) DESC, id DESC"
+        : ' ORDER BY id DESC';
+
     $stmt = $pdo->prepare(
         'SELECT username, hero_class, level, depth, killed_by, victims, record_json, created_at FROM spirits'
         . $where_sql
-        . ' ORDER BY id DESC LIMIT ? OFFSET ?'
+        . $order_sql
+        . ' LIMIT ? OFFSET ?'
     );
     $idx = 1;
     foreach ($params as $p) {
@@ -161,6 +172,7 @@ function handle_list_spirits() {
     $spirits = array();
     foreach ($stmt->fetchAll() as $row) {
         $rec = is_string($row['record_json']) ? json_decode($row['record_json'], true) : null;
+        $kill_count = count(split_victims($row['victims']));
         $spirits[] = array(
             'username' => $row['username'],
             'hero_class' => $row['hero_class'],
@@ -168,6 +180,7 @@ function handle_list_spirits() {
             'depth' => $row['depth'] !== null ? (int) $row['depth'] : null,
             'killed_by' => $row['killed_by'],
             'victims' => $row['victims'],
+            'kill_count' => $kill_count,
             'weapon' => is_array($rec) && isset($rec['weapon']) ? extract_item_info($rec['weapon']) : null,
             'armor' => is_array($rec) && isset($rec['armor']) ? extract_item_info($rec['armor']) : null,
             'created_at' => (int) $row['created_at'],
@@ -441,6 +454,83 @@ function handle_admin_moderate() {
     json_out(array('verdict' => $verdict, 'raw' => $raw), 200);
 }
 
+function handle_submit_suggestion() {
+    $data = json_decode(read_body(), true);
+    if (!is_array($data)) fail(400, 'bad payload');
+
+    $category = isset($data['category']) && is_string($data['category']) ? trim($data['category']) : 'suggestion';
+    $allowed_categories = array('suggestion', 'bug', 'other');
+    if (!in_array($category, $allowed_categories, true)) {
+        $category = 'suggestion';
+    }
+
+    $contact = sanitize_text(isset($data['contact']) ? $data['contact'] : '', 64);
+    if ($contact === null) fail(400, 'bad contact');
+
+    $max_len = (int) cfgv('suggestion_max_length');
+    $content = sanitize_multiline_text(isset($data['content']) ? $data['content'] : null, $max_len);
+    if ($content === null || str_len($content) < 5) {
+        fail(400, 'bad content');
+    }
+
+    $ip = client_ip();
+    if (suggestion_rate_limited($ip)) {
+        fail(429, 'too many requests');
+    }
+
+    $pdo = db();
+    $now = time();
+    $stmt = $pdo->prepare('INSERT INTO suggestions(ip, category, contact, content, email_status, created_at) VALUES (?, ?, ?, ?, ?, ?)');
+    $stmt->execute(array($ip, $category, $contact, $content, 'pending', $now));
+    $id = (int) $pdo->lastInsertId();
+
+    $category_labels = array(
+        'suggestion' => '游戏建议',
+        'bug' => 'Bug 反馈',
+        'other' => '其他',
+    );
+    $label = isset($category_labels[$category]) ? $category_labels[$category] : $category;
+
+    $smtp_user = cfgv('smtp_user');
+    $smtp_pass = cfgv('smtp_pass');
+    $smtp_to = cfgv('smtp_to');
+    $email_status = 'skipped';
+    $email_error = '';
+
+    if ($smtp_user !== '' && $smtp_pass !== '' && $smtp_pass !== 'CHANGE_ME' && $smtp_to !== '') {
+        $subject = '[DPD 建议收集 #' . $id . '] ' . $label;
+        $body_lines = array(
+            '编号: #' . $id,
+            '类型: ' . $label,
+            '时间: ' . date('Y-m-d H:i:s', $now) . ' (UTC' . date('P', $now) . ')',
+            'IP: ' . $ip,
+            '称呼/联系方式: ' . ($contact !== '' ? $contact : '(未填写)'),
+            '',
+            '--- 建议内容 ---',
+            $content,
+        );
+        $err = '';
+        $sent = smtp_send_mail(
+            cfgv('smtp_host'),
+            cfgv('smtp_port'),
+            cfgv('smtp_secure'),
+            $smtp_user,
+            $smtp_pass,
+            $smtp_to,
+            $subject,
+            implode("\n", $body_lines),
+            $err
+        );
+        $email_status = $sent ? 'sent' : 'failed';
+        $email_error = $sent ? '' : substr($err, 0, 500);
+    }
+
+    $upd = $pdo->prepare('UPDATE suggestions SET email_status = ?, email_error = ? WHERE id = ?');
+    $upd->execute(array($email_status, $email_error, $id));
+
+    json_out(array('ok' => true, 'id' => $id), 200);
+}
+
 $method = $_SERVER['REQUEST_METHOD'];
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $path = trim($path, '/');
@@ -469,6 +559,8 @@ if ($method === 'GET' && $path === 'health') {
     handle_upload_victory();
 } elseif ($method === 'POST' && $path === 'v1/epitaphs') {
     handle_upload_epitaph();
+} elseif ($method === 'POST' && $path === 'v1/suggestions') {
+    handle_submit_suggestion();
 } elseif ($method === 'GET' && $path === 'v1/spirits/batch') {
     handle_batch_spirits();
 } elseif ($method === 'GET' && $path === 'v1/epitaphs/random') {

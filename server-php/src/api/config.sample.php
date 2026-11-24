@@ -16,4 +16,15 @@ return array(
     'max_speech' => 300,
     'malice_limit' => 10,
     'ban_seconds' => 172800,
+
+    'suggestion_max_length' => 1000,
+    'suggestion_max_per_hour' => 5,
+    'suggestion_cooldown_seconds' => 60,
+
+    'smtp_host' => 'smtp.feishu.cn',
+    'smtp_port' => 465,
+    'smtp_secure' => 'ssl',
+    'smtp_user' => 'CHANGE_ME@example.com',
+    'smtp_pass' => 'CHANGE_ME',
+    'smtp_to' => 'CHANGE_ME@example.com',
 );
